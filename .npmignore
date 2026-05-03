@@ -1,0 +1,40 @@
+# Source — don't ship (Next.js standalone build is what runs)
+app/
+components/
+lib/
+scripts/
+public/
+
+# Build leftovers we don't ship
+.next/cache/
+.next/trace
+.next/server
+.next/static
+
+# Configs
+next.config.mjs
+tailwind.config.ts
+postcss.config.mjs
+tsconfig.json
+tsconfig.tsbuildinfo
+.eslintrc*
+eslint.config.*
+.prettierrc*
+.gitignore
+.editorconfig
+.npmrc
+
+# Lockfiles
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Dev artifacts
+*.log
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+
+# Design docs (optional — comment out if you want them in the package)
+PLAN.md

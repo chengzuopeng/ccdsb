@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Default = dark (matches what server emits when no class is present) */
+:root,
+.theme-dark {
+  --bg-base: 10 10 10;
+  --bg-surface: 20 20 20;
+  --bg-surface-hi: 28 28 28;
+  --border: 38 38 38;
+  --border-hi: 64 64 64;
+  --text-primary: 250 250 250;
+  --text-secondary: 163 163 163;
+  --text-tertiary: 115 115 115;
+  --brand: 201 100 66;
+  --brand-hover: 216 121 89;
+  --success: 34 197 94;
+  --warning: 250 204 21;
+  --danger: 248 113 113;
+  --chart-input: 96 165 250;
+  --chart-output: 251 146 60;
+  --chart-cache-read: 52 211 153;
+  --chart-cache-create: 167 139 250;
+  --chart-grid: 38 38 38;
+  --chart-axis: 115 115 115;
+}
+
+.theme-light {
+  --bg-base: 255 255 255;
+  --bg-surface: 250 250 250;
+  --bg-surface-hi: 244 244 245;
+  --border: 228 228 231;
+  --border-hi: 212 212 216;
+  --text-primary: 23 23 23;
+  --text-secondary: 82 82 91;
+  --text-tertiary: 161 161 170;
+  --brand: 194 65 12;
+  --brand-hover: 154 52 18;
+  --success: 22 163 74;
+  --warning: 217 119 6;
+  --danger: 220 38 38;
+  --chart-input: 37 99 235;
+  --chart-output: 234 88 12;
+  --chart-cache-read: 22 163 74;
+  --chart-cache-create: 124 58 237;
+  --chart-grid: 228 228 231;
+  --chart-axis: 113 113 122;
+}
+
+:root {
+  --font-sans:
+    'Geist Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+html,
+body {
+  background: rgb(var(--bg-base));
+  color: rgb(var(--text-primary));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgb(var(--brand) / 0.3);
+  color: rgb(var(--text-primary));
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-hi));
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--text-tertiary));
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border bg-bg-surface;
+  }
+  .card-pad {
+    @apply p-6;
+  }
+  .label {
+    @apply text-xs uppercase tracking-wide text-text-tertiary font-medium;
+  }
+  .num-hero {
+    @apply text-4xl font-semibold text-text-primary tabular-nums tracking-tight;
+  }
+  .num-mid {
+    @apply text-2xl font-semibold text-text-primary tabular-nums;
+  }
+  .num-mono {
+    @apply font-mono tabular-nums;
+  }
+  .delta-up {
+    @apply text-success;
+  }
+  .delta-down {
+    @apply text-danger;
+  }
+  .pill {
+    @apply inline-flex items-center px-2 py-0.5 rounded-button text-xs font-medium;
+  }
+  .pill-muted {
+    @apply pill bg-bg-surface-hi text-text-secondary border border-border;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-button text-sm font-medium border border-border bg-bg-surface hover:bg-bg-surface-hi hover:border-border-hi transition-colors;
+  }
+  .btn-brand {
+    @apply btn bg-brand/15 border-brand/40 text-brand hover:bg-brand/25 hover:border-brand/60;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-button text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-hi transition-colors;
+  }
+}
