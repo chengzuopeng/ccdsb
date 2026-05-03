@@ -1,27 +1,75 @@
+<div align="center">
+
 # ccdsb
 
-> **C**laude **C**ode **D**a**s**h**b**oard — a zero-config local web UI for your Claude Code token usage and cost.
+**C**laude **C**ode **D**a**s**h**b**oard — a zero-config local web UI for your Claude Code token usage and cost.
+
+[![npm version](https://img.shields.io/npm/v/ccdsb?color=C96442&style=flat-square)](https://www.npmjs.com/package/ccdsb)
+[![license](https://img.shields.io/npm/l/ccdsb?color=C96442&style=flat-square)](./LICENSE)
+[![node](https://img.shields.io/node/v/ccdsb?color=C96442&style=flat-square)](#)
+
+[English](./README.md) · [简体中文](./README.zh-CN.md)
+
+</div>
 
 ```bash
 npx ccdsb
 ```
 
-That's it. ccdsb scans `~/.claude/projects/` (and `~/.config/claude/projects/`), reads the JSONL files, computes token usage and USD cost, and opens a dashboard in your browser. Data never leaves your machine.
+That's it. ccdsb scans `~/.claude/projects/` (and `~/.config/claude/projects/`), reads the JSONL files, computes token usage + USD cost + cache savings, and opens a dashboard in your browser. **Data never leaves your machine.**
+
+![Overview — English / Dark](./docs/screenshots/overview-en-dark.png)
+
+---
+
+## Why
+
+[ccusage](https://github.com/ryoppippi/ccusage) (the de-facto standard) is a great terminal CLI but it's a wall of numbers. ccdsb gives you the same data with charts, drill-down by project / session / model, a live 5-hour-block countdown, and a clear **"saved by cache"** KPI — all in a polished local web UI. Bilingual (English + 中文), light + dark themes, completely offline.
 
 ## Features
 
 - **Overview** — KPI cards: tokens today, cost today, this month, cache hit rate, top model, sessions today
-- **5h block** — live countdown + progress bar for the current Claude Code rolling 5-hour window
-- **Usage trend** — stacked bar chart broken down by `input` / `output` / `cache_read` / `cache_creation`
-- **Sessions** — per-conversation breakdown with message-level timeline
-- **Projects** — per-`cwd` aggregation
-- **Models** — side-by-side comparison with cost/token share + cache hit per model
-- **Cache savings** — a separate KPI showing how much cache reads have saved you
-- **i18n** — English / 中文, persisted to localStorage + cookie
-- **Themes** — Light / Dark / System (no-flash on initial paint)
-- **Filters** — time range, granularity (hour/day/week/month), model multi-select, project multi-select
+- **Live 5h block** — countdown + progress + burn rate + projected total cost
+- **Token usage trend** — stacked bar chart broken down by `input` / `output` / `cache_read` / `cache_creation`
+- **Sessions** — per-conversation list with model / tokens / cost / duration; click into the message-level timeline
+- **Projects** — per-`cwd` aggregation cards with sparkline + spend share
+- **Models** — side-by-side comparison: cost share, tokens share, cache hit rate, USD pricing
+- **Cache savings** — separate KPI showing how much cache reads have saved you vs. paying full input price
+- **i18n** — English / 中文, persisted to localStorage + cookie (no flash on initial paint)
+- **Themes** — Light / Dark / System (no flash, follows `prefers-color-scheme` when set to System)
+- **Filters** — time range (today / 7d / 30d / 90d / all), granularity (hour / day / week / month), model multi-select, project multi-select
 - **Export** — CSV download of the request log
 - **100% local** — read-only access to JSONL files, no telemetry, no network calls
+
+## Screenshots
+
+### Overview — English · Dark
+
+![](./docs/screenshots/overview-en-dark.png)
+
+### Overview — 中文 · Light
+
+![](./docs/screenshots/overview-zh-light.png)
+
+### Usage — filters, stacked trend, request log
+
+![](./docs/screenshots/usage-en-dark.png)
+
+### Sessions — every conversation, sorted by recency
+
+![](./docs/screenshots/sessions-en-dark.png)
+
+### Projects — per-`cwd` spend cards
+
+![](./docs/screenshots/projects-en-dark.png)
+
+### Models — side-by-side cost / cache / pricing
+
+![](./docs/screenshots/models-en-dark.png)
+
+### Settings — language / theme / data sources / pricing table
+
+![](./docs/screenshots/settings-zh-light.png)
 
 ## Install / Run
 
@@ -34,7 +82,7 @@ npm  i -g ccdsb     && ccdsb
 pnpm i -g ccdsb     && ccdsb
 yarn global add ccdsb && ccdsb
 
-# pnpm dlx
+# dlx
 pnpm dlx ccdsb
 ```
 
@@ -52,6 +100,8 @@ ccdsb [options]
       --help            show help
 ```
 
+If `3737` is taken ccdsb falls back to the next available port automatically.
+
 ### Environment variables
 
 | Variable             | Effect                                                              |
@@ -64,7 +114,7 @@ ccdsb [options]
 This repo is also a working Next.js project — you can run the dashboard against your live data while iterating on the code.
 
 ```bash
-git clone <repo>
+git clone https://github.com/chengzuopeng/ccdsb.git
 cd ccdsb
 pnpm install
 pnpm dev               # http://localhost:3737
@@ -77,6 +127,7 @@ pnpm typecheck         # tsc --noEmit
 pnpm lint              # next lint
 pnpm build             # next build + copy static into .next/standalone
 pnpm start             # run bin/cli.mjs against the standalone build
+pnpm screenshots       # regenerate docs/screenshots/*.png (requires Chromium)
 pnpm clean             # rm -rf .next node_modules tsconfig.tsbuildinfo
 ```
 
@@ -90,7 +141,7 @@ node bin/cli.mjs       # exact same entrypoint as `npx ccdsb`
 To preview what would be published:
 
 ```bash
-pnpm pack --dry-run
+pnpm pack              # writes ccdsb-<version>.tgz; tar -tzf to inspect
 ```
 
 ## Publish
@@ -100,17 +151,18 @@ pnpm pack --dry-run
 pnpm publish --access public
 ```
 
-`prepublishOnly` will run `pnpm build` first, so the `.next/standalone` artifact is always fresh.
+`prepublishOnly` runs `pnpm build` first, so the `.next/standalone` artifact is always fresh.
 
 ## How it works
 
-1. CLI (`bin/cli.mjs`) picks an available port via `get-port`, then `fork()`s the Next.js standalone server (`.next/standalone/server.js`).
-2. Once the server responds, it `open()`s the browser to that URL.
-3. The Next.js server-side code in `lib/data-loader/scan.ts` reads `~/.claude/projects/**/*.jsonl`, parses every `assistant` message, dedups via `(message.id, requestId)`, and aggregates.
+1. **CLI** (`bin/cli.mjs`) picks an available port via [`get-port`](https://github.com/sindresorhus/get-port), then `fork()`s the Next.js standalone server (`.next/standalone/server.js`).
+2. Once the server responds, it [`open()`](https://github.com/sindresorhus/open)s the browser to that URL.
+3. The Next.js server-side code in `lib/data-loader/scan.ts` reads `~/.claude/projects/**/*.jsonl`, parses every `assistant` message, dedups via `(message.id, requestId)`, and aggregates by day / model / project / session / 5h-block.
 4. Pricing is from a built-in snapshot of Anthropic's published rates (12 models). Unknown models fall back to the same family's latest rate.
+5. i18n + theme: Cookie-driven SSR + `localStorage` mirror + an inline no-flash script in `<head>`.
 
-See [PLAN.md](./PLAN.md) for the full design rationale.
+See [PLAN.md](./PLAN.md) for the full design rationale, data-source investigation, and competitive analysis.
 
 ## License
 
-MIT
+MIT — see [LICENSE](./LICENSE).

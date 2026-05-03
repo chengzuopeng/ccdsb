@@ -41,9 +41,9 @@ If you installed ccdsb from npm: please reinstall — the published package shou
 include the standalone build.
 
 If you are running from source: build first with
-  $ yarn build
+  $ pnpm build
 or run the dev server with
-  $ yarn dev
+  $ pnpm dev
 `);
   process.exit(1);
 }
