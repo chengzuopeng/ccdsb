@@ -26,7 +26,7 @@ export function Nav() {
           <span className="inline-flex items-center justify-center w-7 h-7 rounded-button bg-brand text-white text-xs font-bold">
             cc
           </span>
-          <span>ccdsb</span>
+          <span>ccgauge</span>
           <span className="text-xs text-text-tertiary font-normal hidden md:inline">{t('brand.tagline')}</span>
         </Link>
         <nav className="flex-1 flex items-center gap-1">

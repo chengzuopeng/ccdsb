@@ -1,1 +1,1 @@
-export const LOCALE_COOKIE = 'ccdsb_locale';
+export const LOCALE_COOKIE = 'ccgauge_locale';

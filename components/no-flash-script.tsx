@@ -9,9 +9,9 @@ export function NoFlashScript() {
 (function(){
   try {
     var t = null;
-    try { t = localStorage.getItem('ccdsb.theme'); } catch (_) {}
+    try { t = localStorage.getItem('ccgauge.theme'); } catch (_) {}
     if (!t) {
-      var m = document.cookie.match(/(?:^|; )ccdsb_theme=([^;]+)/);
+      var m = document.cookie.match(/(?:^|; )ccgauge_theme=([^;]+)/);
       if (m) t = decodeURIComponent(m[1]);
     }
     if (t !== 'light' && t !== 'dark' && t !== 'system') t = 'system';

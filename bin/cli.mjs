@@ -19,7 +19,7 @@ const open = openMod.default;
 
 const program = new Command();
 program
-  .name('ccdsb')
+  .name('ccgauge')
   .description(pkg.description ?? 'Claude Code Dashboard')
   .version(pkg.version ?? '0.0.0')
   .option('-p, --port <port>', 'preferred port', '3737')
@@ -34,10 +34,10 @@ const opts = program.opts();
 const standaloneEntry = join(packageRoot, '.next', 'standalone', 'server.js');
 if (!existsSync(standaloneEntry)) {
   console.error(`
-[ccdsb] Build artifact not found:
+[ccgauge] Build artifact not found:
   ${standaloneEntry}
 
-If you installed ccdsb from npm: please reinstall — the published package should
+If you installed ccgauge from npm: please reinstall — the published package should
 include the standalone build.
 
 If you are running from source: build first with
@@ -60,7 +60,7 @@ const env = {
   NODE_ENV: 'production',
 };
 if (opts.dir) {
-  env.CCDSB_CONFIG_DIR = String(opts.dir);
+  env.CCGAUGE_CONFIG_DIR = String(opts.dir);
 }
 
 const child = fork(standaloneEntry, [], {
@@ -90,7 +90,7 @@ async function tryOpen() {
 waitForUrl(url, 15_000)
   .then(tryOpen)
   .catch((err) => {
-    console.error(`\n[ccdsb] failed to start: ${err.message}\n`);
+    console.error(`\n[ccgauge] failed to start: ${err.message}\n`);
     child.kill('SIGTERM');
     process.exit(1);
   });
@@ -129,7 +129,7 @@ async function waitForUrl(target, timeoutMs) {
 function printReady(url) {
   const banner = [
     '',
-    '  \x1b[1m\x1b[38;2;201;100;66mccdsb\x1b[0m  Claude Code Dashboard',
+    '  \x1b[1m\x1b[38;2;201;100;66mccgauge\x1b[0m  Claude Code Dashboard',
     '',
     `   ➜  Local:   \x1b[36m${url}\x1b[0m`,
     `   ➜  Press \x1b[2mCtrl+C\x1b[0m to stop`,

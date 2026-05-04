@@ -1,22 +1,22 @@
 <div align="center">
 
-# ccdsb
+# ccgauge
 
-**C**laude **C**ode **D**a**s**h**b**oard —— Claude Code 用量本地看板，零配置开箱即用。
+Claude Code 用量本地看板，零配置开箱即用。
 
-[![npm version](https://img.shields.io/npm/v/ccdsb?color=C96442&style=flat-square)](https://www.npmjs.com/package/ccdsb)
-[![license](https://img.shields.io/npm/l/ccdsb?color=C96442&style=flat-square)](./LICENSE)
-[![node](https://img.shields.io/node/v/ccdsb?color=C96442&style=flat-square)](#)
+[![npm version](https://img.shields.io/npm/v/ccgauge?color=C96442&style=flat-square)](https://www.npmjs.com/package/ccgauge)
+[![license](https://img.shields.io/npm/l/ccgauge?color=C96442&style=flat-square)](./LICENSE)
+[![node](https://img.shields.io/node/v/ccgauge?color=C96442&style=flat-square)](#)
 
 [English](./README.md) · [简体中文](./README.zh-CN.md)
 
 </div>
 
 ```bash
-npx ccdsb
+npx ccgauge
 ```
 
-就这一行。ccdsb 会扫描 `~/.claude/projects/`（以及 `~/.config/claude/projects/`）下的 JSONL 文件，计算 token 用量、美元成本与缓存节省，然后在浏览器里打开看板。**所有数据全程不离开你的电脑。**
+就这一行。ccgauge 会扫描 `~/.claude/projects/`（以及 `~/.config/claude/projects/`）下的 JSONL 文件，计算 token 用量、美元成本与缓存节省，然后在浏览器里打开看板。**所有数据全程不离开你的电脑。**
 
 ![概览 — 中文 / Light](./docs/screenshots/overview-zh-light.png)
 
@@ -24,7 +24,7 @@ npx ccdsb
 
 ## 为什么写这个
 
-社区已有的 [ccusage](https://github.com/ryoppippi/ccusage) 是终端 CLI 标杆，但它给你的是一墙的数字。ccdsb 用同一份数据画出图表、按项目 / 会话 / 模型分维度下钻、5 小时 block 实时倒计时，还把"缓存节省了多少钱"单独做成一张 KPI 卡 —— 全部塞进一个本地的现代 Web 看板。中英双语、亮暗双主题、完全离线。
+社区已有的 [ccusage](https://github.com/ryoppippi/ccusage) 是终端 CLI 标杆，但它给你的是一墙的数字。ccgauge 用同一份数据画出图表、按项目 / 会话 / 模型分维度下钻、5 小时 block 实时倒计时，还把"缓存节省了多少钱"单独做成一张 KPI 卡 —— 全部塞进一个本地的现代 Web 看板。中英双语、亮暗双主题、完全离线。
 
 ## 功能
 
@@ -75,21 +75,21 @@ npx ccdsb
 
 ```bash
 # 一行运行（推荐）
-npx ccdsb
+npx ccgauge
 
 # 全局安装后直接用
-npm  i -g ccdsb     && ccdsb
-pnpm i -g ccdsb     && ccdsb
-yarn global add ccdsb && ccdsb
+npm  i -g ccgauge     && ccgauge
+pnpm i -g ccgauge     && ccgauge
+yarn global add ccgauge && ccgauge
 
 # pnpm dlx
-pnpm dlx ccdsb
+pnpm dlx ccgauge
 ```
 
 ### 命令行选项
 
 ```
-ccdsb [options]
+ccgauge [options]
 
   -p, --port <port>     首选端口（默认 3737）
   -h, --host <host>     绑定地址（默认 127.0.0.1）
@@ -100,22 +100,22 @@ ccdsb [options]
       --help            查看帮助
 ```
 
-如果 `3737` 被占用，ccdsb 会自动顺延到下一个可用端口。
+如果 `3737` 被占用，ccgauge 会自动顺延到下一个可用端口。
 
 ### 环境变量
 
-| 变量                | 作用                                                                |
-| ------------------- | ------------------------------------------------------------------- |
-| `CCDSB_CONFIG_DIR`  | 把 `<dir>/projects` 也加入扫描路径（在默认路径之外）                  |
-| `CLAUDE_CONFIG_DIR` | 同上（与 Claude Code 1.0.30+ 兼容）                                 |
+| 变量                 | 作用                                                                |
+| -------------------- | ------------------------------------------------------------------- |
+| `CCGAUGE_CONFIG_DIR` | 把 `<dir>/projects` 也加入扫描路径（在默认路径之外）                  |
+| `CLAUDE_CONFIG_DIR`  | 同上（与 Claude Code 1.0.30+ 兼容）                                 |
 
 ## 本地开发
 
 这个仓库本身就是一个能跑的 Next.js 工程，可以一边改代码一边看实时数据。
 
 ```bash
-git clone https://github.com/chengzuopeng/ccdsb.git
-cd ccdsb
+git clone https://github.com/chengzuopeng/ccgauge.git
+cd ccgauge
 pnpm install
 pnpm dev               # http://localhost:3737
 ```
@@ -135,13 +135,13 @@ pnpm clean             # rm -rf .next node_modules tsconfig.tsbuildinfo
 
 ```bash
 pnpm build
-node bin/cli.mjs       # 入口与 npx ccdsb 完全一致
+node bin/cli.mjs       # 入口与 npx ccgauge 完全一致
 ```
 
 预览将要发布的内容：
 
 ```bash
-pnpm pack              # 生成 ccdsb-<version>.tgz；用 tar -tzf 查看
+pnpm pack              # 生成 ccgauge-<version>.tgz；用 tar -tzf 查看
 ```
 
 ## 发布
@@ -160,8 +160,6 @@ pnpm publish --access public
 3. Next.js 的服务端代码 `lib/data-loader/scan.ts` 扫描 `~/.claude/projects/**/*.jsonl`，解析每一条 `assistant` 消息，按 `(message.id, requestId)` 去重，然后按 天 / 模型 / 项目 / 会话 / 5h-block 多维聚合。
 4. 单价用内置的 Anthropic 官价快照（12 个模型）；遇到未知模型时，回退到同 family 的最新一档单价。
 5. i18n + 主题：cookie 驱动 SSR + `localStorage` 镜像 + `<head>` 注入一段同步执行的 no-flash 脚本。
-
-完整的设计文档、数据源调研、竞品对比见 [PLAN.md](./PLAN.md)。
 
 ## 许可证
 

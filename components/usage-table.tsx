@@ -102,7 +102,7 @@ export function UsageTable({ rows }: { rows: UsageTableRow[] }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ccdsb-usage-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `ccgauge-usage-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

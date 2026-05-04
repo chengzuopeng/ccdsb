@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const OUT = resolve(ROOT, 'docs/screenshots');
-const BASE = process.env.CCDSB_BASE || 'http://127.0.0.1:3737';
+const BASE = process.env.CCGAUGE_BASE || 'http://127.0.0.1:3737';
 
 const VIEWPORT = { width: 1440, height: 900 };
 
@@ -52,8 +52,8 @@ async function main() {
   for (const s of SHOTS) {
     await context.clearCookies();
     await context.addCookies([
-      { name: 'ccdsb_locale', value: s.locale, domain: url.hostname, path: '/' },
-      { name: 'ccdsb_theme', value: s.theme, domain: url.hostname, path: '/' },
+      { name: 'ccgauge_locale', value: s.locale, domain: url.hostname, path: '/' },
+      { name: 'ccgauge_theme', value: s.theme, domain: url.hostname, path: '/' },
     ]);
     const page = await context.newPage();
     await page.goto(BASE + s.path, { waitUntil: 'networkidle' });

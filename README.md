@@ -1,22 +1,22 @@
 <div align="center">
 
-# ccdsb
+# ccgauge
 
-**C**laude **C**ode **D**a**s**h**b**oard — a zero-config local web UI for your Claude Code token usage and cost.
+Local web dashboard for your Claude Code token usage and cost. Zero-config.
 
-[![npm version](https://img.shields.io/npm/v/ccdsb?color=C96442&style=flat-square)](https://www.npmjs.com/package/ccdsb)
-[![license](https://img.shields.io/npm/l/ccdsb?color=C96442&style=flat-square)](./LICENSE)
-[![node](https://img.shields.io/node/v/ccdsb?color=C96442&style=flat-square)](#)
+[![npm version](https://img.shields.io/npm/v/ccgauge?color=C96442&style=flat-square)](https://www.npmjs.com/package/ccgauge)
+[![license](https://img.shields.io/npm/l/ccgauge?color=C96442&style=flat-square)](./LICENSE)
+[![node](https://img.shields.io/node/v/ccgauge?color=C96442&style=flat-square)](#)
 
 [English](./README.md) · [简体中文](./README.zh-CN.md)
 
 </div>
 
 ```bash
-npx ccdsb
+npx ccgauge
 ```
 
-That's it. ccdsb scans `~/.claude/projects/` (and `~/.config/claude/projects/`), reads the JSONL files, computes token usage + USD cost + cache savings, and opens a dashboard in your browser. **Data never leaves your machine.**
+That's it. ccgauge scans `~/.claude/projects/` (and `~/.config/claude/projects/`), reads the JSONL files, computes token usage + USD cost + cache savings, and opens a dashboard in your browser. **Data never leaves your machine.**
 
 ![Overview — English / Dark](./docs/screenshots/overview-en-dark.png)
 
@@ -24,7 +24,7 @@ That's it. ccdsb scans `~/.claude/projects/` (and `~/.config/claude/projects/`),
 
 ## Why
 
-[ccusage](https://github.com/ryoppippi/ccusage) (the de-facto standard) is a great terminal CLI but it's a wall of numbers. ccdsb gives you the same data with charts, drill-down by project / session / model, a live 5-hour-block countdown, and a clear **"saved by cache"** KPI — all in a polished local web UI. Bilingual (English + 中文), light + dark themes, completely offline.
+[ccusage](https://github.com/ryoppippi/ccusage) (the de-facto standard) is a great terminal CLI but it's a wall of numbers. ccgauge gives you the same data with charts, drill-down by project / session / model, a live 5-hour-block countdown, and a clear **"saved by cache"** KPI — all in a polished local web UI. Bilingual (English + 中文), light + dark themes, completely offline.
 
 ## Features
 
@@ -75,21 +75,21 @@ That's it. ccdsb scans `~/.claude/projects/` (and `~/.config/claude/projects/`),
 
 ```bash
 # zero-install one-shot (recommended)
-npx ccdsb
+npx ccgauge
 
 # global install
-npm  i -g ccdsb     && ccdsb
-pnpm i -g ccdsb     && ccdsb
-yarn global add ccdsb && ccdsb
+npm  i -g ccgauge     && ccgauge
+pnpm i -g ccgauge     && ccgauge
+yarn global add ccgauge && ccgauge
 
 # dlx
-pnpm dlx ccdsb
+pnpm dlx ccgauge
 ```
 
 ### Options
 
 ```
-ccdsb [options]
+ccgauge [options]
 
   -p, --port <port>     preferred port (default: 3737)
   -h, --host <host>     bind host (default: 127.0.0.1)
@@ -100,22 +100,22 @@ ccdsb [options]
       --help            show help
 ```
 
-If `3737` is taken ccdsb falls back to the next available port automatically.
+If `3737` is taken ccgauge falls back to the next available port automatically.
 
 ### Environment variables
 
-| Variable             | Effect                                                              |
-| -------------------- | ------------------------------------------------------------------- |
-| `CCDSB_CONFIG_DIR`   | Use `<dir>/projects` as a data source (in addition to defaults)     |
-| `CLAUDE_CONFIG_DIR`  | Same as above (compatible with Claude Code 1.0.30+)                 |
+| Variable              | Effect                                                              |
+| --------------------- | ------------------------------------------------------------------- |
+| `CCGAUGE_CONFIG_DIR`  | Use `<dir>/projects` as a data source (in addition to defaults)     |
+| `CLAUDE_CONFIG_DIR`   | Same as above (compatible with Claude Code 1.0.30+)                 |
 
 ## Develop
 
 This repo is also a working Next.js project — you can run the dashboard against your live data while iterating on the code.
 
 ```bash
-git clone https://github.com/chengzuopeng/ccdsb.git
-cd ccdsb
+git clone https://github.com/chengzuopeng/ccgauge.git
+cd ccgauge
 pnpm install
 pnpm dev               # http://localhost:3737
 ```
@@ -135,13 +135,13 @@ To produce the npm-publishable artifact:
 
 ```bash
 pnpm build
-node bin/cli.mjs       # exact same entrypoint as `npx ccdsb`
+node bin/cli.mjs       # exact same entrypoint as `npx ccgauge`
 ```
 
 To preview what would be published:
 
 ```bash
-pnpm pack              # writes ccdsb-<version>.tgz; tar -tzf to inspect
+pnpm pack              # writes ccgauge-<version>.tgz; tar -tzf to inspect
 ```
 
 ## Publish
@@ -159,9 +159,7 @@ pnpm publish --access public
 2. Once the server responds, it [`open()`](https://github.com/sindresorhus/open)s the browser to that URL.
 3. The Next.js server-side code in `lib/data-loader/scan.ts` reads `~/.claude/projects/**/*.jsonl`, parses every `assistant` message, dedups via `(message.id, requestId)`, and aggregates by day / model / project / session / 5h-block.
 4. Pricing is from a built-in snapshot of Anthropic's published rates (12 models). Unknown models fall back to the same family's latest rate.
-5. i18n + theme: Cookie-driven SSR + `localStorage` mirror + an inline no-flash script in `<head>`.
-
-See [PLAN.md](./PLAN.md) for the full design rationale, data-source investigation, and competitive analysis.
+5. i18n + theme: cookie-driven SSR + `localStorage` mirror + an inline no-flash script in `<head>`.
 
 ## License
 

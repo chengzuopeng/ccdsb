@@ -12,8 +12,8 @@ function getScanDirs(): string[] {
     path.join(home, '.config', 'claude', 'projects'),
   ];
 
-  if (process.env.CCDSB_CONFIG_DIR) {
-    candidates.push(path.join(process.env.CCDSB_CONFIG_DIR, 'projects'));
+  if (process.env.CCGAUGE_CONFIG_DIR) {
+    candidates.push(path.join(process.env.CCGAUGE_CONFIG_DIR, 'projects'));
   }
   if (process.env.CLAUDE_CONFIG_DIR) {
     candidates.push(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects'));
@@ -111,7 +111,7 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
         userRecords.push(...parsed.user);
         recordsParsed += parsed.assistant.length + parsed.user.length;
       } catch (err) {
-        console.error(`[ccdsb] failed to parse ${file}:`, err);
+        console.error(`[ccgauge] failed to parse ${file}:`, err);
       }
     }),
   );

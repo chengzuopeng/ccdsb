@@ -11,7 +11,7 @@ interface Ctx {
 
 const ThemeContext = createContext<Ctx>({ theme: DEFAULT_THEME, resolved: 'dark', setTheme: () => {} });
 
-const LS_KEY = 'ccdsb.theme';
+const LS_KEY = 'ccgauge.theme';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 function resolveTheme(t: Theme): 'light' | 'dark' {

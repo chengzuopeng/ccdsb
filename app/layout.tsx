@@ -10,7 +10,7 @@ import { tFn } from '@/lib/i18n/dict';
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   return {
-    title: 'ccdsb — Claude Code Dashboard',
+    title: 'ccgauge — Claude Code Dashboard',
     description: tFn(locale, 'brand.tagline'),
   };
 }

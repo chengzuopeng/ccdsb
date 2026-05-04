@@ -65,7 +65,7 @@ export default async function SettingsPage() {
         </div>
         <div className="mt-4 text-xs text-text-secondary">
           {t('settings.dataSources.envHint', {
-            env1: 'CCDSB_CONFIG_DIR',
+            env1: 'CCGAUGE_CONFIG_DIR',
             env2: 'CLAUDE_CONFIG_DIR',
             appendix: '/projects',
           })}

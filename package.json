@@ -1,5 +1,5 @@
 {
-  "name": "ccdsb",
+  "name": "ccgauge",
   "version": "0.1.0",
   "description": "Claude Code Dashboard — local web UI for Claude Code token usage and cost",
   "keywords": [
@@ -19,7 +19,7 @@
   },
   "packageManager": "pnpm@10.30.3",
   "bin": {
-    "ccdsb": "bin/cli.mjs"
+    "ccgauge": "bin/cli.mjs"
   },
   "files": [
     "bin/cli.mjs",

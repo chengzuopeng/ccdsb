@@ -17,7 +17,7 @@ const I18nContext = createContext<Ctx>({
   t: (k) => k,
 });
 
-const LS_KEY = 'ccdsb.locale';
+const LS_KEY = 'ccgauge.locale';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 export function I18nProvider({ initialLocale, children }: { initialLocale: Locale; children: React.ReactNode }) {
