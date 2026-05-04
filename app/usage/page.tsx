@@ -3,7 +3,7 @@ import { aggregateByTime, aggregateTotals, type Granularity } from '@/lib/aggreg
 import { Section, PageShell, EmptyState } from '@/components/section';
 import { TokenStackChart, type TokenStackDatum } from '@/components/charts/token-stack-chart';
 import { UsageTable } from '@/components/usage-table';
-import { recordsToTableRows } from '@/lib/serialize';
+import { recordsToTurnRows } from '@/lib/serialize';
 import { RangePicker } from '@/components/range-picker';
 import { rangeToDates } from '@/lib/range';
 import { GranularityPicker } from '@/components/granularity-picker';
@@ -60,7 +60,7 @@ export default async function UsagePage({
     return true;
   });
 
-  const tableRows = recordsToTableRows(filteredRecords);
+  const turnRows = recordsToTurnRows(filteredRecords, scan.userRecords);
 
   const allModels = Array.from(new Set(scan.records.map((r) => r.model))).sort();
   const allProjects = Array.from(new Set(scan.records.map((r) => r.cwd).filter(Boolean))).sort();
@@ -74,7 +74,7 @@ export default async function UsagePage({
   return (
     <PageShell
       title={t('usage.title')}
-      desc={t('usage.subtitle', { count: tableRows.length.toLocaleString() })}
+      desc={t('usage.subtitle', { count: turnRows.length.toLocaleString() })}
       right={<RangePicker defaultValue="7d" />}
     >
       {scan.records.length === 0 ? (
@@ -103,7 +103,7 @@ export default async function UsagePage({
           </Section>
 
           <Section title={t('usage.requests.title')} desc={t('usage.requests.desc')}>
-            <UsageTable rows={tableRows} />
+            <UsageTable rows={turnRows} />
           </Section>
         </>
       )}
