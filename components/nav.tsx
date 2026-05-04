@@ -48,12 +48,14 @@ export function Nav() {
             );
           })}
         </nav>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <span className="pill bg-bg-surface-hi text-text-tertiary text-[10px] uppercase tracking-wide">
             {t('nav.localBadge')}
           </span>
-          <LanguageSwitcher />
-          <ThemeSwitcher />
+          <div className="flex items-center gap-1.5">
+            <LanguageSwitcher />
+            <ThemeSwitcher />
+          </div>
         </div>
       </div>
     </header>
