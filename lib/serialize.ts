@@ -56,24 +56,41 @@ export interface UsageTableRow {
   outputTokens: number;
   cacheReadTokens: number;
   cacheCreationTokens: number;
+  totalTokens: number;
   cost: number;
+  costInput: number;
+  costOutput: number;
+  costCacheRead: number;
+  costCacheWrite: number;
   toolNames: string[];
 }
 
 export function recordsToTableRows(records: AssistantRecord[]): UsageTableRow[] {
-  return records.map((r) => ({
-    uuid: r.uuid,
-    timestamp: r.timestamp,
-    model: r.model,
-    cwd: r.cwd,
-    sessionId: r.sessionId,
-    inputTokens: r.usage.input_tokens,
-    outputTokens: r.usage.output_tokens,
-    cacheReadTokens: r.usage.cache_read_input_tokens,
-    cacheCreationTokens: r.usage.cache_creation_input_tokens,
-    cost: costOfRecord(r).total,
-    toolNames: r.toolNames,
-  }));
+  return records.map((r) => {
+    const c = costOfRecord(r);
+    return {
+      uuid: r.uuid,
+      timestamp: r.timestamp,
+      model: r.model,
+      cwd: r.cwd,
+      sessionId: r.sessionId,
+      inputTokens: r.usage.input_tokens,
+      outputTokens: r.usage.output_tokens,
+      cacheReadTokens: r.usage.cache_read_input_tokens,
+      cacheCreationTokens: r.usage.cache_creation_input_tokens,
+      totalTokens:
+        r.usage.input_tokens +
+        r.usage.output_tokens +
+        r.usage.cache_read_input_tokens +
+        r.usage.cache_creation_input_tokens,
+      cost: c.total,
+      costInput: c.input,
+      costOutput: c.output,
+      costCacheRead: c.cacheRead,
+      costCacheWrite: c.cacheCreation5m + c.cacheCreation1h,
+      toolNames: r.toolNames,
+    };
+  });
 }
 
 export interface UsageTurnRow {
@@ -88,7 +105,12 @@ export interface UsageTurnRow {
   outputTokens: number;
   cacheReadTokens: number;
   cacheCreationTokens: number;
+  totalTokens: number;
   cost: number;
+  costInput: number;
+  costOutput: number;
+  costCacheRead: number;
+  costCacheWrite: number;
   toolNames: string[];
   userText: string;
   children: UsageTableRow[];
@@ -107,6 +129,7 @@ export function recordsToTurnRows(
   const order = new Map<string, AssistantRecord>();
   for (const r of assistants) {
     const turnId = turnIndex.get(r.uuid) ?? r.uuid;
+    const c = costOfRecord(r);
     const child: UsageTableRow = {
       uuid: r.uuid,
       timestamp: r.timestamp,
@@ -117,7 +140,16 @@ export function recordsToTurnRows(
       outputTokens: r.usage.output_tokens,
       cacheReadTokens: r.usage.cache_read_input_tokens,
       cacheCreationTokens: r.usage.cache_creation_input_tokens,
-      cost: costOfRecord(r).total,
+      totalTokens:
+        r.usage.input_tokens +
+        r.usage.output_tokens +
+        r.usage.cache_read_input_tokens +
+        r.usage.cache_creation_input_tokens,
+      cost: c.total,
+      costInput: c.input,
+      costOutput: c.output,
+      costCacheRead: c.cacheRead,
+      costCacheWrite: c.cacheCreation5m + c.cacheCreation1h,
       toolNames: r.toolNames,
     };
     const list = groups.get(turnId);
@@ -138,6 +170,10 @@ export function recordsToTurnRows(
     let cacheReadTokens = 0;
     let cacheCreationTokens = 0;
     let cost = 0;
+    let costInput = 0;
+    let costOutput = 0;
+    let costCacheRead = 0;
+    let costCacheWrite = 0;
     for (const c of children) {
       modelSet.add(c.model);
       for (const t of c.toolNames) toolSet.add(t);
@@ -146,6 +182,10 @@ export function recordsToTurnRows(
       cacheReadTokens += c.cacheReadTokens;
       cacheCreationTokens += c.cacheCreationTokens;
       cost += c.cost;
+      costInput += c.costInput;
+      costOutput += c.costOutput;
+      costCacheRead += c.costCacheRead;
+      costCacheWrite += c.costCacheWrite;
     }
     const userRec = userMap.get(turnId);
     turns.push({
@@ -160,7 +200,12 @@ export function recordsToTurnRows(
       outputTokens,
       cacheReadTokens,
       cacheCreationTokens,
+      totalTokens: inputTokens + outputTokens + cacheReadTokens + cacheCreationTokens,
       cost,
+      costInput,
+      costOutput,
+      costCacheRead,
+      costCacheWrite,
       toolNames: Array.from(toolSet),
       userText: userRec?.textPreview ?? '',
       children,

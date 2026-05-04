@@ -14,7 +14,7 @@ import {
   shortenModel,
 } from '@/lib/utils';
 import { Suspense } from 'react';
-import { getServerT } from '@/lib/i18n/server';
+import { getServerT, getServerLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -58,6 +58,8 @@ async function OverviewContent() {
   const scan = await getCachedScan();
   const records = scan.records;
   const t = await getServerT();
+  const locale = await getServerLocale();
+  const fmtTokens = (n: number) => formatTokensCompact(n, locale);
 
   if (records.length === 0) {
     return (
@@ -78,8 +80,12 @@ async function OverviewContent() {
   const yest = aggregateTotals(yesterdayRecs);
   const month = aggregateTotals(monthRecs);
 
+  const hasYesterday = yest.totalTokens > 0 || yest.cost > 0;
   const tokenDelta = yest.totalTokens > 0 ? ((today.totalTokens - yest.totalTokens) / yest.totalTokens) * 100 : NaN;
   const costDelta = yest.cost > 0 ? ((today.cost - yest.cost) / yest.cost) * 100 : NaN;
+  const firstTimeDelta = !hasYesterday && (today.totalTokens > 0 || today.cost > 0)
+    ? { firstTime: true as const, label: t('overview.delta.firstTime') }
+    : null;
 
   const cacheHit =
     today.cacheReadTokens + today.inputTokens > 0
@@ -128,23 +134,23 @@ async function OverviewContent() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <KpiCard
           label={t('overview.kpi.tokensToday')}
-          value={formatTokensCompact(today.totalTokens)}
+          value={fmtTokens(today.totalTokens)}
           hint={t('overview.kpi.tokensToday.hint', { count: today.requests })}
-          delta={Number.isFinite(tokenDelta) ? { value: tokenDelta, positiveIsGood: false } : null}
+          delta={Number.isFinite(tokenDelta) ? { value: tokenDelta, positiveIsGood: false } : firstTimeDelta}
           deltaTitle={t('overview.delta.title')}
         />
         <KpiCard
           label={t('overview.kpi.costToday')}
           value={formatUSD(today.cost)}
           hint={t('common.savedTodayViaCache', { amount: formatUSD(today.saved) })}
-          delta={Number.isFinite(costDelta) ? { value: costDelta, positiveIsGood: false } : null}
+          delta={Number.isFinite(costDelta) ? { value: costDelta, positiveIsGood: false } : firstTimeDelta}
           deltaTitle={t('overview.delta.title')}
         />
         <KpiCard
           label={t('overview.kpi.thisMonth')}
           value={formatUSD(month.cost)}
           hint={t('overview.kpi.thisMonth.hint', {
-            tokens: formatTokensCompact(month.totalTokens),
+            tokens: fmtTokens(month.totalTokens),
             req: month.requests,
           })}
         />

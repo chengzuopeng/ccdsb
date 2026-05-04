@@ -8,13 +8,14 @@ import {
   formatRelative,
   shortenModel,
 } from '@/lib/utils';
-import { getServerT } from '@/lib/i18n/server';
+import { getServerT, getServerLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ProjectsPage() {
   const t = await getServerT();
+  const locale = await getServerLocale();
   const scan = await getCachedScan();
   if (scan.records.length === 0) {
     return (
@@ -52,7 +53,7 @@ export default async function ProjectsPage() {
               <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                 <Stat label={t('projects.stat.sessions')} value={p.sessions} />
                 <Stat label={t('projects.stat.requests')} value={p.requests} />
-                <Stat label={t('projects.stat.tokens')} value={formatTokensCompact(p.totalTokens)} />
+                <Stat label={t('projects.stat.tokens')} value={formatTokensCompact(p.totalTokens, locale)} />
               </div>
 
               <div className="mt-4 h-1.5 bg-bg-surface-hi rounded overflow-hidden">
@@ -61,7 +62,7 @@ export default async function ProjectsPage() {
 
               <div className="mt-3 flex items-center justify-between text-xs text-text-tertiary gap-2">
                 <span className="whitespace-nowrap">
-                  {t('common.lastActivity')} {formatRelative(p.lastActivity)}
+                  {t('common.lastActivity')} {formatRelative(p.lastActivity, locale)}
                 </span>
                 <span className="truncate">{p.models.map(shortenModel).join(', ')}</span>
               </div>

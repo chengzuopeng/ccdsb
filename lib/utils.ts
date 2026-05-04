@@ -11,8 +11,13 @@ export function formatNumber(n: number, opts?: { maxFrac?: number }): string {
   }).format(n);
 }
 
-export function formatTokensCompact(n: number): string {
+export function formatTokensCompact(n: number, locale: 'en' | 'zh' = 'en'): string {
   if (!Number.isFinite(n)) return '0';
+  if (locale === 'zh') {
+    if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿';
+    if (n >= 1e4) return (n / 1e4).toFixed(1) + '万';
+    return formatNumber(n);
+  }
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
   if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
@@ -60,24 +65,26 @@ export function formatDuration(ms: number): string {
   return m ? `${hr}h ${m}m` : `${hr}h`;
 }
 
-export function formatRelative(ts: string | number | Date): string {
+export function formatRelative(ts: string | number | Date, locale: 'en' | 'zh' = 'en'): string {
   const d = typeof ts === 'string' || typeof ts === 'number' ? new Date(ts) : ts;
   const now = Date.now();
   const diff = now - d.getTime();
-  if (diff < 0) return 'just now';
+  const isZh = locale === 'zh';
+  if (diff < 0) return isZh ? '刚刚' : 'just now';
   const sec = Math.floor(diff / 1000);
-  if (sec < 60) return `${sec}s ago`;
+  if (sec < 60) return isZh ? '刚刚' : `${sec}s ago`;
   const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
+  if (min < 60) return isZh ? `${min} 分钟前` : `${min}m ago`;
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
+  if (hr < 24) return isZh ? `${hr} 小时前` : `${hr}h ago`;
   const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}d ago`;
+  if (day < 7) return isZh ? `${day} 天前` : `${day}d ago`;
   const wk = Math.floor(day / 7);
-  if (wk < 5) return `${wk}w ago`;
+  if (wk < 5) return isZh ? `${wk} 周前` : `${wk}w ago`;
   const mo = Math.floor(day / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  return `${Math.floor(day / 365)}y ago`;
+  if (mo < 12) return isZh ? `${mo} 个月前` : `${mo}mo ago`;
+  const yr = Math.floor(day / 365);
+  return isZh ? `${yr} 年前` : `${yr}y ago`;
 }
 
 export function formatDateTime(ts: string | number | Date): string {
@@ -88,7 +95,8 @@ export function formatDateTime(ts: string | number | Date): string {
   const dd = String(d.getDate()).padStart(2, '0');
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
 }
 
 export function projectNameFromCwd(cwd: string): string {

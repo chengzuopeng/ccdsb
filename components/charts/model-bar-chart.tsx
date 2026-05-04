@@ -2,7 +2,7 @@
 
 import { formatUSD, formatPct, formatTokensCompact, shortenModel } from '@/lib/utils';
 import type { ModelSummary } from '@/lib/types';
-import { useT } from '@/lib/i18n/context';
+import { useT, useI18n } from '@/lib/i18n/context';
 
 const MODEL_COLORS: Record<string, string> = {
   opus: 'rgb(var(--chart-output))',
@@ -19,6 +19,7 @@ function colorFor(model: string): string {
 
 export function ModelBarChart({ models }: { models: ModelSummary[] }) {
   const t = useT();
+  const { locale } = useI18n();
   if (!models.length) {
     return <div className="text-sm text-text-tertiary">{t('chart.empty')}</div>;
   }
@@ -33,7 +34,7 @@ export function ModelBarChart({ models }: { models: ModelSummary[] }) {
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <span className="font-medium text-text-primary">{shortenModel(m.model)}</span>
               <span className="text-xs text-text-secondary tabular-nums flex-1 text-right">
-                {formatTokensCompact(m.totalTokens)} · {formatPct(pct)}
+                {formatTokensCompact(m.totalTokens, locale)} · {formatPct(pct)}
               </span>
               <span className="num-mono text-text-primary min-w-[80px] text-right">{formatUSD(m.cost)}</span>
             </div>

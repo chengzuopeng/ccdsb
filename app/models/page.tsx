@@ -3,13 +3,14 @@ import { aggregateByModel, aggregateByTime } from '@/lib/aggregator';
 import { Section, PageShell, EmptyState } from '@/components/section';
 import { TokenStackChart, type TokenStackDatum } from '@/components/charts/token-stack-chart';
 import { formatTokensCompact, formatUSD, formatPct, shortenModel } from '@/lib/utils';
-import { getServerT } from '@/lib/i18n/server';
+import { getServerT, getServerLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ModelsPage() {
   const t = await getServerT();
+  const locale = await getServerLocale();
   const scan = await getCachedScan();
   if (scan.records.length === 0) {
     return (
@@ -62,7 +63,7 @@ export default async function ModelsPage() {
               <div className="text-xs text-text-secondary">
                 {t('models.field.pctOfTotal', {
                   pct: formatPct(costPct, 0),
-                  tokens: formatTokensCompact(m.totalTokens),
+                  tokens: formatTokensCompact(m.totalTokens, locale),
                 })}
               </div>
               <ProgressRow label={t('models.share.cost')} value={costPct} tone="brand" right={formatPct(costPct)} />

@@ -18,6 +18,9 @@ importers:
         specifier: ^10.1.0
         version: 10.2.0
     devDependencies:
+      '@eslint/eslintrc':
+        specifier: ^3.3.5
+        version: 3.3.5
       '@types/node':
         specifier: ^22.10.0
         version: 22.19.17

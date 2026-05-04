@@ -92,6 +92,14 @@ body {
   background: rgb(var(--text-tertiary));
 }
 
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-hi) / 0.5);
+}
+
 @layer components {
   .card {
     @apply rounded-card border bg-bg-surface;
@@ -103,7 +111,7 @@ body {
     @apply text-xs uppercase tracking-wide text-text-tertiary font-medium;
   }
   .num-hero {
-    @apply text-4xl font-semibold text-text-primary tabular-nums tracking-tight;
+    @apply text-3xl sm:text-4xl font-semibold text-text-primary tabular-nums tracking-tight break-words;
   }
   .num-mid {
     @apply text-2xl font-semibold text-text-primary tabular-nums;

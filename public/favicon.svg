@@ -1,4 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect width="64" height="64" rx="14" fill="#C96442"/>
-  <text x="32" y="42" font-family="ui-sans-serif,Inter,system-ui,sans-serif" font-size="28" font-weight="700" fill="#fff" text-anchor="middle">cc</text>
+  <path d="M14 41 A18 18 0 0 1 50 41" stroke="#fff" stroke-opacity="0.32" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M14 41 A18 18 0 0 1 43.2 25.4" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+  <line x1="32" y1="41" x2="42" y2="27" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="32" cy="41" r="3" fill="#fff"/>
 </svg>

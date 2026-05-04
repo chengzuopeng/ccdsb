@@ -16,7 +16,7 @@ import {
   shortHash,
   projectNameFromCwd,
 } from '@/lib/utils';
-import { getServerT } from '@/lib/i18n/server';
+import { getServerT, getServerLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -29,6 +29,7 @@ export default async function SessionDetailPage({
   const { id } = await params;
   const sessionId = decodeURIComponent(id);
   const t = await getServerT();
+  const locale = await getServerLocale();
   const scan = await getCachedScan();
 
   const sessionRecords = scan.records.filter((r) => r.sessionId === sessionId);
@@ -84,7 +85,7 @@ export default async function SessionDetailPage({
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard label={t('session.kpi.requests')} value={String(session.requests)} />
-        <KpiCard label={t('session.kpi.totalTokens')} value={formatTokensCompact(session.totalTokens)} />
+        <KpiCard label={t('session.kpi.totalTokens')} value={formatTokensCompact(session.totalTokens, locale)} />
         <KpiCard label={t('session.kpi.cost')} value={formatUSD(session.cost)} />
         <KpiCard label={t('session.kpi.duration')} value={formatDuration(session.durationMs)} />
       </div>
@@ -101,7 +102,7 @@ export default async function SessionDetailPage({
               <span className="text-text-secondary flex-1">
                 {t('session.modelLine', {
                   requests: mb.requests,
-                  tokens: formatTokensCompact(mb.tokens),
+                  tokens: formatTokensCompact(mb.tokens, locale),
                 })}
               </span>
               <span className="num-mono text-text-primary font-medium">{formatUSD(mb.cost)}</span>
@@ -120,26 +121,26 @@ export default async function SessionDetailPage({
               <div className="flex items-center justify-between gap-3 text-xs text-text-tertiary mb-1">
                 <span>
                   #{i + 1} · {shortenModel(m.model)} · {formatDateTime(m.timestamp)}{' '}
-                  <span className="text-text-tertiary">({formatRelative(m.timestamp)})</span>
+                  <span className="text-text-tertiary">({formatRelative(m.timestamp, locale)})</span>
                 </span>
                 <span className="num-mono text-text-primary font-medium">{formatUSD(m.cost)}</span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs num-mono mt-2">
                 <div>
                   <span className="text-text-tertiary">{t('session.token.in')}</span>{' '}
-                  <span className="text-text-secondary">{formatTokensCompact(m.input)}</span>
+                  <span className="text-text-secondary">{formatTokensCompact(m.input, locale)}</span>
                 </div>
                 <div>
                   <span className="text-text-tertiary">{t('session.token.out')}</span>{' '}
-                  <span className="text-text-secondary">{formatTokensCompact(m.output)}</span>
+                  <span className="text-text-secondary">{formatTokensCompact(m.output, locale)}</span>
                 </div>
                 <div>
                   <span className="text-text-tertiary">{t('session.token.cacheR')}</span>{' '}
-                  <span className="text-success">{formatTokensCompact(m.cacheRead)}</span>
+                  <span className="text-success">{formatTokensCompact(m.cacheRead, locale)}</span>
                 </div>
                 <div>
                   <span className="text-text-tertiary">{t('session.token.cacheW')}</span>{' '}
-                  <span className="text-text-secondary">{formatTokensCompact(m.cacheCreation)}</span>
+                  <span className="text-text-secondary">{formatTokensCompact(m.cacheCreation, locale)}</span>
                 </div>
               </div>
               {(m.tools.length > 0 || m.thinking || m.preview) && (

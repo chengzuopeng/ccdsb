@@ -5,7 +5,7 @@ export interface KpiCardProps {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
-  delta?: { value: number; positiveIsGood?: boolean } | null;
+  delta?: { value: number; positiveIsGood?: boolean } | { firstTime: true; label?: string } | null;
   deltaTitle?: string;
   progress?: { value: number; tone?: 'brand' | 'success' | 'warning' | 'danger' } | null;
   accent?: 'brand' | 'success' | 'warning' | 'default';
@@ -32,10 +32,18 @@ export function KpiCard({
         className,
       )}
     >
-      <div className="label">{label}</div>
-      <div className="flex items-baseline gap-2 flex-wrap">
-        <div className="num-hero">{value}</div>
-        {delta && Number.isFinite(delta.value) && (
+      <div className="label truncate">{label}</div>
+      <div className="flex items-baseline gap-2 flex-wrap min-w-0">
+        <div className="num-hero min-w-0 max-w-full">{value}</div>
+        {delta && 'firstTime' in delta && delta.firstTime && (
+          <span
+            className="pill text-[11px] font-medium whitespace-nowrap text-brand bg-brand/10 border border-brand/20"
+            title={deltaTitle}
+          >
+            {delta.label ?? 'NEW'}
+          </span>
+        )}
+        {delta && 'value' in delta && Number.isFinite(delta.value) && (
           <DeltaPill value={delta.value} positiveIsGood={delta.positiveIsGood} title={deltaTitle} />
         )}
       </div>

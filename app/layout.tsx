@@ -12,6 +12,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'ccgauge — Claude Code Dashboard',
     description: tFn(locale, 'brand.tagline'),
+    icons: {
+      icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+      shortcut: '/favicon.svg',
+      apple: '/favicon.svg',
+    },
   };
 }
 

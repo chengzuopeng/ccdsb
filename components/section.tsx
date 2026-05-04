@@ -13,17 +13,17 @@ export function Section({ title, desc, right, children, className }: SectionProp
   return (
     <section className={cn('card', className)}>
       {(title || right) && (
-        <header className="flex items-start justify-between gap-4 px-6 pt-5 pb-3 border-b border-border">
-          <div>
+        <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border">
+          <div className="min-w-0">
             {title && (
               <h2 className="text-base font-semibold text-text-primary tracking-tight">{title}</h2>
             )}
             {desc && <p className="text-xs text-text-secondary mt-1">{desc}</p>}
           </div>
-          {right}
+          {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
         </header>
       )}
-      <div className="p-6">{children}</div>
+      <div className="p-4 sm:p-6">{children}</div>
     </section>
   );
 }
@@ -40,13 +40,13 @@ export function PageShell({
   children: ReactNode;
 }) {
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight truncate">{title}</h1>
           {desc && <p className="text-sm text-text-secondary mt-1">{desc}</p>}
         </div>
-        {right}
+        {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
       </div>
       {children}
     </div>

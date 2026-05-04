@@ -14,7 +14,7 @@ import {
   shortHash,
   shortenModel,
 } from '@/lib/utils';
-import { getServerT } from '@/lib/i18n/server';
+import { getServerT, getServerLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -27,6 +27,7 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const cwd = decodeURIComponent(id);
   const t = await getServerT();
+  const locale = await getServerLocale();
   const scan = await getCachedScan();
   const records = scan.records.filter((r) => r.cwd === cwd);
   if (records.length === 0) notFound();
@@ -59,7 +60,7 @@ export default async function ProjectDetailPage({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard label={t('projects.stat.sessions')} value={String(sessions.length)} />
         <KpiCard label={t('projects.stat.requests')} value={String(totals.requests)} />
-        <KpiCard label={t('usage.kpi.totalTokens')} value={formatTokensCompact(totals.totalTokens)} />
+        <KpiCard label={t('usage.kpi.totalTokens')} value={formatTokensCompact(totals.totalTokens, locale)} />
         <KpiCard
           label={t('usage.kpi.totalCost')}
           value={formatUSD(totals.cost)}
@@ -101,13 +102,13 @@ export default async function ProjectDetailPage({
                       {s.models.map(shortenModel).join(', ')}
                     </td>
                     <td className="px-3 py-2.5 num-mono text-right">{s.requests}</td>
-                    <td className="px-3 py-2.5 num-mono text-right">{formatTokensCompact(s.totalTokens)}</td>
+                    <td className="px-3 py-2.5 num-mono text-right">{formatTokensCompact(s.totalTokens, locale)}</td>
                     <td className="px-3 py-2.5 num-mono text-right font-medium">{formatUSD(s.cost)}</td>
                     <td className="px-3 py-2.5 num-mono text-right text-text-tertiary">
                       {formatDuration(s.durationMs)}
                     </td>
                     <td className="px-3 py-2.5 num-mono text-right text-xs text-text-tertiary whitespace-nowrap">
-                      {formatRelative(s.endTime)}
+                      {formatRelative(s.endTime, locale)}
                     </td>
                   </tr>
                 ))}

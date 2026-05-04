@@ -1,21 +1,30 @@
 import { getCachedScan, getScannedDirs } from '@/lib/data-loader/scan';
 import { BUILTIN_PRICING } from '@/lib/pricing/builtin';
 import { PageShell, Section } from '@/components/section';
-import { formatUSD, shortenModel } from '@/lib/utils';
 import { ScanRefresh } from '@/components/scan-refresh';
+import { PricingTable, type PricingRow } from '@/components/pricing-table';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { getServerT } from '@/lib/i18n/server';
+import pkg from '../../package.json' assert { type: 'json' };
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const VERSION = '0.1.0';
+const VERSION = pkg.version;
 
 export default async function SettingsPage() {
   const t = await getServerT();
   const scan = await getCachedScan();
   const dirs = getScannedDirs();
+  const pricingRows: PricingRow[] = Object.entries(BUILTIN_PRICING).map(([model, p]) => ({
+    model,
+    input: p.input,
+    output: p.output,
+    cacheCreation5m: p.cacheCreation5m,
+    cacheCreation1h: p.cacheCreation1h,
+    cacheRead: p.cacheRead,
+  }));
 
   return (
     <PageShell title={t('settings.title')} desc={t('settings.subtitle')}>
@@ -85,32 +94,7 @@ export default async function SettingsPage() {
       </Section>
 
       <Section title={t('settings.pricing.title')} desc={t('settings.pricing.desc')}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <Th>{t('settings.pricing.col.model')}</Th>
-                <Th align="right">{t('settings.pricing.col.input')}</Th>
-                <Th align="right">{t('settings.pricing.col.output')}</Th>
-                <Th align="right">{t('settings.pricing.col.write5m')}</Th>
-                <Th align="right">{t('settings.pricing.col.write1h')}</Th>
-                <Th align="right">{t('settings.pricing.col.read')}</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(BUILTIN_PRICING).map(([model, p]) => (
-                <tr key={model} className="border-b border-border last:border-b-0">
-                  <td className="px-3 py-2 text-text-primary">{shortenModel(model)}</td>
-                  <td className="px-3 py-2 num-mono text-right">{formatUSD(p.input)}</td>
-                  <td className="px-3 py-2 num-mono text-right">{formatUSD(p.output)}</td>
-                  <td className="px-3 py-2 num-mono text-right text-text-secondary">{formatUSD(p.cacheCreation5m)}</td>
-                  <td className="px-3 py-2 num-mono text-right text-text-secondary">{formatUSD(p.cacheCreation1h)}</td>
-                  <td className="px-3 py-2 num-mono text-right text-success">{formatUSD(p.cacheRead)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <PricingTable rows={pricingRows} />
       </Section>
 
       <Section title={t('settings.about.title')} desc={t('settings.about.subtitle', { version: VERSION })}>
@@ -134,12 +118,3 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
-  return (
-    <th
-      className={`px-3 py-2 text-xs font-medium text-text-tertiary uppercase tracking-wide whitespace-nowrap ${align === 'right' ? 'text-right' : 'text-left'}`}
-    >
-      {children}
-    </th>
-  );
-}

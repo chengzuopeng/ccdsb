@@ -23,7 +23,7 @@ export function costFromUsage(
   const output = (usage.output_tokens / PER_MTOK) * pricing.output;
 
   let cc5 = (usage.cache_creation_5m / PER_MTOK) * pricing.cacheCreation5m;
-  let cc1 = (usage.cache_creation_1h / PER_MTOK) * pricing.cacheCreation1h;
+  const cc1 = (usage.cache_creation_1h / PER_MTOK) * pricing.cacheCreation1h;
 
   if (cc5 + cc1 === 0 && usage.cache_creation_input_tokens > 0) {
     cc5 = (usage.cache_creation_input_tokens / PER_MTOK) * pricing.cacheCreation5m;

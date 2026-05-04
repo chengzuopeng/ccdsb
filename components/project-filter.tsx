@@ -1,19 +1,21 @@
 'use client';
 
-import { Filter } from './model-filter';
+import { MultiSelect } from '@/components/multi-select';
 import { projectNameFromCwd } from '@/lib/utils';
+import { useT } from '@/lib/i18n/context';
 
 export function ProjectFilter({ all, selected }: { all: string[]; selected: string[] }) {
+  const t = useT();
   return (
-    <Filter
-      labelKey="filter.projectLabel"
+    <MultiSelect
+      paramKey="projects"
+      all={all}
+      selected={selected}
+      render={projectNameFromCwd}
       labelAllKey="filter.projectAll"
       labelSingleKey="filter.projectSingle"
       labelMultiKey="filter.projectMulti"
-      all={all}
-      selected={selected}
-      param="projects"
-      render={projectNameFromCwd}
+      ariaLabel={t('filter.projectLabel')}
     />
   );
 }

@@ -10,13 +10,14 @@ import {
   shortenModel,
   shortHash,
 } from '@/lib/utils';
-import { getServerT } from '@/lib/i18n/server';
+import { getServerT, getServerLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function SessionsPage() {
   const t = await getServerT();
+  const locale = await getServerLocale();
   const scan = await getCachedScan();
   if (scan.records.length === 0) {
     return (
@@ -70,7 +71,7 @@ export default async function SessionsPage() {
                   </td>
                   <td className="px-3 py-2.5 num-mono text-right text-text-secondary">{s.requests}</td>
                   <td className="px-3 py-2.5 num-mono text-right text-text-secondary">
-                    {formatTokensCompact(s.totalTokens)}
+                    {formatTokensCompact(s.totalTokens, locale)}
                   </td>
                   <td className="px-3 py-2.5 num-mono text-right text-text-primary font-medium">
                     {formatUSD(s.cost)}
@@ -79,7 +80,7 @@ export default async function SessionsPage() {
                     {formatDuration(s.durationMs)}
                   </td>
                   <td className="px-3 py-2.5 num-mono text-right text-text-tertiary text-xs whitespace-nowrap">
-                    {formatRelative(s.endTime)}
+                    {formatRelative(s.endTime, locale)}
                   </td>
                 </tr>
               ))}

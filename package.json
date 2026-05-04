@@ -32,7 +32,7 @@
     "build": "next build && node scripts/postbuild.mjs",
     "start": "node bin/cli.mjs",
     "start:next": "next start -p 3737",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next node_modules tsconfig.tsbuildinfo",
     "screenshots": "node scripts/screenshots.mjs",
@@ -44,6 +44,7 @@
     "open": "^10.1.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

@@ -82,7 +82,7 @@ export default async function UsagePage({
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KpiCard label={t('usage.kpi.totalTokens')} value={formatTokensCompact(totals.totalTokens)} />
+            <KpiCard label={t('usage.kpi.totalTokens')} value={formatTokensCompact(totals.totalTokens, locale)} />
             <KpiCard label={t('usage.kpi.totalCost')} value={formatUSD(totals.cost)} />
             <KpiCard label={t('usage.kpi.cacheSaved')} value={formatUSD(totals.saved)} accent="success" />
             <KpiCard label={t('usage.kpi.cacheHit')} value={formatPct(cacheHit, 0)} accent="success" />
@@ -103,7 +103,10 @@ export default async function UsagePage({
           </Section>
 
           <Section title={t('usage.requests.title')} desc={t('usage.requests.desc')}>
-            <UsageTable rows={turnRows} />
+            <UsageTable
+              rows={turnRows}
+              meta={{ range, granularity: gran, models, projects }}
+            />
           </Section>
         </>
       )}

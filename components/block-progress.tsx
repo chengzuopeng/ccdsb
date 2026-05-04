@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { formatUSD, formatTokensCompact } from '@/lib/utils';
 import type { SerializedProgress } from '@/lib/serialize';
-import { useT } from '@/lib/i18n/context';
+import { useT, useI18n } from '@/lib/i18n/context';
 
 interface Props {
   initial: SerializedProgress;
@@ -11,11 +11,8 @@ interface Props {
 
 export function BlockProgress({ initial }: Props) {
   const t = useT();
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const { locale } = useI18n();
+  const fmtTokens = (n: number) => formatTokensCompact(n, locale);
 
   if (!initial.hasBlock || !initial.endTime || !initial.startTime) {
     return (
@@ -27,13 +24,6 @@ export function BlockProgress({ initial }: Props) {
     );
   }
 
-  const startMs = new Date(initial.startTime).getTime();
-  const endMs = new Date(initial.endTime).getTime();
-  const elapsedMs = Math.max(0, now - startMs);
-  const remainingMs = Math.max(0, endMs - now);
-  const total = endMs - startMs;
-  const progress = Math.min(1, elapsedMs / total);
-
   return (
     <div className="card card-pad min-h-[180px]">
       <div className="flex items-center justify-between">
@@ -44,24 +34,15 @@ export function BlockProgress({ initial }: Props) {
         </span>
       </div>
 
-      <div className="mt-3 flex items-baseline gap-2">
-        <div className="num-hero">{formatRemaining(remainingMs)}</div>
-        <div className="text-xs text-text-secondary">{t('block.remaining')}</div>
-      </div>
-
-      <div className="mt-3 space-y-2">
-        <div className="flex items-center justify-between text-xs text-text-secondary">
-          <span>{t('block.elapsed', { pct: (progress * 100).toFixed(1) })}</span>
-          <span className="num-mono">{formatTokensCompact(initial.totalTokens)} {t('block.tokensSuffix')}</span>
-        </div>
-        <div className="h-1.5 bg-bg-surface-hi rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-brand to-brand-hover transition-all"
-            style={{ width: `${progress * 100}%` }}
-            suppressHydrationWarning
-          />
-        </div>
-      </div>
+      <LiveCountdown
+        startTime={initial.startTime}
+        endTime={initial.endTime}
+        totalTokens={initial.totalTokens}
+        remainingLabel={t('block.remaining')}
+        renderElapsed={(pct) => t('block.elapsed', { pct })}
+        tokensSuffix={t('block.tokensSuffix')}
+        fmtTokens={fmtTokens}
+      />
 
       <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-3 text-xs">
         <div>
@@ -71,7 +52,7 @@ export function BlockProgress({ initial }: Props) {
         <div>
           <div className="text-text-tertiary">{t('block.burnPerMin')}</div>
           <div className="num-mono text-text-primary mt-0.5 text-base">
-            {formatTokensCompact(initial.burnRatePerMin)}
+            {fmtTokens(initial.burnRatePerMin)}
           </div>
         </div>
         <div>
@@ -84,6 +65,65 @@ export function BlockProgress({ initial }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+interface LiveProps {
+  startTime: string;
+  endTime: string;
+  totalTokens: number;
+  remainingLabel: string;
+  renderElapsed: (pct: string) => string;
+  tokensSuffix: string;
+  fmtTokens: (n: number) => string;
+}
+
+function LiveCountdown({
+  startTime,
+  endTime,
+  totalTokens,
+  remainingLabel,
+  renderElapsed,
+  tokensSuffix,
+  fmtTokens,
+}: LiveProps) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const startMs = new Date(startTime).getTime();
+  const endMs = new Date(endTime).getTime();
+  const elapsedMs = Math.max(0, now - startMs);
+  const remainingMs = Math.max(0, endMs - now);
+  const total = endMs - startMs;
+  const progress = Math.min(1, elapsedMs / total);
+  const elapsedText = renderElapsed((progress * 100).toFixed(1));
+
+  return (
+    <>
+      <div className="mt-3 flex items-baseline gap-2">
+        <div className="num-hero">{formatRemaining(remainingMs)}</div>
+        <div className="text-xs text-text-secondary">{remainingLabel}</div>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between text-xs text-text-secondary">
+          <span>{elapsedText}</span>
+          <span className="num-mono">
+            {fmtTokens(totalTokens)} {tokensSuffix}
+          </span>
+        </div>
+        <div className="h-1.5 bg-bg-surface-hi rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-brand to-brand-hover transition-all"
+            style={{ width: `${progress * 100}%` }}
+            suppressHydrationWarning
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
