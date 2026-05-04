@@ -41,36 +41,6 @@ That's it. ccgauge scans `~/.claude/projects/` (and `~/.config/claude/projects/`
 - **Export** — CSV download of the request log
 - **100% local** — read-only access to JSONL files, no telemetry, no network calls
 
-## Screenshots
-
-### Overview — English · Dark
-
-![](./docs/screenshots/overview-en-dark.png)
-
-### Overview — 中文 · Light
-
-![](./docs/screenshots/overview-zh-light.png)
-
-### Usage — filters, stacked trend, request log
-
-![](./docs/screenshots/usage-en-dark.png)
-
-### Sessions — every conversation, sorted by recency
-
-![](./docs/screenshots/sessions-en-dark.png)
-
-### Projects — per-`cwd` spend cards
-
-![](./docs/screenshots/projects-en-dark.png)
-
-### Models — side-by-side cost / cache / pricing
-
-![](./docs/screenshots/models-en-dark.png)
-
-### Settings — language / theme / data sources / pricing table
-
-![](./docs/screenshots/settings-zh-light.png)
-
 ## Install / Run
 
 ```bash

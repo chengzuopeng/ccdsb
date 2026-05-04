@@ -41,36 +41,6 @@ npx ccgauge
 - **导出** —— 请求列表一键导出 CSV
 - **100% 本地** —— 只读访问 JSONL，零遥测，零网络调用
 
-## 截图
-
-### 概览 —— English · Dark
-
-![](./docs/screenshots/overview-en-dark.png)
-
-### 概览 —— 中文 · Light
-
-![](./docs/screenshots/overview-zh-light.png)
-
-### 用量 —— 筛选、堆叠趋势、请求明细
-
-![](./docs/screenshots/usage-en-dark.png)
-
-### 会话 —— 每场对话，按最近活跃排序
-
-![](./docs/screenshots/sessions-en-dark.png)
-
-### 项目 —— 按 `cwd` 聚合的花费卡片
-
-![](./docs/screenshots/projects-en-dark.png)
-
-### 模型 —— 成本 / 缓存 / 单价并排对比
-
-![](./docs/screenshots/models-en-dark.png)
-
-### 设置 —— 语言 / 主题 / 数据源 / 价格表
-
-![](./docs/screenshots/settings-zh-light.png)
-
 ## 安装 / 运行
 
 ```bash

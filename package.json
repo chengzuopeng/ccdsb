@@ -1,6 +1,6 @@
 {
   "name": "ccgauge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Claude Code Dashboard — local web UI for Claude Code token usage and cost",
   "keywords": [
     "claude",
