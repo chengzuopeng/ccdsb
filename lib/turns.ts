@@ -1,41 +1,40 @@
 import type { AssistantRecord, UserRecord } from './types';
 
-const MAX_PARENT_WALK = 2000;
+const MAX_PARENT_WALK = 5000;
 
 export function buildTurnIndex(
   assistants: AssistantRecord[],
   users: UserRecord[],
+  parentMap: Record<string, string | null>,
 ): Map<string, string> {
-  const userMap = new Map<string, UserRecord>();
-  for (const u of users) userMap.set(u.uuid, u);
-  const asstMap = new Map<string, AssistantRecord>();
-  for (const a of assistants) asstMap.set(a.uuid, a);
+  const userTextMap = new Map<string, string>();
+  for (const u of users) {
+    if (u.textPreview && u.textPreview.trim()) userTextMap.set(u.uuid, u.textPreview);
+  }
 
   const result = new Map<string, string>();
   const memo = new Map<string, string>();
 
   function resolve(startUuid: string): string {
-    const cached = memo.get(startUuid);
-    if (cached) return cached;
     const path: string[] = [];
     let cur: string | null = startUuid;
     let answer: string | null = null;
     let steps = 0;
+    const seen = new Set<string>();
     while (cur && steps++ < MAX_PARENT_WALK) {
+      if (seen.has(cur)) break;
+      seen.add(cur);
       const m = memo.get(cur);
       if (m) {
         answer = m;
         break;
       }
       path.push(cur);
-      const u = userMap.get(cur);
-      if (u && u.textPreview && u.textPreview.trim()) {
+      if (userTextMap.has(cur)) {
         answer = cur;
         break;
       }
-      const parent: string | null =
-        u?.parentUuid ?? asstMap.get(cur)?.parentUuid ?? null;
-      cur = parent;
+      cur = parentMap[cur] ?? null;
     }
     if (!answer) answer = startUuid;
     for (const id of path) memo.set(id, answer);

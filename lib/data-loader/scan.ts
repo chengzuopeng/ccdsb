@@ -62,6 +62,7 @@ interface CacheEntry {
   size: number;
   assistantRecords: AssistantRecord[];
   userRecords: UserRecord[];
+  parentLinks: Array<[string, string | null]>;
 }
 
 const fileCache = new Map<string, CacheEntry>();
@@ -82,6 +83,7 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
 
   const assistantRecords: AssistantRecord[] = [];
   const userRecords: UserRecord[] = [];
+  const parentMap: Record<string, string | null> = {};
   let recordsParsed = 0;
 
   await Promise.all(
@@ -97,6 +99,7 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
         ) {
           assistantRecords.push(...cached.assistantRecords);
           userRecords.push(...cached.userRecords);
+          for (const [uuid, parent] of cached.parentLinks) parentMap[uuid] = parent;
           recordsParsed += cached.assistantRecords.length + cached.userRecords.length;
           return;
         }
@@ -106,9 +109,11 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
           size: stat.size,
           assistantRecords: parsed.assistant,
           userRecords: parsed.user,
+          parentLinks: parsed.parentLinks,
         });
         assistantRecords.push(...parsed.assistant);
         userRecords.push(...parsed.user);
+        for (const [uuid, parent] of parsed.parentLinks) parentMap[uuid] = parent;
         recordsParsed += parsed.assistant.length + parsed.user.length;
       } catch (err) {
         console.error(`[ccgauge] failed to parse ${file}:`, err);
@@ -132,7 +137,7 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
     scannedDirs: existingDirs,
   };
 
-  return { records: dedupedAssistants, userRecords: dedupedUsers, stats };
+  return { records: dedupedAssistants, userRecords: dedupedUsers, parentMap, stats };
 }
 
 function dedupUserRecords(records: UserRecord[]): UserRecord[] {

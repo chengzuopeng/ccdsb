@@ -7,11 +7,13 @@ const TEXT_PREVIEW_MAX = 200;
 export async function parseJsonlFile(file: string): Promise<{
   assistant: AssistantRecord[];
   user: UserRecord[];
+  parentLinks: Array<[string, string | null]>;
 }> {
   const stream = createReadStream(file, { encoding: 'utf8' });
   const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
   const assistant: AssistantRecord[] = [];
   const user: UserRecord[] = [];
+  const parentLinks: Array<[string, string | null]> = [];
 
   for await (const line of rl) {
     if (!line.trim()) continue;
@@ -23,6 +25,8 @@ export async function parseJsonlFile(file: string): Promise<{
     }
     if (!raw || typeof raw !== 'object') continue;
 
+    if (raw.uuid) parentLinks.push([raw.uuid, raw.parentUuid ?? null]);
+
     if (raw.type === 'assistant') {
       const a = parseAssistant(raw, file);
       if (a) assistant.push(a);
@@ -32,7 +36,7 @@ export async function parseJsonlFile(file: string): Promise<{
     }
   }
 
-  return { assistant, user };
+  return { assistant, user, parentLinks };
 }
 
 function parseAssistant(raw: RawRecord, file: string): AssistantRecord | null {

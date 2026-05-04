@@ -131,6 +131,7 @@ export interface ScanStats {
 export interface ScanResult {
   records: AssistantRecord[];
   userRecords: UserRecord[];
+  parentMap: Record<string, string | null>;
   stats: ScanStats;
 }
 

@@ -60,7 +60,7 @@ export default async function UsagePage({
     return true;
   });
 
-  const turnRows = recordsToTurnRows(filteredRecords, scan.userRecords);
+  const turnRows = recordsToTurnRows(filteredRecords, scan.userRecords, scan.parentMap);
 
   const allModels = Array.from(new Set(scan.records.map((r) => r.model))).sort();
   const allProjects = Array.from(new Set(scan.records.map((r) => r.cwd).filter(Boolean))).sort();

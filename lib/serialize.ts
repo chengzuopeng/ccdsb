@@ -97,8 +97,9 @@ export interface UsageTurnRow {
 export function recordsToTurnRows(
   assistants: AssistantRecord[],
   users: UserRecord[],
+  parentMap: Record<string, string | null>,
 ): UsageTurnRow[] {
-  const turnIndex = buildTurnIndex(assistants, users);
+  const turnIndex = buildTurnIndex(assistants, users, parentMap);
   const userMap = new Map<string, UserRecord>();
   for (const u of users) userMap.set(u.uuid, u);
 
