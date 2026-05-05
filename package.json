@@ -1,6 +1,6 @@
 {
   "name": "ccgauge",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Local web dashboard for Claude Code and OpenAI Codex CLI token usage and cost",
   "keywords": [
     "claude",
@@ -39,6 +39,7 @@
   "files": [
     "bin/cli.mjs",
     ".next/standalone",
+    "dist/mcp",
     "README.md",
     "README.zh-CN.md",
     "CHANGELOG.md",
@@ -46,17 +47,20 @@
   ],
   "scripts": {
     "dev": "next dev -p 3737",
-    "build": "next build && node scripts/postbuild.mjs",
+    "build": "next build && node scripts/build-mcp.mjs && node scripts/postbuild.mjs",
+    "build:mcp": "node scripts/build-mcp.mjs",
     "start": "node bin/cli.mjs",
     "start:next": "next start -p 3737",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --no-warnings scripts/test-codex-parser.mjs",
+    "test:mcp": "node scripts/test-mcp-server.mjs",
     "clean": "rm -rf .next node_modules tsconfig.tsbuildinfo",
     "screenshots": "node scripts/screenshots.mjs",
     "prepack": "pnpm build"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^13.1.0",
     "get-port": "^7.1.0",
     "open": "^10.1.0"
@@ -69,6 +73,7 @@
     "autoprefixer": "^10.4.20",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "esbuild": "^0.28.0",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.0",
     "next": "^15.1.0",

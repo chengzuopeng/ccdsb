@@ -5,6 +5,66 @@ All notable changes to **ccgauge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-05
+
+This release ships an **MCP (Model Context Protocol) server** so any
+MCP-aware LLM client (Claude Desktop, Cursor, Cline, your own agent…)
+can query your Claude Code + Codex CLI usage history through structured
+tools. The on-disk index introduced in 0.3.0 is reused, so the MCP
+server boots cold in ~110 ms and answers warm calls in O(1).
+
+### Added
+
+- **MCP server** (`ccgauge mcp`) — stdio JSON-RPC server bundled as
+  `dist/mcp/server.mjs` (esbuild single-file ESM, ~800 KB). Wires into
+  Claude Desktop / Cursor / Cline / generic MCP clients via standard
+  `{ command, args }` config blocks. Documented in the README.
+- **8 MCP tools**:
+  - `usage_summary` — totals + per-source breakdown for any window
+  - `usage_by_time` — bucketed time-series (hour / day / week / month)
+  - `usage_by_model` — per-model cost share
+  - `usage_by_project` — per-project cost share + last-activity
+  - `usage_by_session` — session list with title / model / duration / cost
+  - `daily_summary` — "what did I do on day X" with sessions grouped by project
+  - `weekly_summary` — 7-day roll-up with per-day cost trend + top sessions / projects
+  - `recent_activity` — N most recently active sessions
+- **1 MCP resource** — `ccgauge://providers` (detected providers, dirs,
+  record counts, indexer status).
+- **`source: 'all'` (default)** on every analytical tool — the response
+  carries combined totals **and** a `bySource: { claude, codex }`
+  breakdown so the LLM can answer combined or provider-specific
+  questions in a single call.
+- **Reasoning-tokens breakdown** in the dashboard's token-total hover
+  card and per-message session timeline. `output_tokens` still includes
+  reasoning for OpenAI billing parity; the new `reasoning_tokens` field
+  is display-only and never double-counted.
+- **Per-named indexer instance** — `getIndexer(name)` lets the web
+  dashboard and the MCP server have independent persisted caches
+  (`index-v2.json` vs `index-mcp-v2.json`) so they never fight for the
+  same on-disk state file.
+- **Strict input validation** for MCP date arguments — invalid `range`,
+  `from`, `to`, or `daily_summary.date` values are rejected at parse
+  time (zod refinement) and at runtime (defensive throws), instead of
+  silently falling back to all-time data.
+
+### Fixed
+
+- **`top_tools` now respects `source`** in `daily_summary` /
+  `weekly_summary`. Previously it ignored the source arg and returned
+  identical tool counts for `claude` / `codex` / `all`, mixing
+  per-provider stats together.
+- **`usage_by_time` now carries `reasoning_tokens` per bucket.** The
+  field was hard-coded to 0, breaking any "reasoning over time"
+  question even though the `usage_summary` total was correct.
+
+### Changed
+
+- Codex parser bumped to `codex-v3-reasoning-detail` (schema change to
+  expose `reasoning_tokens`); persisted entries from earlier parsers
+  are auto-invalidated on next startup.
+- `lib/aggregator/index.ts` exports `bucketKey` so external callers
+  (the MCP layer) can re-bucket records under the same key scheme.
+
 ## [0.3.1] — 2026-05-05
 
 ### Fixed
@@ -133,6 +193,7 @@ of HTML to the browser.
 - Initial public release as `ccgauge`: local Next.js dashboard for
   Claude Code token usage, cost, and 5-hour block tracking.
 
+[0.4.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/chengzuopeng/ccgauge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.1.1...v0.2.0

@@ -143,6 +143,196 @@ ccgauge stop
 | `--strict-port` | start, restart, 根命令 | 端口不可用时直接失败。 |
 | `--log <path>` | start --background, restart | 后台日志文件。 |
 
+## MCP 服务（让大模型直接查你的用量）
+
+ccgauge 内置了一个 [Model Context Protocol](https://modelcontextprotocol.io/) 服务，
+任何 MCP 客户端（Claude Desktop / Cursor / Cline / Codex CLI / 自建 agent）都能
+通过结构化 tool 调用，直接问大模型关于你本机 Claude Code + Codex CLI 历史的问题——
+不用复制粘贴、不用截图看板。
+
+### 你能问什么
+
+配好之后，可以这样问：
+
+- *"我这周在 AI 编程上花了多少？分别看下 Claude 和 Codex。"*
+- *"我昨天都在做什么？"*
+- *"列一下本月最贵的 10 个会话。"*
+- *"过去 30 天哪个项目最吃 token？"*
+- *"prompt caching 帮我省了多少钱？"*
+- *"如果我在 Opus 4.7 上再跑 100K input + 20K output，要多少钱？"*
+- *"上周 Codex 的 reasoning 开销有多大？"*
+- *"给我一份本周完成事项的 standup bullet list。"*
+
+LLM 会自动选合适的 tool、本地调用、用大白话给你带真实数字的答案。
+
+### 工具一览
+
+| Tool | 回答什么 |
+| --- | --- |
+| `usage_summary` | 一段时间内总 tokens / 花费 / 缓存节省。永远同时返回合并总数 + 按 source 拆分。 |
+| `usage_by_time` | 时间序列（小时/天/周/月），用于趋势 / "什么时候开销爆了"。 |
+| `usage_by_model` | 按模型的成本占比，每条带 source。 |
+| `usage_by_project` | 按项目（cwd）的成本占比 + 会话数 + 最近活跃时间。 |
+| `usage_by_session` | 会话列表，含标题（首条用户消息）/ 模型 / 时长 / 花费。可按 recent / cost / tokens / duration 排序。 |
+| `daily_summary` | "今天 / 昨天 / 周一 / YYYY-MM-DD 我都干了啥？" 按项目分组的会话 + 模型 + top 工具调用。 |
+| `weekly_summary` | 7 天 roll-up：每日花费趋势 + top 会话 + top 项目 + 模型分布。`week_offset=-1` 看上周。 |
+| `recent_activity` | 最近 N 条活跃会话（不限日期）。 |
+
+| Resource URI | 内容 |
+| --- | --- |
+| `ccgauge://providers` | 检测到的 provider、数据目录、文件 / 记录数、indexer 状态。 |
+
+**公共参数**（每个分析类工具都接）：
+
+- `source`：`"claude"` | `"codex"` | `"all"`（默认 `"all"`）。当 `"all"` 时，响应同时带合并总数 **和** `bySource: { claude, codex }` 拆分，让 LLM 一次调用就能回答 "总共多少" 和 "分别多少" 两类问题。
+- 时间范围：传 `range`（`today` / `yesterday` / `this_week` / `last_week` / `this_month` / `last_month` / `7d` / `30d` / `90d` / `all`），**或**显式 `from` / `to`（ISO 日期或完整时间戳）。
+
+### 在 MCP 客户端里配置
+
+不同客户端的配置文件位置不同，但 snippet 形状一样。
+
+#### Claude Desktop
+
+`~/Library/Application Support/Claude/claude_desktop_config.json`（macOS）/
+`%APPDATA%\Claude\claude_desktop_config.json`（Windows）：
+
+```json
+{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "npx",
+      "args": ["-y", "ccgauge", "mcp"]
+    }
+  }
+}
+```
+
+如果已经全局装了 ccgauge（`npm i -g ccgauge`），可以省掉 `npx`：
+
+```json
+{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "ccgauge",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+重启 Claude Desktop，工具选择器里就能看到 ccgauge 的 8 个工具。
+
+#### Cursor
+
+`~/.cursor/mcp.json`（项目级：`<project>/.cursor/mcp.json`）：
+
+```json
+{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "ccgauge",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+#### Cline / Continue / 通用 MCP 客户端
+
+任何遵循标准 `{ command, args, env? }` 格式的客户端都能用。`npx -y ccgauge mcp`
+（无需全局装）或 `ccgauge mcp`（已全局装）任选其一。要覆盖扫描路径，通过 `env` 传：
+
+```json
+{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "ccgauge",
+      "args": ["mcp"],
+      "env": {
+        "CCGAUGE_CODEX_DIR": "/custom/codex/path",
+        "CLAUDE_CONFIG_DIR": "/custom/claude/path",
+        "CCGAUGE_STATE_DIR": "/custom/cache/path"
+      }
+    }
+  }
+}
+```
+
+#### 验证是否生效
+
+在 Claude Desktop 新开一个对话，问：
+
+> *"你有哪些 ccgauge 工具？跑一下 usage_summary 看最近 7 天数据。"*
+
+如果配置成功，Claude 会调 `usage_summary`，返回带 `totals` + `bySource` 的 JSON，
+然后用大白话总结成带真实数字的回答。
+
+### Prompt 示例集
+
+直接复制丢进 Claude Desktop / Cursor / Cline 即可。每个 prompt 后面斜体注的是
+LLM 大概率会调的工具——方便你"为什么会这样回答"反查。
+
+#### 用量与花费
+
+- *"我这周用 AI 编程花了多少钱？分开看 Claude 和 Codex。"*
+  → `usage_summary({ range: "7d" })`
+- *"本月 AI 编程花了多少？跟上个月比怎么样？"*
+  → `usage_summary({ range: "this_month" })` + `usage_summary({ range: "last_month" })`
+- *"画一下最近 30 天的每日花费趋势。"*
+  → `usage_by_time({ range: "30d", granularity: "day" })`
+- *"本月用的最多的 Claude 模型是哪个？花了多少？"*
+  → `usage_by_model({ range: "this_month", source: "claude" })`
+- *"本月最贵的 5 个会话是哪些？"*
+  → `usage_by_session({ range: "this_month", sort: "cost", limit: 5 })`
+
+#### 工作内容回顾 / standup
+
+- *"我昨天都做了什么？按项目分一下。"*
+  → `daily_summary({ date: "yesterday" })`
+- *"给我一份周一 standup 用的 bullet list，列我上周完成的事。"*
+  → `weekly_summary({ week_offset: -1 })`
+- *"过去两周我接触最多的 3 个项目是什么？"*
+  → `usage_by_project({ range: "14d", limit: 3 })`（LLM 也可能补一次 `weekly_summary`）
+- *"我最近一次的编码会话是关于什么的？"*
+  → `recent_activity({ limit: 1 })`
+
+#### 缓存 / 效率
+
+- *"本月 Anthropic prompt caching 帮我省了多少 tokens？"*
+  → `usage_summary({ range: "this_month", source: "claude" })`——返回里有 `saved_usd`。
+- *"本周 Codex 的 output 里有多少比例是 reasoning tokens？"*
+  → `usage_summary({ range: "7d", source: "codex" })`——返回里 `reasoning_tokens` 紧挨着 `output_tokens`。
+
+#### 预算 / 规划
+
+- *"按当前消耗速度，本月预计花多少？"*
+  → `usage_summary({ range: "this_month" })` + `usage_by_time({ range: "this_month", granularity: "day" })`——LLM 自己外推。
+- *"如果我今天再在 Opus 4.7 上跑 200K input + 50K output，本月累计要多少？"*
+  → `usage_summary({ range: "this_month" })` + LLM 按公开单价做算术。
+
+#### 跨数据源对比
+
+- *"本月 Claude 和 Codex 哪个性价比更高（按每美元 tokens）？"*
+  → `usage_summary({ range: "this_month" })`——两边数字都在 `bySource` 里。
+- *"上周每个 provider 的最吃 token 项目分别是哪个？"*
+  → `usage_by_project({ range: "last_week" })`（每条 entry 自带 `source`）。
+
+### 隐私边界
+
+- v1 **仅 stdio**——不开网络端口，不能远程访问
+- 只读本机已有的 JSONL 文件，零上游 API 调用
+- 错误信息里的绝对路径会脱敏（`$HOME` → `~`）
+- MCP 用独立的持久化缓存文件（`~/.ccgauge/cache/index-mcp-v2.json`），永远不会和看板抢同一份磁盘状态
+
+### 排障
+
+| 现象 | 建议 |
+| --- | --- |
+| 客户端看不到 ccgauge 工具 | 改完配置重启客户端；终端里手动跑 `npx -y ccgauge mcp` 看是否能起 |
+| 第一次调用比较慢 | 冷启动后第一次会全量索引（100 文件 ~1–3s）；之后都是 O(1) |
+| Resource 显示 "no providers detected" | MCP 进程看不到 `~/.claude/projects` / `~/.codex/sessions`；通过 MCP 配置的 `env` 传 `CLAUDE_CONFIG_DIR` / `CCGAUGE_CODEX_DIR` |
+| 想看 server 在打什么日志 | 看客户端的 MCP 日志；ccgauge 把日志写到 **stderr**（stdout 被 JSON-RPC 占用）|
+
 ## 配置
 
 ccgauge 会自动识别标准路径：

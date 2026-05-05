@@ -13,7 +13,9 @@ import { projectNameFromCwd } from '../utils';
 
 export type Granularity = 'hour' | 'day' | 'week' | 'month';
 
-function bucketKey(ts: string, gran: Granularity): { key: string; label: string } {
+/** Public so callers (e.g. MCP formatters) can re-bucket records under
+ *  the same key scheme to layer extra fields on top of `aggregateByTime`. */
+export function bucketKey(ts: string, gran: Granularity): { key: string; label: string } {
   const d = new Date(ts);
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');

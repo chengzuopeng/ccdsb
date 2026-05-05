@@ -7,6 +7,11 @@ import type { AssistantRecord, ProviderId, UserRecord } from '../types';
 // stale records without requiring users to delete ~/.ccgauge by hand.
 const SCHEMA_VERSION = 2;
 
+/** Default cache name used by the Web dashboard / CLI. The MCP server uses
+ *  its own name ("mcp") so the two processes don't compete for the same
+ *  on-disk file. */
+export const DEFAULT_INDEX_NAME = 'default';
+
 export interface PersistedFileEntry {
   filePath: string;
   source: ProviderId;
@@ -31,12 +36,20 @@ function getStateDir(): string {
   return path.join(os.homedir(), '.ccgauge');
 }
 
-function getIndexPath(): string {
-  return path.join(getStateDir(), 'cache', `index-v${SCHEMA_VERSION}.json`);
+function getIndexPath(name: string): string {
+  // Backward compatibility: the original "default" cache file was just
+  // index-v{N}.json. Named caches get index-{name}-v{N}.json.
+  const fileName =
+    name === DEFAULT_INDEX_NAME
+      ? `index-v${SCHEMA_VERSION}.json`
+      : `index-${name}-v${SCHEMA_VERSION}.json`;
+  return path.join(getStateDir(), 'cache', fileName);
 }
 
-export async function loadPersistedIndex(): Promise<PersistedIndex | null> {
-  const filePath = getIndexPath();
+export async function loadPersistedIndex(
+  name: string = DEFAULT_INDEX_NAME,
+): Promise<PersistedIndex | null> {
+  const filePath = getIndexPath(name);
   try {
     const raw = await fs.readFile(filePath, 'utf8');
     const parsed = JSON.parse(raw) as PersistedIndex;
@@ -48,11 +61,14 @@ export async function loadPersistedIndex(): Promise<PersistedIndex | null> {
   }
 }
 
-export async function savePersistedIndex(payload: {
-  savedAt: string;
-  files: PersistedFileEntry[];
-}): Promise<void> {
-  const filePath = getIndexPath();
+export async function savePersistedIndex(
+  payload: {
+    savedAt: string;
+    files: PersistedFileEntry[];
+  },
+  name: string = DEFAULT_INDEX_NAME,
+): Promise<void> {
+  const filePath = getIndexPath(name);
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
   const data: PersistedIndex = {
@@ -65,9 +81,11 @@ export async function savePersistedIndex(payload: {
   await fs.rename(tmp, filePath);
 }
 
-export async function clearPersistedIndex(): Promise<void> {
+export async function clearPersistedIndex(
+  name: string = DEFAULT_INDEX_NAME,
+): Promise<void> {
   try {
-    await fs.unlink(getIndexPath());
+    await fs.unlink(getIndexPath(name));
   } catch {
     // ignore
   }

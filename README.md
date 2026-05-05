@@ -143,6 +143,200 @@ Background mode persists state under `~/.ccgauge/`:
 | `--strict-port` | start, restart, root | Fail if the preferred port is busy. |
 | `--log <path>` | start --background, restart | Background log file path. |
 
+## MCP server (let an LLM query your usage)
+
+ccgauge ships an [Model Context Protocol](https://modelcontextprotocol.io/)
+server so any MCP-aware client (Claude Desktop, Cursor, Cline, Codex CLI,
+your own agent…) can talk to your local Claude Code + Codex CLI history
+through structured tools — no copy-paste, no screenshots of the dashboard.
+
+### What you can ask
+
+Once configured, you can ask things like:
+
+- *"How much did I spend on AI coding this week? Break it down by Claude vs Codex."*
+- *"What did I work on yesterday?"*
+- *"Show me my 10 most expensive sessions this month."*
+- *"Which project ate the most tokens in the last 30 days?"*
+- *"Was prompt caching saving me money? How much?"*
+- *"Estimate the cost of 100K input + 20K output on Opus 4.7."*
+- *"How big was my Codex reasoning overhead last week?"*
+- *"Give me a weekly stand-up bullet list of what I shipped."*
+
+The LLM picks the right tool, calls it locally, and answers in plain
+English with real numbers from your machine.
+
+### Capabilities at a glance
+
+| Tool | What it answers |
+| --- | --- |
+| `usage_summary` | Total tokens / cost / cache savings for a date range. Always returns combined totals + per-source breakdown. |
+| `usage_by_time` | Time-series buckets (hour / day / week / month) for trend questions. |
+| `usage_by_model` | Per-model cost share. Each entry tagged with its `source`. |
+| `usage_by_project` | Per-project (cwd) cost share + session counts + last-activity. |
+| `usage_by_session` | Session list with title (= first user message), models, duration, cost. Sort by recent / cost / tokens / duration. |
+| `daily_summary` | "What did I do today / yesterday / Monday / on YYYY-MM-DD?" Sessions grouped by project + models + top tool calls. |
+| `weekly_summary` | 7-day roll-up: per-day cost trend, top sessions, top projects, models. `week_offset=-1` for last week. |
+| `recent_activity` | The N most recently active sessions across providers. |
+
+| Resource URI | Content |
+| --- | --- |
+| `ccgauge://providers` | Detected providers, data dirs, file/record counts, indexer status. |
+
+**Common arguments** (every analytical tool accepts these):
+
+- `source`: `"claude"` | `"codex"` | `"all"` (default `"all"`). When `"all"`, the response carries combined totals **and** a `bySource: { claude, codex }` breakdown so the LLM can answer either combined or provider-specific questions in a single call.
+- Date range: pass `range` (one of `today`, `yesterday`, `this_week`, `last_week`, `this_month`, `last_month`, `7d`, `30d`, `90d`, `all`) **or** explicit `from` / `to` (ISO date or full timestamp).
+
+### Configure your MCP client
+
+The exact config-file location depends on your client; the snippet shape
+is the same.
+
+#### Claude Desktop
+
+`~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) /
+`%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "npx",
+      "args": ["-y", "ccgauge", "mcp"]
+    }
+  }
+}
+```
+
+If you've installed ccgauge globally (`npm i -g ccgauge`), drop the `npx`:
+
+```json
+{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "ccgauge",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop. The 8 ccgauge tools appear in the tool picker.
+
+#### Cursor
+
+`~/.cursor/mcp.json` (project-level: `<project>/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "ccgauge",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+#### Cline / Continue / generic MCP clients
+
+Anything that follows the standard `{ command, args, env? }` shape works.
+Use either `npx -y ccgauge mcp` (no global install) or `ccgauge mcp`
+(with global install). To override scan paths, pass them via `env`:
+
+```json
+{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "ccgauge",
+      "args": ["mcp"],
+      "env": {
+        "CCGAUGE_CODEX_DIR": "/custom/codex/path",
+        "CLAUDE_CONFIG_DIR": "/custom/claude/path",
+        "CCGAUGE_STATE_DIR": "/custom/cache/path"
+      }
+    }
+  }
+}
+```
+
+#### Verify it's working
+
+In Claude Desktop, open a new chat and ask:
+
+> *"What ccgauge tools do you have? Run usage_summary for the last 7 days."*
+
+You should see Claude pick `usage_summary`, return a JSON payload with
+`totals` + `bySource`, then summarise it in prose with real numbers.
+
+### Prompt cookbook
+
+Drop these into Claude Desktop / Cursor / Cline as-is. The italics next
+to each one are the tool(s) the LLM will pick — useful if you want to
+debug "why did it answer X".
+
+#### Cost & usage
+
+- *"How much did I spend on AI coding this week, broken down by Claude and Codex?"*
+  → `usage_summary({ range: "7d" })`
+- *"What's my AI coding cost this month? How does that compare to last month?"*
+  → `usage_summary({ range: "this_month" })` + `usage_summary({ range: "last_month" })`
+- *"Show me a daily cost trend for the last 30 days."*
+  → `usage_by_time({ range: "30d", granularity: "day" })`
+- *"Which Claude model did I use the most this month, and how much did it cost?"*
+  → `usage_by_model({ range: "this_month", source: "claude" })`
+- *"Top 5 most expensive sessions this month?"*
+  → `usage_by_session({ range: "this_month", sort: "cost", limit: 5 })`
+
+#### Work content / standup
+
+- *"What did I work on yesterday? Group by project."*
+  → `daily_summary({ date: "yesterday" })`
+- *"Generate a Monday stand-up bullet list of what I shipped last week."*
+  → `weekly_summary({ week_offset: -1 })`
+- *"Which 3 projects have I touched most in the last 2 weeks?"*
+  → `usage_by_project({ range: "14d", limit: 3 })` (LLM may also pull `weekly_summary`)
+- *"What was my last coding session about?"*
+  → `recent_activity({ limit: 1 })`
+
+#### Caching / efficiency
+
+- *"How many tokens did Anthropic prompt caching save me this month?"*
+  → `usage_summary({ range: "this_month", source: "claude" })` — the response includes `saved_usd`.
+- *"What percentage of my Codex output is reasoning tokens this week?"*
+  → `usage_summary({ range: "7d", source: "codex" })` — response carries `reasoning_tokens` next to `output_tokens`.
+
+#### Budget / planning
+
+- *"At my current burn rate, how much will I spend this month?"*
+  → `usage_summary({ range: "this_month" })` + `usage_by_time({ range: "this_month", granularity: "day" })` — LLM extrapolates.
+- *"If I run another 200K input + 50K output on Opus 4.7 today, what does that add to my month-to-date cost?"*
+  → `usage_summary({ range: "this_month" })` + LLM does the arithmetic from the published per-1M-token rates.
+
+#### Cross-source comparisons
+
+- *"Am I getting more value out of Claude or Codex this month, by tokens-per-dollar?"*
+  → `usage_summary({ range: "this_month" })` — both totals are in `bySource`.
+- *"For each provider, which project ate the most tokens last week?"*
+  → `usage_by_project({ range: "last_week" })` (each entry already carries `source`).
+
+### Privacy posture
+
+- **stdio only** in v1 — no network ports, no remote access
+- Reads only the JSONL files you already have on disk; no upstream API calls
+- Absolute paths in error messages are scrubbed (`$HOME` → `~`)
+- The MCP server uses a separate persisted cache (`~/.ccgauge/cache/index-mcp-v2.json`) so it never fights the dashboard for the same on-disk state file
+
+### Troubleshooting
+
+| Symptom | Try |
+| --- | --- |
+| Client doesn't see ccgauge tools | Restart the client after editing the config; check `npx -y ccgauge mcp` runs in your shell |
+| First call is slow | First call after a cold start indexes all JSONL files (~1–3 s for 100 files); subsequent calls are O(1) |
+| "no providers detected" in the resource | The MCP process can't see `~/.claude/projects` / `~/.codex/sessions`; pass `CLAUDE_CONFIG_DIR` / `CCGAUGE_CODEX_DIR` via `env` in the MCP config |
+| Want to see what the server is logging | Watch the client's MCP log; ccgauge writes to **stderr** (stdout is reserved for JSON-RPC) |
+
 ## Configuration
 
 ccgauge auto-detects the standard locations:

@@ -25,7 +25,7 @@ const DEFAULT_LOG_FILE = join(STATE_DIR, 'ccgauge.log');
 const STATE_VERSION = 1;
 const DEFAULT_PORT = '3737';
 const DEFAULT_HOST = '127.0.0.1';
-const COMMAND_NAMES = new Set(['start', 'stop', 'restart', 'status', 'open', 'logs']);
+const COMMAND_NAMES = new Set(['start', 'stop', 'restart', 'status', 'open', 'logs', 'mcp']);
 const VALUE_OPTIONS = new Set(['-p', '--port', '-H', '--host', '--dir', '--log', '-n', '--lines']);
 
 function browserHost(host) {
@@ -130,6 +130,13 @@ program
   .option('-n, --lines <lines>', 'number of lines to show', '80')
   .action(async (opts) => {
     await logs(opts);
+  });
+
+program
+  .command('mcp')
+  .description('start the MCP server (stdio) so LLMs can query usage data')
+  .action(async () => {
+    await startMcp();
   });
 
 await program.parseAsync(normalizeArgv(process.argv));
@@ -342,6 +349,39 @@ or run the dev server with
   $ pnpm dev
 `);
   process.exit(1);
+}
+
+async function startMcp() {
+  const bundle = join(packageRoot, 'dist', 'mcp', 'server.mjs');
+  if (!existsSync(bundle)) {
+    console.error(`
+[ccgauge-mcp] Build artifact not found:
+  ${bundle}
+
+If you installed ccgauge from npm: please reinstall — the published package should
+include the MCP server bundle.
+
+If you are running from source: build first with
+  $ pnpm build:mcp
+or run the full build with
+  $ pnpm build
+`);
+    process.exit(1);
+  }
+  // Hand control to the bundled MCP server. It owns the stdio JSON-RPC
+  // session for the lifetime of the parent (the LLM client) process.
+  const child = spawn(process.execPath, [bundle], {
+    stdio: 'inherit',
+    env: process.env,
+  });
+  const forward = (sig) => () => {
+    if (!child.killed) child.kill(sig);
+  };
+  process.on('SIGINT', forward('SIGINT'));
+  process.on('SIGTERM', forward('SIGTERM'));
+  child.on('exit', (code, sig) => {
+    process.exit(typeof code === 'number' ? code : sig ? 128 : 0);
+  });
 }
 
 async function resolvePort(opts) {

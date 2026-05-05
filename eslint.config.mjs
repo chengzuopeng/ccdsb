@@ -15,6 +15,7 @@ export default [
       'node_modules/**',
       '.next-test/**',
       'docs/**',
+      'dist/**',
       'next-env.d.ts',
       'tsconfig.tsbuildinfo',
     ],

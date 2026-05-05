@@ -12,6 +12,7 @@ import type {
   UserRecord,
 } from '../types';
 import {
+  DEFAULT_INDEX_NAME,
   loadPersistedIndex,
   savePersistedIndex,
   type PersistedFileEntry,
@@ -55,6 +56,9 @@ const SCAN_DEPTH_LIMIT = 8;
 const MAX_ERROR_HISTORY = 20;
 
 class FileIndexer {
+  /** Cache namespace — different consumers (web vs MCP) use different
+   *  names so they don't fight over the same on-disk persisted file. */
+  private readonly cacheName: string;
   private files = new Map<string, FileEntry>();
   private snapshot: SnapshotExtended | null = null;
   private watchers = new Map<string, FSWatcher>();
@@ -77,6 +81,10 @@ class FileIndexer {
    *  never have two full scans clobbering each other's `files` map. */
   private rescanPromise: Promise<SnapshotExtended> | null = null;
 
+  constructor(cacheName: string = DEFAULT_INDEX_NAME) {
+    this.cacheName = cacheName;
+  }
+
   init(): Promise<void> {
     if (!this.initPromise) {
       this.initPromise = this.doInit();
@@ -91,7 +99,7 @@ class FileIndexer {
     try {
       await this.detectProviderDirs();
 
-      const persisted = await loadPersistedIndex();
+      const persisted = await loadPersistedIndex(this.cacheName);
       this.loadedFromDisk = persisted !== null;
 
       const persistedMap = new Map<string, PersistedFileEntry>();
@@ -493,10 +501,13 @@ class FileIndexer {
           parentLinks: entry.parentLinks,
         });
       }
-      savePersistedIndex({
-        savedAt: new Date().toISOString(),
-        files: entries,
-      }).catch((err) => this.recordError(`persist: ${(err as Error).message}`));
+      savePersistedIndex(
+        {
+          savedAt: new Date().toISOString(),
+          files: entries,
+        },
+        this.cacheName,
+      ).catch((err) => this.recordError(`persist: ${(err as Error).message}`));
     }, PERSIST_DEBOUNCE_MS);
     this.persistTimer.unref?.();
   }
@@ -590,14 +601,28 @@ function dedupUserRecords(records: UserRecord[]): UserRecord[] {
 }
 
 declare global {
-  var __ccgaugeIndexer: FileIndexer | undefined;
+  var __ccgaugeIndexers: Map<string, FileIndexer> | undefined;
 }
 
-function getOrCreateIndexer(): FileIndexer {
-  if (!globalThis.__ccgaugeIndexer) {
-    globalThis.__ccgaugeIndexer = new FileIndexer();
+function indexerRegistry(): Map<string, FileIndexer> {
+  if (!globalThis.__ccgaugeIndexers) {
+    globalThis.__ccgaugeIndexers = new Map();
   }
-  return globalThis.__ccgaugeIndexer;
+  return globalThis.__ccgaugeIndexers;
 }
 
-export const indexer = getOrCreateIndexer();
+/** Get (or create + cache) a FileIndexer instance for the given cache
+ *  namespace. The web dashboard uses the default name; the MCP server
+ *  passes 'mcp' so it has its own on-disk persisted file and watcher set. */
+export function getIndexer(cacheName: string = DEFAULT_INDEX_NAME): FileIndexer {
+  const reg = indexerRegistry();
+  let inst = reg.get(cacheName);
+  if (!inst) {
+    inst = new FileIndexer(cacheName);
+    reg.set(cacheName, inst);
+  }
+  return inst;
+}
+
+/** Backwards-compatible singleton — used by web/CLI code paths. */
+export const indexer = getIndexer();
