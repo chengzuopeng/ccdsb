@@ -2,31 +2,42 @@ import { getCachedScan } from '@/lib/data-loader/scan';
 import { aggregateByModel, aggregateByTime } from '@/lib/aggregator';
 import { Section, PageShell, EmptyState } from '@/components/section';
 import { TokenStackChart, type TokenStackDatum } from '@/components/charts/token-stack-chart';
-import { formatTokensCompact, formatUSD, formatPct, shortenModel } from '@/lib/utils';
+import { formatTokensCompact, formatUSD, formatPct } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
+import { resolveSource, filterBySource } from '@/lib/source';
+import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function ModelsPage() {
+export default async function ModelsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ source?: string }>;
+}) {
+  const sp = await searchParams;
+  const source = await resolveSource(sp.source);
   const t = await getServerT();
   const locale = await getServerLocale();
   const scan = await getCachedScan();
-  if (scan.records.length === 0) {
+  const records = filterBySource(scan.records, source);
+  const provider = getProvider(source);
+  const shorten = (m: string) => provider.shortenModel(m);
+
+  if (records.length === 0) {
     return (
       <PageShell title={t('models.title')}>
         <EmptyState title={t('models.empty')} />
       </PageShell>
     );
   }
-  const models = aggregateByModel(scan.records);
+  const models = aggregateByModel(records, { source });
   const total = models.reduce((s, m) => s + m.cost, 0);
   const totalTokens = models.reduce((s, m) => s + m.totalTokens, 0);
 
-  // 30-day per-bucket trend across all models combined
   const thirtyAgo = new Date();
   thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-  const trend: TokenStackDatum[] = aggregateByTime(scan.records, 'day', { from: thirtyAgo }).map((b) => ({
+  const trend: TokenStackDatum[] = aggregateByTime(records, 'day', { source, from: thirtyAgo }).map((b) => ({
     label: b.label,
     input: b.inputTokens,
     output: b.outputTokens,
@@ -50,7 +61,7 @@ export default async function ModelsPage() {
             <div key={m.model} className="card card-pad space-y-3">
               <div className="flex items-baseline justify-between gap-2">
                 <div>
-                  <div className="font-semibold text-text-primary">{shortenModel(m.model)}</div>
+                  <div className="font-semibold text-text-primary">{shorten(m.model)}</div>
                   <div className="num-mono text-xs text-text-tertiary">{m.model}</div>
                 </div>
                 {!m.pricingResolved && (

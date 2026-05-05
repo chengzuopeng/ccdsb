@@ -1,9 +1,12 @@
 import type { AssistantRecord, BlockSummary } from '../types';
 import { costOfRecord } from '../pricing/calculate';
 
-const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
+const DEFAULT_BLOCK_WINDOW_MS = 5 * 60 * 60 * 1000;
 
-export function computeBlocks(records: AssistantRecord[]): BlockSummary[] {
+export function computeBlocks(
+  records: AssistantRecord[],
+  windowMs: number = DEFAULT_BLOCK_WINDOW_MS,
+): BlockSummary[] {
   if (records.length === 0) return [];
   const sorted = [...records].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   const blocks: BlockSummary[] = [];
@@ -13,12 +16,12 @@ export function computeBlocks(records: AssistantRecord[]): BlockSummary[] {
 
   for (const rec of sorted) {
     const t = new Date(rec.timestamp).getTime();
-    if (!current || t - blockStartMs >= FIVE_HOURS_MS) {
+    if (!current || t - blockStartMs >= windowMs) {
       blockStartMs = t;
       current = {
         id: rec.timestamp,
         startTime: rec.timestamp,
-        endTime: new Date(t + FIVE_HOURS_MS).toISOString(),
+        endTime: new Date(t + windowMs).toISOString(),
         actualEndTime: rec.timestamp,
         isActive: false,
         inputTokens: 0,
@@ -58,14 +61,18 @@ export function computeBlocks(records: AssistantRecord[]): BlockSummary[] {
   return blocks;
 }
 
-export function getActiveBlock(records: AssistantRecord[]): BlockSummary | null {
-  const blocks = computeBlocks(records);
+export function getActiveBlock(
+  records: AssistantRecord[],
+  windowMs: number = DEFAULT_BLOCK_WINDOW_MS,
+): BlockSummary | null {
+  const blocks = computeBlocks(records, windowMs);
   const active = blocks.find((b) => b.isActive);
   return active ?? null;
 }
 
 export interface BlockProgressInfo {
   block: BlockSummary | null;
+  windowMs: number;
   elapsedMs: number;
   remainingMs: number;
   progress: number;
@@ -75,11 +82,15 @@ export interface BlockProgressInfo {
   projectedCost: number;
 }
 
-export function blockProgress(records: AssistantRecord[]): BlockProgressInfo {
-  const block = getActiveBlock(records);
+export function blockProgress(
+  records: AssistantRecord[],
+  windowMs: number = DEFAULT_BLOCK_WINDOW_MS,
+): BlockProgressInfo {
+  const block = getActiveBlock(records, windowMs);
   if (!block) {
     return {
       block: null,
+      windowMs,
       elapsedMs: 0,
       remainingMs: 0,
       progress: 0,
@@ -94,13 +105,14 @@ export function blockProgress(records: AssistantRecord[]): BlockProgressInfo {
   const endMs = new Date(block.endTime).getTime();
   const elapsedMs = now - startMs;
   const remainingMs = Math.max(0, endMs - now);
-  const progress = Math.min(1, elapsedMs / (5 * 60 * 60 * 1000));
+  const progress = Math.min(1, elapsedMs / windowMs);
   const elapsedMin = elapsedMs / 60_000;
   const burnRatePerMin = elapsedMin > 0 ? block.totalTokens / elapsedMin : 0;
   const costPerMin = elapsedMin > 0 ? block.cost / elapsedMin : 0;
-  const totalMin = (5 * 60 * 60 * 1000) / 60_000;
+  const totalMin = windowMs / 60_000;
   return {
     block,
+    windowMs,
     elapsedMs,
     remainingMs,
     progress,

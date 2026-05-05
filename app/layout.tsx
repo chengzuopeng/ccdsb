@@ -6,11 +6,13 @@ import { NoFlashScript } from '@/components/no-flash-script';
 import { getServerLocale } from '@/lib/i18n/server';
 import { getServerTheme } from '@/lib/theme/server';
 import { tFn } from '@/lib/i18n/dict';
+import { detectAvailableProviders, listProviders } from '@/lib/providers';
+import { resolveSource } from '@/lib/source';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   return {
-    title: 'ccgauge — Claude Code Dashboard',
+    title: 'ccgauge — Claude Code & Codex Dashboard',
     description: tFn(locale, 'brand.tagline'),
     icons: {
       icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
@@ -28,9 +30,18 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getServerLocale();
   const theme = await getServerTheme();
-  // Server emits the resolved class so SSR colors look right; the inline
-  // NoFlashScript fixes it up immediately for users whose preference differs.
   const initialClass = theme === 'light' ? 'theme-light' : 'theme-dark';
+
+  const available = await detectAvailableProviders();
+  const initialSource = await resolveSource(null);
+  const providerInfos = listProviders().map((p) => ({
+    id: p.id,
+    shortLabel: p.shortLabel,
+    fg: p.color.fg,
+    bg: p.color.bg,
+    displayEn: p.displayName.en,
+    displayZh: p.displayName.zh,
+  }));
 
   return (
     <html lang={locale === 'zh' ? 'zh-CN' : 'en'} className={initialClass} suppressHydrationWarning>
@@ -39,7 +50,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-screen bg-bg text-text-primary">
         <Providers locale={locale} theme={theme}>
-          <Nav />
+          <Nav
+            availableProviders={available}
+            initialSource={initialSource}
+            providerInfos={providerInfos}
+          />
           <main>{children}</main>
         </Providers>
       </body>

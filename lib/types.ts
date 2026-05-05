@@ -85,8 +85,11 @@ export const RawRecordSchema = z
 
 export type RawRecord = z.infer<typeof RawRecordSchema>;
 
+export type ProviderId = 'claude' | 'codex';
+
 export interface AssistantRecord {
   type: 'assistant';
+  source: ProviderId;
   uuid: string;
   parentUuid: string | null;
   timestamp: string;
@@ -109,6 +112,7 @@ export interface AssistantRecord {
 
 export interface UserRecord {
   type: 'user';
+  source: ProviderId;
   uuid: string;
   parentUuid: string | null;
   timestamp: string;
@@ -133,6 +137,14 @@ export interface ScanResult {
   userRecords: UserRecord[];
   parentMap: Record<string, string | null>;
   stats: ScanStats;
+}
+
+export interface ScanStatsBySource {
+  source: ProviderId;
+  filesScanned: number;
+  recordsParsed: number;
+  assistantRecords: number;
+  scannedDirs: string[];
 }
 
 export interface Pricing {
@@ -224,6 +236,7 @@ export interface ProjectSummary {
 
 export interface ModelSummary {
   model: string;
+  source: ProviderId;
   requests: number;
   inputTokens: number;
   outputTokens: number;

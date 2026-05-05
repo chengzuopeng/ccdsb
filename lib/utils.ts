@@ -110,13 +110,29 @@ export function shortHash(s: string, len = 8): string {
   return s.replace(/-/g, '').slice(0, len);
 }
 
+const OPENAI_FAMILY_LABEL: Record<string, string> = {
+  mini: 'Mini',
+  nano: 'Nano',
+  pro: 'Pro',
+  turbo: 'Turbo',
+  preview: 'Preview',
+};
+
 export function shortenModel(model: string): string {
   if (!model) return '(unknown)';
-  // strip date suffix (-20251101) and provider prefix (vertex_ai/, bedrock/, anthropic/)
-  let m = model.replace(/-(\d{8})$/, '').replace(/^(vertex_ai|bedrock|anthropic)\//, '');
-  // claude-opus-4-7 → opus-4-7 → Opus 4.7
+  const noPrefix = model.replace(/^(vertex_ai|bedrock|anthropic|openai)\//, '');
+  const lower = noPrefix.toLowerCase();
+  if (lower.startsWith('gpt-') || /^o\d/.test(lower)) {
+    if (lower.startsWith('gpt-')) {
+      const rest = noPrefix.slice(4);
+      const parts = rest.split('-').map((p) => OPENAI_FAMILY_LABEL[p.toLowerCase()] ?? p);
+      return 'GPT-' + parts.join(' ');
+    }
+    return noPrefix.toUpperCase();
+  }
+  // Anthropic / Claude path
+  let m = noPrefix.replace(/-(\d{8})$/, '');
   m = m.replace(/^claude-/, '');
-  // split family from numeric version: "opus-4-7" → ["opus", "4", "7"]
   const parts = m.split('-');
   if (parts.length >= 2) {
     const family = parts[0];

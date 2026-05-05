@@ -1,11 +1,14 @@
-import { getCachedScan, getScannedDirs } from '@/lib/data-loader/scan';
+import { getCachedScan, getScannedDirsBySource } from '@/lib/data-loader/scan';
 import { BUILTIN_PRICING } from '@/lib/pricing/builtin';
+import { BUILTIN_PRICING_OPENAI } from '@/lib/providers/codex/pricing';
+import { listProviders, detectAvailableProviders } from '@/lib/providers';
+import type { ProviderId } from '@/lib/providers';
 import { PageShell, Section } from '@/components/section';
 import { ScanRefresh } from '@/components/scan-refresh';
 import { PricingTable, type PricingRow } from '@/components/pricing-table';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeSwitcher } from '@/components/theme-switcher';
-import { getServerT } from '@/lib/i18n/server';
+import { getServerT, getServerLocale } from '@/lib/i18n/server';
 import pkg from '../../package.json' assert { type: 'json' };
 
 export const dynamic = 'force-dynamic';
@@ -15,16 +18,30 @@ const VERSION = pkg.version;
 
 export default async function SettingsPage() {
   const t = await getServerT();
+  const locale = await getServerLocale();
   const scan = await getCachedScan();
-  const dirs = getScannedDirs();
-  const pricingRows: PricingRow[] = Object.entries(BUILTIN_PRICING).map(([model, p]) => ({
-    model,
-    input: p.input,
-    output: p.output,
-    cacheCreation5m: p.cacheCreation5m,
-    cacheCreation1h: p.cacheCreation1h,
-    cacheRead: p.cacheRead,
-  }));
+  const dirsBySource = getScannedDirsBySource();
+  const available = await detectAvailableProviders();
+  const providers = listProviders();
+
+  const pricingTablesBySource: Record<ProviderId, PricingRow[]> = {
+    claude: Object.entries(BUILTIN_PRICING).map(([model, p]) => ({
+      model,
+      input: p.input,
+      output: p.output,
+      cacheCreation5m: p.cacheCreation5m,
+      cacheCreation1h: p.cacheCreation1h,
+      cacheRead: p.cacheRead,
+    })),
+    codex: Object.entries(BUILTIN_PRICING_OPENAI).map(([model, p]) => ({
+      model,
+      input: p.input,
+      output: p.output,
+      cacheCreation5m: p.cacheCreation5m,
+      cacheCreation1h: p.cacheCreation1h,
+      cacheRead: p.cacheRead,
+    })),
+  };
 
   return (
     <PageShell title={t('settings.title')} desc={t('settings.subtitle')}>
@@ -50,33 +67,71 @@ export default async function SettingsPage() {
       </Section>
 
       <Section title={t('settings.dataSources.title')} desc={t('settings.dataSources.desc')}>
-        <div className="space-y-2">
-          {dirs.map((d) => {
-            const isActive = scan.stats.scannedDirs.includes(d);
+        <div className="space-y-5">
+          {dirsBySource.map(({ source, dirs }) => {
+            const provider = providers.find((p) => p.id === source)!;
+            const isAvail = available.includes(source);
+            const sourceStat = scan.bySource.find((s) => s.source === source);
             return (
-              <div
-                key={d}
-                className="flex items-center justify-between gap-3 px-3 py-2 rounded-button border border-border bg-bg-surface-hi/30"
-              >
-                <span className="num-mono text-sm text-text-primary truncate">{d}</span>
-                <span
-                  className={`pill text-xs whitespace-nowrap ${
-                    isActive
-                      ? 'bg-success/10 text-success border border-success/20'
-                      : 'bg-bg-surface-hi text-text-tertiary'
-                  }`}
-                >
-                  {isActive ? t('settings.dataSources.active') : t('settings.dataSources.notPresent')}
-                </span>
+              <div key={source} className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-flex items-center justify-center text-[10px] w-5 h-5 rounded-full font-bold"
+                      style={{ background: provider.color.bg, color: provider.color.fg }}
+                    >
+                      {provider.shortLabel}
+                    </span>
+                    <span className="text-sm font-semibold text-text-primary">
+                      {provider.displayName[locale]}
+                    </span>
+                    {isAvail ? (
+                      <span className="pill bg-success/10 text-success border border-success/20 text-xs">
+                        {t('settings.dataSources.active')}
+                      </span>
+                    ) : (
+                      <span className="pill bg-bg-surface-hi text-text-tertiary text-xs">
+                        {t('settings.dataSources.notPresent')}
+                      </span>
+                    )}
+                  </div>
+                  {sourceStat && isAvail && (
+                    <span className="text-xs text-text-tertiary num-mono">
+                      {sourceStat.filesScanned} files · {sourceStat.assistantRecords.toLocaleString()} records
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  {dirs.map((d) => {
+                    const present = scan.stats.scannedDirs.includes(d);
+                    return (
+                      <div
+                        key={d}
+                        className="flex items-center justify-between gap-3 px-3 py-2 rounded-button border border-border bg-bg-surface-hi/30"
+                      >
+                        <span className="num-mono text-sm text-text-primary truncate">{d}</span>
+                        <span
+                          className={`pill text-xs whitespace-nowrap ${
+                            present
+                              ? 'bg-success/10 text-success border border-success/20'
+                              : 'bg-bg-surface-hi text-text-tertiary'
+                          }`}
+                        >
+                          {present ? t('settings.dataSources.active') : t('settings.dataSources.notPresent')}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
         </div>
         <div className="mt-4 text-xs text-text-secondary">
           {t('settings.dataSources.envHint', {
-            env1: 'CCGAUGE_CONFIG_DIR',
-            env2: 'CLAUDE_CONFIG_DIR',
-            appendix: '/projects',
+            env1: 'CCGAUGE_CONFIG_DIR / CLAUDE_CONFIG_DIR',
+            env2: 'CCGAUGE_CODEX_DIR / CODEX_HOME',
+            appendix: '/projects · /sessions',
           })}
         </div>
         <div className="mt-4">
@@ -93,9 +148,19 @@ export default async function SettingsPage() {
         </div>
       </Section>
 
-      <Section title={t('settings.pricing.title')} desc={t('settings.pricing.desc')}>
-        <PricingTable rows={pricingRows} />
-      </Section>
+      {providers.map((p) => {
+        const rows = pricingTablesBySource[p.id];
+        if (!rows || rows.length === 0) return null;
+        return (
+          <Section
+            key={p.id}
+            title={`${p.displayName[locale]} · ${t('settings.pricing.title')}`}
+            desc={p.costFootnoteKey ? t(p.costFootnoteKey) : t('settings.pricing.desc')}
+          >
+            <PricingTable rows={rows} />
+          </Section>
+        );
+      })}
 
       <Section title={t('settings.about.title')} desc={t('settings.about.subtitle', { version: VERSION })}>
         <ul className="text-sm text-text-secondary space-y-1.5">
@@ -117,4 +182,3 @@ function Stat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

@@ -6,25 +6,36 @@ import {
   formatTokensCompact,
   formatUSD,
   formatRelative,
-  shortenModel,
 } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
+import { resolveSource, filterBySource } from '@/lib/source';
+import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function ProjectsPage() {
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ source?: string }>;
+}) {
+  const sp = await searchParams;
+  const source = await resolveSource(sp.source);
   const t = await getServerT();
   const locale = await getServerLocale();
   const scan = await getCachedScan();
-  if (scan.records.length === 0) {
+  const records = filterBySource(scan.records, source);
+  const provider = getProvider(source);
+  const shorten = (m: string) => provider.shortenModel(m);
+
+  if (records.length === 0) {
     return (
       <PageShell title={t('projects.title')}>
         <EmptyState title={t('projects.empty')} />
       </PageShell>
     );
   }
-  const projects = aggregateByProject(scan.records);
+  const projects = aggregateByProject(records, { source });
   const totalCost = projects.reduce((s, p) => s + p.cost, 0);
 
   return (
@@ -35,7 +46,7 @@ export default async function ProjectsPage() {
           return (
             <Link
               key={p.cwd}
-              href={`/projects/${encodeURIComponent(p.cwd)}`}
+              href={`/projects/${encodeURIComponent(p.cwd)}?source=${source}`}
               className="card card-pad hover:border-border-hi transition-colors group"
             >
               <div className="flex items-start justify-between gap-3">
@@ -64,7 +75,7 @@ export default async function ProjectsPage() {
                 <span className="whitespace-nowrap">
                   {t('common.lastActivity')} {formatRelative(p.lastActivity, locale)}
                 </span>
-                <span className="truncate">{p.models.map(shortenModel).join(', ')}</span>
+                <span className="truncate">{p.models.map(shorten).join(', ')}</span>
               </div>
             </Link>
           );

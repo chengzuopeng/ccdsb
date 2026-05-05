@@ -12,32 +12,41 @@ import {
   formatDuration,
   projectNameFromCwd,
   shortHash,
-  shortenModel,
 } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
+import { resolveSource, filterBySource } from '@/lib/source';
+import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ProjectDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ source?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
+  const source = await resolveSource(sp.source);
   const cwd = decodeURIComponent(id);
   const t = await getServerT();
   const locale = await getServerLocale();
   const scan = await getCachedScan();
-  const records = scan.records.filter((r) => r.cwd === cwd);
-  if (records.length === 0) notFound();
+  const provider = getProvider(source);
+  const shorten = (m: string) => provider.shortenModel(m);
 
-  const totals = aggregateTotals(records);
-  const sessions = aggregateBySession(records, scan.userRecords);
+  const records = filterBySource(scan.records, source).filter((r) => r.cwd === cwd);
+  if (records.length === 0) notFound();
+  const userRecords = filterBySource(scan.userRecords, source);
+
+  const totals = aggregateTotals(records, { source });
+  const sessions = aggregateBySession(records, userRecords, { source });
 
   const thirtyAgo = new Date();
   thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-  const trend: TokenStackDatum[] = aggregateByTime(records, 'day', { from: thirtyAgo }).map((b) => ({
+  const trend: TokenStackDatum[] = aggregateByTime(records, 'day', { source, from: thirtyAgo }).map((b) => ({
     label: b.label,
     input: b.inputTokens,
     output: b.outputTokens,
@@ -52,7 +61,7 @@ export default async function ProjectDetailPage({
       title={projectNameFromCwd(cwd)}
       desc={cwd}
       right={
-        <Link href="/projects" className="btn-ghost">
+        <Link href={`/projects?source=${source}`} className="btn-ghost">
           {t('common.allProjectsLink')}
         </Link>
       }
@@ -91,7 +100,7 @@ export default async function ProjectDetailPage({
                 {sessions.map((s) => (
                   <tr key={s.sessionId} className="border-b border-border last:border-b-0 hover:bg-bg-surface-hi/40">
                     <td className="px-3 py-2.5">
-                      <Link href={`/sessions/${encodeURIComponent(s.sessionId)}`} className="hover:text-brand">
+                      <Link href={`/sessions/${encodeURIComponent(s.sessionId)}?source=${source}`} className="hover:text-brand">
                         <div className="font-medium truncate max-w-[280px]">
                           {s.title || t('sessions.untitled', { hash: shortHash(s.sessionId) })}
                         </div>
@@ -99,7 +108,7 @@ export default async function ProjectDetailPage({
                       </Link>
                     </td>
                     <td className="px-3 py-2.5 text-xs text-text-secondary">
-                      {s.models.map(shortenModel).join(', ')}
+                      {s.models.map(shorten).join(', ')}
                     </td>
                     <td className="px-3 py-2.5 num-mono text-right">{s.requests}</td>
                     <td className="px-3 py-2.5 num-mono text-right">{formatTokensCompact(s.totalTokens, locale)}</td>

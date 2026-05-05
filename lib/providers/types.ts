@@ -1,0 +1,46 @@
+import type { AssistantRecord, CostBreakdown, Pricing, UserRecord } from '../types';
+
+export type ProviderId = 'claude' | 'codex';
+
+export interface ProviderCapabilities {
+  hasCacheCreation: boolean;
+  hasReasoningTokens: boolean;
+  blockWindowMs: number;
+}
+
+export type PricingMatchType =
+  | 'exact'
+  | 'date-stripped'
+  | 'prefix-stripped'
+  | 'family-fallback'
+  | 'none';
+
+export interface PricingResolution {
+  pricing: Pricing | null;
+  matchType: PricingMatchType;
+  matchedKey: string | null;
+}
+
+export interface ParsedFile {
+  assistant: AssistantRecord[];
+  user: UserRecord[];
+  parentLinks: Array<[string, string | null]>;
+}
+
+export interface ProviderAdapter {
+  id: ProviderId;
+  displayName: { en: string; zh: string };
+  shortLabel: string;
+  color: { fg: string; bg: string };
+  capabilities: ProviderCapabilities;
+
+  getDirs(): string[];
+  shouldSkipDir(name: string): boolean;
+  parseFile(file: string): Promise<ParsedFile>;
+
+  resolvePricing(model: string): PricingResolution;
+  shortenModel(model: string): string;
+  costFromUsage(usage: AssistantRecord['usage'], pricing: Pricing | null): CostBreakdown;
+
+  costFootnoteKey: string | null;
+}

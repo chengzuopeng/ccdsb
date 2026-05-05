@@ -3,11 +3,12 @@ import type {
   AssistantRecord,
   ModelSummary,
   ProjectSummary,
+  ProviderId,
   SessionSummary,
   UserRecord,
 } from '../types';
 import { costOfRecord } from '../pricing/calculate';
-import { resolvePricing } from '../pricing/resolve';
+import { getProvider } from '../providers';
 import { projectNameFromCwd } from '../utils';
 
 export type Granularity = 'hour' | 'day' | 'week' | 'month';
@@ -39,6 +40,7 @@ function bucketKey(ts: string, gran: Granularity): { key: string; label: string 
 }
 
 export interface AggregateOpts {
+  source: ProviderId;
   from?: Date;
   to?: Date;
   models?: string[];
@@ -46,6 +48,7 @@ export interface AggregateOpts {
 }
 
 function withinRange(rec: AssistantRecord, opts: AggregateOpts): boolean {
+  if (rec.source !== opts.source) return false;
   if (opts.from && rec.timestamp < opts.from.toISOString()) return false;
   if (opts.to && rec.timestamp > opts.to.toISOString()) return false;
   if (opts.models && opts.models.length && !opts.models.includes(rec.model)) return false;
@@ -56,7 +59,7 @@ function withinRange(rec: AssistantRecord, opts: AggregateOpts): boolean {
 export function aggregateByTime(
   records: AssistantRecord[],
   gran: Granularity,
-  opts: AggregateOpts = {},
+  opts: AggregateOpts,
 ): AggregateBucket[] {
   const buckets = new Map<string, AggregateBucket>();
   for (const rec of records) {
@@ -108,16 +111,17 @@ function pushRecord(b: AggregateBucket, rec: AssistantRecord) {
 
 export function aggregateByModel(
   records: AssistantRecord[],
-  opts: AggregateOpts = {},
+  opts: AggregateOpts,
 ): ModelSummary[] {
   const map = new Map<string, ModelSummary>();
   for (const rec of records) {
     if (!withinRange(rec, opts)) continue;
     let s = map.get(rec.model);
     if (!s) {
-      const { pricing, source } = resolvePricing(rec.model);
+      const { pricing, matchType } = getProvider(rec.source).resolvePricing(rec.model);
       s = {
         model: rec.model,
+        source: rec.source,
         requests: 0,
         inputTokens: 0,
         outputTokens: 0,
@@ -127,7 +131,7 @@ export function aggregateByModel(
         cost: 0,
         saved: 0,
         pricing,
-        pricingResolved: source === 'exact' || source === 'date-stripped' || source === 'prefix-stripped',
+        pricingResolved: matchType === 'exact' || matchType === 'date-stripped' || matchType === 'prefix-stripped',
       };
       map.set(rec.model, s);
     }
@@ -147,7 +151,7 @@ export function aggregateByModel(
 
 export function aggregateByProject(
   records: AssistantRecord[],
-  opts: AggregateOpts = {},
+  opts: AggregateOpts,
 ): ProjectSummary[] {
   const map = new Map<string, ProjectSummary>();
   const sessionsByProject = new Map<string, Set<string>>();
@@ -200,7 +204,7 @@ export function aggregateByProject(
 export function aggregateBySession(
   records: AssistantRecord[],
   userRecords: UserRecord[],
-  opts: AggregateOpts = {},
+  opts: AggregateOpts,
 ): SessionSummary[] {
   const map = new Map<string, SessionSummary>();
   for (const rec of records) {
@@ -274,7 +278,7 @@ export function aggregateBySession(
 
 export function aggregateTotals(
   records: AssistantRecord[],
-  opts: AggregateOpts = {},
+  opts: AggregateOpts,
 ): {
   inputTokens: number;
   outputTokens: number;

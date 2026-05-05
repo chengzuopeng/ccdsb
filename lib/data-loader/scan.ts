@@ -1,26 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
-import { parseJsonlFile } from './parse-jsonl';
 import { dedupAssistantRecords } from '../dedup';
-import type { AssistantRecord, ScanResult, ScanStats, UserRecord } from '../types';
-
-function getScanDirs(): string[] {
-  const home = os.homedir();
-  const candidates = [
-    path.join(home, '.claude', 'projects'),
-    path.join(home, '.config', 'claude', 'projects'),
-  ];
-
-  if (process.env.CCGAUGE_CONFIG_DIR) {
-    candidates.push(path.join(process.env.CCGAUGE_CONFIG_DIR, 'projects'));
-  }
-  if (process.env.CLAUDE_CONFIG_DIR) {
-    candidates.push(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects'));
-  }
-
-  return Array.from(new Set(candidates));
-}
+import { listProviders } from '../providers';
+import type { ProviderAdapter, ProviderId } from '../providers';
+import type { AssistantRecord, ScanResult, ScanStats, ScanStatsBySource, UserRecord } from '../types';
 
 async function dirExists(p: string): Promise<boolean> {
   try {
@@ -31,11 +14,11 @@ async function dirExists(p: string): Promise<boolean> {
   }
 }
 
-async function listJsonlFiles(rootDir: string): Promise<string[]> {
+async function listJsonlFiles(rootDir: string, provider: ProviderAdapter): Promise<string[]> {
   const out: string[] = [];
 
   async function walk(dir: string, depth: number): Promise<void> {
-    if (depth > 6) return;
+    if (depth > 8) return;
     let entries: import('node:fs').Dirent[];
     try {
       entries = await fs.readdir(dir, { withFileTypes: true });
@@ -45,7 +28,7 @@ async function listJsonlFiles(rootDir: string): Promise<string[]> {
     for (const e of entries) {
       const full = path.join(dir, e.name);
       if (e.isDirectory()) {
-        if (e.name === 'tool-results' || e.name === 'memory') continue;
+        if (provider.shouldSkipDir(e.name)) continue;
         await walk(full, depth + 1);
       } else if (e.isFile() && e.name.endsWith('.jsonl')) {
         out.push(full);
@@ -58,6 +41,7 @@ async function listJsonlFiles(rootDir: string): Promise<string[]> {
 }
 
 interface CacheEntry {
+  source: ProviderId;
   mtimeMs: number;
   size: number;
   assistantRecords: AssistantRecord[];
@@ -67,17 +51,30 @@ interface CacheEntry {
 
 const fileCache = new Map<string, CacheEntry>();
 
-export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResult> {
-  const start = Date.now();
-  const dirs = getScanDirs();
-  const existingDirs: string[] = [];
-  const fileList: string[] = [];
+interface ScanResultExtended extends ScanResult {
+  bySource: ScanStatsBySource[];
+}
 
-  for (const d of dirs) {
-    if (await dirExists(d)) {
-      existingDirs.push(d);
-      const files = await listJsonlFiles(d);
-      fileList.push(...files);
+export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResultExtended> {
+  const start = Date.now();
+  const providers = listProviders();
+  const existingDirs: string[] = [];
+  type FileEntry = { file: string; provider: ProviderAdapter };
+  const fileEntries: FileEntry[] = [];
+
+  const bySourceState: Record<ProviderId, ScanStatsBySource> = {
+    claude: { source: 'claude', filesScanned: 0, recordsParsed: 0, assistantRecords: 0, scannedDirs: [] },
+    codex: { source: 'codex', filesScanned: 0, recordsParsed: 0, assistantRecords: 0, scannedDirs: [] },
+  };
+
+  for (const provider of providers) {
+    for (const d of provider.getDirs()) {
+      if (await dirExists(d)) {
+        existingDirs.push(d);
+        bySourceState[provider.id].scannedDirs.push(d);
+        const files = await listJsonlFiles(d, provider);
+        for (const f of files) fileEntries.push({ file: f, provider });
+      }
     }
   }
 
@@ -87,13 +84,14 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
   let recordsParsed = 0;
 
   await Promise.all(
-    fileList.map(async (file) => {
+    fileEntries.map(async ({ file, provider }) => {
       try {
         const stat = await fs.stat(file);
         const cached = fileCache.get(file);
         if (
           !opts.force &&
           cached &&
+          cached.source === provider.id &&
           cached.mtimeMs === stat.mtimeMs &&
           cached.size === stat.size
         ) {
@@ -101,10 +99,14 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
           userRecords.push(...cached.userRecords);
           for (const [uuid, parent] of cached.parentLinks) parentMap[uuid] = parent;
           recordsParsed += cached.assistantRecords.length + cached.userRecords.length;
+          bySourceState[provider.id].filesScanned += 1;
+          bySourceState[provider.id].recordsParsed += cached.assistantRecords.length + cached.userRecords.length;
+          bySourceState[provider.id].assistantRecords += cached.assistantRecords.length;
           return;
         }
-        const parsed = await parseJsonlFile(file);
+        const parsed = await provider.parseFile(file);
         fileCache.set(file, {
+          source: provider.id,
           mtimeMs: stat.mtimeMs,
           size: stat.size,
           assistantRecords: parsed.assistant,
@@ -115,6 +117,9 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
         userRecords.push(...parsed.user);
         for (const [uuid, parent] of parsed.parentLinks) parentMap[uuid] = parent;
         recordsParsed += parsed.assistant.length + parsed.user.length;
+        bySourceState[provider.id].filesScanned += 1;
+        bySourceState[provider.id].recordsParsed += parsed.assistant.length + parsed.user.length;
+        bySourceState[provider.id].assistantRecords += parsed.assistant.length;
       } catch (err) {
         console.error(`[ccgauge] failed to parse ${file}:`, err);
       }
@@ -129,15 +134,28 @@ export async function scanAll(opts: { force?: boolean } = {}): Promise<ScanResul
     a.timestamp.localeCompare(b.timestamp),
   );
 
+  for (const sourceStat of Object.values(bySourceState)) {
+    sourceStat.assistantRecords = 0;
+  }
+  for (const rec of dedupedAssistants) {
+    bySourceState[rec.source].assistantRecords += 1;
+  }
+
   const stats: ScanStats = {
-    filesScanned: fileList.length,
+    filesScanned: fileEntries.length,
     recordsParsed,
     assistantRecords: dedupedAssistants.length,
     durationMs: Date.now() - start,
     scannedDirs: existingDirs,
   };
 
-  return { records: dedupedAssistants, userRecords: dedupedUsers, parentMap, stats };
+  return {
+    records: dedupedAssistants,
+    userRecords: dedupedUsers,
+    parentMap,
+    stats,
+    bySource: Object.values(bySourceState),
+  };
 }
 
 function dedupUserRecords(records: UserRecord[]): UserRecord[] {
@@ -151,10 +169,10 @@ function dedupUserRecords(records: UserRecord[]): UserRecord[] {
   });
 }
 
-let cachedScan: { promise: Promise<ScanResult>; t: number } | null = null;
+let cachedScan: { promise: Promise<ScanResultExtended>; t: number } | null = null;
 const SCAN_TTL_MS = 5_000;
 
-export async function getCachedScan(opts: { force?: boolean } = {}): Promise<ScanResult> {
+export async function getCachedScan(opts: { force?: boolean } = {}): Promise<ScanResultExtended> {
   if (opts.force) {
     cachedScan = null;
   }
@@ -173,5 +191,13 @@ export function clearScanCache() {
 }
 
 export function getScannedDirs(): string[] {
-  return getScanDirs();
+  const out: string[] = [];
+  for (const p of listProviders()) {
+    out.push(...p.getDirs());
+  }
+  return Array.from(new Set(out));
+}
+
+export function getScannedDirsBySource(): Array<{ source: ProviderId; dirs: string[] }> {
+  return listProviders().map((p) => ({ source: p.id, dirs: p.getDirs() }));
 }

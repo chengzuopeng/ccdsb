@@ -12,30 +12,38 @@ import {
   formatRelative,
   formatDateTime,
   formatDuration,
-  shortenModel,
   shortHash,
   projectNameFromCwd,
 } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
+import { resolveSource, filterBySource } from '@/lib/source';
+import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function SessionDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ source?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
+  const source = await resolveSource(sp.source);
   const sessionId = decodeURIComponent(id);
   const t = await getServerT();
   const locale = await getServerLocale();
   const scan = await getCachedScan();
+  const provider = getProvider(source);
+  const shorten = (m: string) => provider.shortenModel(m);
 
-  const sessionRecords = scan.records.filter((r) => r.sessionId === sessionId);
+  const sessionRecords = filterBySource(scan.records, source).filter((r) => r.sessionId === sessionId);
   if (sessionRecords.length === 0) notFound();
 
-  const sessions = aggregateBySession(sessionRecords, scan.userRecords);
+  const userRecords = filterBySource(scan.userRecords, source);
+  const sessions = aggregateBySession(sessionRecords, userRecords, { source });
   const session = sessions[0];
 
   const messages = sessionRecords
@@ -72,13 +80,13 @@ export default async function SessionDetailPage({
         <>
           <span className="num-mono">{shortHash(sessionId, 16)}</span>
           {' · '}
-          <Link href={`/projects/${encodeURIComponent(session.cwd)}`} className="hover:text-brand">
+          <Link href={`/projects/${encodeURIComponent(session.cwd)}?source=${source}`} className="hover:text-brand">
             {projectNameFromCwd(session.cwd)}
           </Link>
         </>
       }
       right={
-        <Link href="/sessions" className="btn-ghost">
+        <Link href={`/sessions?source=${source}`} className="btn-ghost">
           {t('common.allSessions')}
         </Link>
       }
@@ -98,7 +106,7 @@ export default async function SessionDetailPage({
         <div className="space-y-2">
           {Object.entries(session.modelBreakdown).map(([model, mb]) => (
             <div key={model} className="flex items-center justify-between text-sm gap-3">
-              <span className="text-text-primary min-w-[120px]">{shortenModel(model)}</span>
+              <span className="text-text-primary min-w-[120px]">{shorten(model)}</span>
               <span className="text-text-secondary flex-1">
                 {t('session.modelLine', {
                   requests: mb.requests,
@@ -120,7 +128,7 @@ export default async function SessionDetailPage({
             >
               <div className="flex items-center justify-between gap-3 text-xs text-text-tertiary mb-1">
                 <span>
-                  #{i + 1} · {shortenModel(m.model)} · {formatDateTime(m.timestamp)}{' '}
+                  #{i + 1} · {shorten(m.model)} · {formatDateTime(m.timestamp)}{' '}
                   <span className="text-text-tertiary">({formatRelative(m.timestamp, locale)})</span>
                 </span>
                 <span className="num-mono text-text-primary font-medium">{formatUSD(m.cost)}</span>

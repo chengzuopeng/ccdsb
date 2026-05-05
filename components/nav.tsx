@@ -7,6 +7,8 @@ import { useT } from '@/lib/i18n/context';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Logo } from '@/components/logo';
+import { SourceSwitcher } from '@/components/source-switcher';
+import type { ProviderId } from '@/lib/providers/types';
 
 const ITEMS = [
   { href: '/', tk: 'nav.overview', exact: true },
@@ -17,7 +19,22 @@ const ITEMS = [
   { href: '/settings', tk: 'nav.settings' },
 ];
 
-export function Nav() {
+interface ProviderInfo {
+  id: ProviderId;
+  shortLabel: string;
+  fg: string;
+  bg: string;
+  displayEn: string;
+  displayZh: string;
+}
+
+interface Props {
+  availableProviders: ProviderId[];
+  initialSource: ProviderId;
+  providerInfos: ProviderInfo[];
+}
+
+export function Nav({ availableProviders, initialSource, providerInfos }: Props) {
   const pathname = usePathname();
   const t = useT();
   return (
@@ -60,6 +77,11 @@ export function Nav() {
           })}
         </nav>
         <div className="flex items-center gap-2 shrink-0">
+          <SourceSwitcher
+            available={availableProviders}
+            initial={initialSource}
+            providers={providerInfos}
+          />
           <span className="pill bg-bg-surface-hi text-text-tertiary text-[10px] uppercase tracking-wide hidden md:inline-flex">
             {t('nav.localBadge')}
           </span>

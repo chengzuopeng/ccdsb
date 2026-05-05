@@ -7,7 +7,7 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   // brand
-  'brand.tagline': 'claude code dashboard',
+  'brand.tagline': 'usage dashboard for AI coding CLIs',
 
   // nav
   'nav.overview': 'Overview',
@@ -17,6 +17,14 @@ const en: Dict = {
   'nav.models': 'Models',
   'nav.settings': 'Settings',
   'nav.localBadge': 'local',
+  'nav.source': 'Data source',
+
+  // sources
+  'source.claude': 'Claude',
+  'source.codex': 'Codex',
+
+  // cost notes
+  'cost.footnote.codex': 'Cost shown is the OpenAI API equivalent (subscription plans pay differently).',
 
   // common
   'common.requests': 'requests',
@@ -267,7 +275,7 @@ const en: Dict = {
 };
 
 const zh: Dict = {
-  'brand.tagline': 'Claude Code 用量看板',
+  'brand.tagline': 'AI 编程 CLI 的本地用量看板',
 
   'nav.overview': '概览',
   'nav.usage': '用量',
@@ -276,6 +284,12 @@ const zh: Dict = {
   'nav.models': '模型',
   'nav.settings': '设置',
   'nav.localBadge': '本地',
+  'nav.source': '数据源',
+
+  'source.claude': 'Claude',
+  'source.codex': 'Codex',
+
+  'cost.footnote.codex': '按 OpenAI API 单价折算估值（订阅计划实际计费不同）',
 
   'common.requests': '次请求',
   'common.tokens': 'tokens',

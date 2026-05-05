@@ -1,7 +1,7 @@
 import { getCachedScan } from '@/lib/data-loader/scan';
 import { aggregateByModel, aggregateByTime, aggregateTotals } from '@/lib/aggregator';
 import { blockProgress } from '@/lib/blocks/compute';
-import { KpiCard, KpiSkeleton } from '@/components/kpi-card';
+import { KpiCard } from '@/components/kpi-card';
 import { Section, PageShell, EmptyState } from '@/components/section';
 import { TokenStackChart, type TokenStackDatum } from '@/components/charts/token-stack-chart';
 import { ModelBarChart } from '@/components/charts/model-bar-chart';
@@ -11,10 +11,10 @@ import {
   formatTokensCompact,
   formatUSD,
   formatPct,
-  shortenModel,
 } from '@/lib/utils';
-import { Suspense } from 'react';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
+import { resolveSource, filterBySource } from '@/lib/source';
+import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -46,20 +46,24 @@ function isThisMonth(ts: string): boolean {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
 }
 
-export default async function OverviewPage() {
-  return (
-    <Suspense fallback={<OverviewSkeleton />}>
-      <OverviewContent />
-    </Suspense>
-  );
+export default async function OverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ source?: string }>;
+}) {
+  const sp = await searchParams;
+  const source = await resolveSource(sp.source);
+  return <OverviewContent source={source} />;
 }
 
-async function OverviewContent() {
+async function OverviewContent({ source }: { source: 'claude' | 'codex' }) {
   const scan = await getCachedScan();
-  const records = scan.records;
+  const records = filterBySource(scan.records, source);
   const t = await getServerT();
   const locale = await getServerLocale();
   const fmtTokens = (n: number) => formatTokensCompact(n, locale);
+  const provider = getProvider(source);
+  const shorten = (m: string) => provider.shortenModel(m);
 
   if (records.length === 0) {
     return (
@@ -76,9 +80,10 @@ async function OverviewContent() {
   const yesterdayRecs = records.filter((r) => isYesterday(r.timestamp));
   const monthRecs = records.filter((r) => isThisMonth(r.timestamp));
 
-  const today = aggregateTotals(todayRecs);
-  const yest = aggregateTotals(yesterdayRecs);
-  const month = aggregateTotals(monthRecs);
+  const opts = { source };
+  const today = aggregateTotals(todayRecs, opts);
+  const yest = aggregateTotals(yesterdayRecs, opts);
+  const month = aggregateTotals(monthRecs, opts);
 
   const hasYesterday = yest.totalTokens > 0 || yest.cost > 0;
   const tokenDelta = yest.totalTokens > 0 ? ((today.totalTokens - yest.totalTokens) / yest.totalTokens) * 100 : NaN;
@@ -92,13 +97,12 @@ async function OverviewContent() {
       ? today.cacheReadTokens / (today.cacheReadTokens + today.inputTokens + today.cacheCreationTokens)
       : 0;
 
-  const block = blockProgress(records);
+  const block = blockProgress(records, provider.capabilities.blockWindowMs);
   const serializedBlock = blockToSerialized(block);
 
-  // 30-day trend
   const thirtyAgo = new Date();
   thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-  const trendBuckets = aggregateByTime(records, 'day', { from: thirtyAgo });
+  const trendBuckets = aggregateByTime(records, 'day', { source, from: thirtyAgo });
   const trendData: TokenStackDatum[] = trendBuckets.map((b) => ({
     label: b.label,
     input: b.inputTokens,
@@ -109,18 +113,18 @@ async function OverviewContent() {
     requests: b.requests,
   }));
 
-  // Active days hint
   const activeDays = trendBuckets.length;
   const activeDaysHint =
     activeDays === 1
       ? t('overview.trend.activeDays', { n: 1 })
       : t('overview.trend.activeDays.plural', { n: activeDays });
 
-  // model breakdown for current period (this month)
-  const monthModels = aggregateByModel(records, { from: startOfMonth() });
+  const monthModels = aggregateByModel(records, { source, from: startOfMonth() });
   const topModel = monthModels[0];
   const topModelPct =
     topModel && month.cost > 0 ? formatPct(topModel.cost / month.cost) : '—';
+
+  const costFootnote = provider.costFootnoteKey ? t(provider.costFootnoteKey) : '';
 
   return (
     <PageShell
@@ -142,7 +146,7 @@ async function OverviewContent() {
         <KpiCard
           label={t('overview.kpi.costToday')}
           value={formatUSD(today.cost)}
-          hint={t('common.savedTodayViaCache', { amount: formatUSD(today.saved) })}
+          hint={costFootnote || t('common.savedTodayViaCache', { amount: formatUSD(today.saved) })}
           delta={Number.isFinite(costDelta) ? { value: costDelta, positiveIsGood: false } : firstTimeDelta}
           deltaTitle={t('overview.delta.title')}
         />
@@ -163,7 +167,7 @@ async function OverviewContent() {
         />
         <KpiCard
           label={t('overview.kpi.topModel')}
-          value={topModel ? shortenModel(topModel.model) : '—'}
+          value={topModel ? shorten(topModel.model) : '—'}
           hint={topModel ? t('overview.kpi.topModel.hint', { pct: topModelPct }) : ''}
           accent="brand"
         />
@@ -199,16 +203,4 @@ async function OverviewContent() {
 function startOfMonth(): Date {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-function OverviewSkeleton() {
-  return (
-    <PageShell title="…" desc="…">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <KpiSkeleton key={i} />
-        ))}
-      </div>
-    </PageShell>
-  );
 }

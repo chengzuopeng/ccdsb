@@ -1,40 +1,27 @@
-# Source — don't ship (Next.js standalone build is what runs)
-app/
-components/
-lib/
-scripts/
-public/
+# `package.json#files` is the source of truth for what ships:
+#   bin/cli.mjs · .next/standalone · README.md · LICENSE
+#
+# This file is belt-and-suspenders: it stops build leftovers from sneaking in
+# if someone widens `files` in the future. Rules outside the whitelist (app/,
+# components/, lib/, scripts/, configs, lockfiles, source) don't need listing —
+# `files` already excludes them.
 
-# Build leftovers we don't ship
+# Build leftovers that live OUTSIDE .next/standalone — never ship.
 .next/cache/
 .next/trace
-.next/server
-.next/static
+.next/build-manifest.json
+.next/prerender-manifest.json
+.next/required-server-files.json
 
-# Configs
-next.config.mjs
-tailwind.config.ts
-postcss.config.mjs
-tsconfig.json
-tsconfig.tsbuildinfo
-.eslintrc*
-eslint.config.*
-.prettierrc*
-.gitignore
-.editorconfig
-.npmrc
-
-# Lockfiles
-pnpm-lock.yaml
-yarn.lock
-package-lock.json
-
-# Dev artifacts
+# Dev artefacts
 *.log
 .DS_Store
 .idea/
 .vscode/
-node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
 
-# Design docs (optional — comment out if you want them in the package)
+# Optional design / planning notes
 PLAN.md
+docs/

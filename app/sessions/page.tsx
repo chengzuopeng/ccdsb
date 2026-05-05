@@ -7,19 +7,31 @@ import {
   formatUSD,
   formatRelative,
   formatDuration,
-  shortenModel,
   shortHash,
 } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
+import { resolveSource, filterBySource } from '@/lib/source';
+import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function SessionsPage() {
+export default async function SessionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ source?: string }>;
+}) {
+  const sp = await searchParams;
+  const source = await resolveSource(sp.source);
   const t = await getServerT();
   const locale = await getServerLocale();
   const scan = await getCachedScan();
-  if (scan.records.length === 0) {
+  const records = filterBySource(scan.records, source);
+  const userRecords = filterBySource(scan.userRecords, source);
+  const provider = getProvider(source);
+  const shorten = (m: string) => provider.shortenModel(m);
+
+  if (records.length === 0) {
     return (
       <PageShell title={t('sessions.title')}>
         <EmptyState title={t('sessions.empty')} />
@@ -27,7 +39,7 @@ export default async function SessionsPage() {
     );
   }
 
-  const sessions = aggregateBySession(scan.records, scan.userRecords);
+  const sessions = aggregateBySession(records, userRecords, { source });
 
   return (
     <PageShell
@@ -54,7 +66,7 @@ export default async function SessionsPage() {
                 <tr key={s.sessionId} className="border-b border-border last:border-b-0 hover:bg-bg-surface-hi/40">
                   <td className="px-3 py-2.5">
                     <Link
-                      href={`/sessions/${encodeURIComponent(s.sessionId)}`}
+                      href={`/sessions/${encodeURIComponent(s.sessionId)}?source=${source}`}
                       className="text-text-primary hover:text-brand"
                     >
                       <div className="font-medium truncate max-w-[280px]" title={s.title || s.sessionId}>
@@ -67,7 +79,7 @@ export default async function SessionsPage() {
                     {s.projectName}
                   </td>
                   <td className="px-3 py-2.5 text-text-secondary text-xs">
-                    {s.models.map(shortenModel).join(', ')}
+                    {s.models.map(shorten).join(', ')}
                   </td>
                   <td className="px-3 py-2.5 num-mono text-right text-text-secondary">{s.requests}</td>
                   <td className="px-3 py-2.5 num-mono text-right text-text-secondary">

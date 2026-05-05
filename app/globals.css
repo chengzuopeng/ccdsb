@@ -13,8 +13,8 @@
   --text-primary: 250 250 250;
   --text-secondary: 163 163 163;
   --text-tertiary: 115 115 115;
-  --brand: 201 100 66;
-  --brand-hover: 216 121 89;
+  --brand: 129 140 248;
+  --brand-hover: 165 180 252;
   --success: 34 197 94;
   --warning: 250 204 21;
   --danger: 248 113 113;
@@ -35,8 +35,8 @@
   --text-primary: 23 23 23;
   --text-secondary: 82 82 91;
   --text-tertiary: 161 161 170;
-  --brand: 194 65 12;
-  --brand-hover: 154 52 18;
+  --brand: 79 70 229;
+  --brand-hover: 67 56 202;
   --success: 22 163 74;
   --warning: 217 119 6;
   --danger: 220 38 38;
@@ -57,6 +57,18 @@
 
 * {
   border-color: rgb(var(--border));
+}
+
+html {
+  /* Force the html element to be a scroll container with the scrollbar
+     always laid out. Without this, navigations between pages with different
+     content heights flip-flop the viewport scrollbar in/out, which shifts
+     the centered nav bar horizontally by the scrollbar width.
+     `overflow-y: scroll` is the bulletproof, universally-supported fix.
+     `scrollbar-gutter: stable` is the modern equivalent and acts as a
+     belt-and-suspenders for browsers that honor it. */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 html,

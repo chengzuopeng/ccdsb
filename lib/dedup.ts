@@ -1,10 +1,11 @@
 import type { AssistantRecord } from './types';
 
 export function dedupKey(r: AssistantRecord): string {
-  if (r.messageId && r.requestId) return `${r.messageId}::${r.requestId}`;
-  if (r.messageId) return `mid:${r.messageId}`;
-  if (r.requestId) return `req:${r.requestId}`;
-  return `uuid:${r.uuid}`;
+  const prefix = `${r.source}:`;
+  if (r.messageId && r.requestId) return `${prefix}${r.messageId}::${r.requestId}`;
+  if (r.messageId) return `${prefix}mid:${r.messageId}`;
+  if (r.requestId) return `${prefix}req:${r.requestId}`;
+  return `${prefix}uuid:${r.uuid}`;
 }
 
 export function dedupAssistantRecords(records: AssistantRecord[]): AssistantRecord[] {

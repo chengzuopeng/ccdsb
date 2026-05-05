@@ -1,11 +1,13 @@
 {
   "name": "ccgauge",
-  "version": "0.2.0",
-  "description": "Claude Code Dashboard — local web UI for Claude Code token usage and cost",
+  "version": "0.3.0",
+  "description": "Local web dashboard for Claude Code and OpenAI Codex CLI token usage and cost",
   "keywords": [
     "claude",
     "claude-code",
     "anthropic",
+    "codex",
+    "openai",
     "usage",
     "dashboard",
     "cli",
@@ -34,9 +36,10 @@
     "start:next": "next start -p 3737",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --no-warnings scripts/test-codex-parser.mjs",
     "clean": "rm -rf .next node_modules tsconfig.tsbuildinfo",
     "screenshots": "node scripts/screenshots.mjs",
-    "prepublishOnly": "pnpm build"
+    "prepack": "pnpm build"
   },
   "dependencies": {
     "commander": "^13.1.0",

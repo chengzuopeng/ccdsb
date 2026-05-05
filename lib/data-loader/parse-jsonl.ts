@@ -69,6 +69,7 @@ function parseAssistant(raw: RawRecord, file: string): AssistantRecord | null {
 
   return {
     type: 'assistant',
+    source: 'claude',
     uuid: raw.uuid ?? messageId,
     parentUuid: raw.parentUuid ?? null,
     timestamp: raw.timestamp ?? new Date().toISOString(),
@@ -114,6 +115,7 @@ function parseUser(raw: RawRecord, file: string): UserRecord | null {
 
   return {
     type: 'user',
+    source: 'claude',
     uuid: raw.uuid,
     parentUuid: raw.parentUuid ?? null,
     timestamp: raw.timestamp ?? new Date().toISOString(),

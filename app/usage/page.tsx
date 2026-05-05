@@ -14,6 +14,8 @@ import { formatTokensCompact, formatUSD, formatPct } from '@/lib/utils';
 import { getServerT } from '@/lib/i18n/server';
 import { tFn } from '@/lib/i18n/dict';
 import { getServerLocale } from '@/lib/i18n/server';
+import { resolveSource, filterBySource } from '@/lib/source';
+import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,9 +23,10 @@ export const revalidate = 0;
 export default async function UsagePage({
   searchParams,
 }: {
-  searchParams: Promise<{ range?: string; gran?: string; models?: string; projects?: string }>;
+  searchParams: Promise<{ source?: string; range?: string; gran?: string; models?: string; projects?: string }>;
 }) {
   const sp = await searchParams;
+  const source = await resolveSource(sp.source);
   const range = sp.range || '7d';
   const gran = (sp.gran || (range === '1d' ? 'hour' : 'day')) as Granularity;
   const models = sp.models ? sp.models.split(',').filter(Boolean) : [];
@@ -32,17 +35,20 @@ export default async function UsagePage({
   const t = await getServerT();
   const locale = await getServerLocale();
   const scan = await getCachedScan();
+  const allSourceRecords = filterBySource(scan.records, source);
+  const allSourceUsers = filterBySource(scan.userRecords, source);
   const dates = rangeToDates(range);
 
   const opts = {
+    source,
     from: dates.from,
     to: dates.to,
     models: models.length ? models : undefined,
     projects: projects.length ? projects : undefined,
   };
 
-  const totals = aggregateTotals(scan.records, opts);
-  const buckets = aggregateByTime(scan.records, gran, opts);
+  const totals = aggregateTotals(allSourceRecords, opts);
+  const buckets = aggregateByTime(allSourceRecords, gran, opts);
   const trend: TokenStackDatum[] = buckets.map((b) => ({
     label: b.label,
     input: b.inputTokens,
@@ -53,17 +59,17 @@ export default async function UsagePage({
     requests: b.requests,
   }));
 
-  const filteredRecords = scan.records.filter((r) => {
+  const filteredRecords = allSourceRecords.filter((r) => {
     if (dates.from && r.timestamp < dates.from.toISOString()) return false;
     if (models.length && !models.includes(r.model)) return false;
     if (projects.length && !projects.includes(r.cwd)) return false;
     return true;
   });
 
-  const turnRows = recordsToTurnRows(filteredRecords, scan.userRecords, scan.parentMap);
+  const turnRows = recordsToTurnRows(filteredRecords, allSourceUsers, scan.parentMap);
 
-  const allModels = Array.from(new Set(scan.records.map((r) => r.model))).sort();
-  const allProjects = Array.from(new Set(scan.records.map((r) => r.cwd).filter(Boolean))).sort();
+  const allModels = Array.from(new Set(allSourceRecords.map((r) => r.model))).sort();
+  const allProjects = Array.from(new Set(allSourceRecords.map((r) => r.cwd).filter(Boolean))).sort();
 
   const cacheHit =
     totals.totalTokens > 0
@@ -71,19 +77,26 @@ export default async function UsagePage({
         Math.max(1, totals.cacheReadTokens + totals.inputTokens + totals.cacheCreationTokens)
       : 0;
 
+  const provider = getProvider(source);
+  const costFootnote = provider.costFootnoteKey ? t(provider.costFootnoteKey) : '';
+
   return (
     <PageShell
       title={t('usage.title')}
       desc={t('usage.subtitle', { count: turnRows.length.toLocaleString() })}
       right={<RangePicker defaultValue="7d" />}
     >
-      {scan.records.length === 0 ? (
+      {allSourceRecords.length === 0 ? (
         <EmptyState title={t('common.empty.title')} desc={t('common.empty.desc')} />
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard label={t('usage.kpi.totalTokens')} value={formatTokensCompact(totals.totalTokens, locale)} />
-            <KpiCard label={t('usage.kpi.totalCost')} value={formatUSD(totals.cost)} />
+            <KpiCard
+              label={t('usage.kpi.totalCost')}
+              value={formatUSD(totals.cost)}
+              hint={costFootnote || undefined}
+            />
             <KpiCard label={t('usage.kpi.cacheSaved')} value={formatUSD(totals.saved)} accent="success" />
             <KpiCard label={t('usage.kpi.cacheHit')} value={formatPct(cacheHit, 0)} accent="success" />
           </div>
