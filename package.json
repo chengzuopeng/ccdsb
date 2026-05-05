@@ -27,6 +27,8 @@
     "bin/cli.mjs",
     ".next/standalone",
     "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
