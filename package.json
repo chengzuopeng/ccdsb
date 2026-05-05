@@ -1,6 +1,6 @@
 {
   "name": "ccgauge",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Local web dashboard for Claude Code and OpenAI Codex CLI token usage and cost",
   "keywords": [
     "claude",
@@ -15,6 +15,19 @@
     "cost"
   ],
   "license": "MIT",
+  "author": {
+    "name": "chengzuopeng",
+    "email": "mrchengzp@qq.com",
+    "url": "https://github.com/chengzuopeng"
+  },
+  "homepage": "https://github.com/chengzuopeng/ccgauge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chengzuopeng/ccgauge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chengzuopeng/ccgauge/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"

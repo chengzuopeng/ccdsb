@@ -5,10 +5,10 @@
 **Local, privacy-first usage dashboard for AI coding CLIs.** Track tokens, cost, and prompt-caching savings across **Claude Code** and **OpenAI Codex CLI** in a single browser tab — without sending a byte to anyone.
 
 [![npm version](https://img.shields.io/npm/v/ccgauge?color=4F46E5&style=flat-square)](https://www.npmjs.com/package/ccgauge)
-[![license](https://img.shields.io/npm/l/ccgauge?color=4F46E5&style=flat-square)](./LICENSE)
+[![license](https://img.shields.io/npm/l/ccgauge?color=4F46E5&style=flat-square)](https://github.com/chengzuopeng/ccgauge/blob/main/LICENSE)
 [![node](https://img.shields.io/node/v/ccgauge?color=4F46E5&style=flat-square)](#)
 
-[English](./README.md) · [简体中文](./README.zh-CN.md)
+[English](https://github.com/chengzuopeng/ccgauge/blob/main/README.md) · [简体中文](https://github.com/chengzuopeng/ccgauge/blob/main/README.zh-CN.md)
 
 </div>
 
@@ -18,7 +18,7 @@ npx ccgauge
 
 One command. ccgauge reads the JSONL session files Claude Code and Codex CLI already write to your disk, computes per-day / per-project / per-model token usage and **dollar-equivalent cost**, then opens a unified web dashboard in your browser. Switch between data sources with one click. **No login, no telemetry, no network calls.**
 
-![Overview — English / Dark](./docs/screenshots/overview-en-dark.png)
+![Overview — English / Dark](https://raw.githubusercontent.com/chengzuopeng/ccgauge/main/docs/screenshots/overview-en-dark.png)
 
 ---
 
@@ -269,4 +269,4 @@ No. ccgauge never calls upstream APIs. It reads the local JSONL transcripts thos
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT — see [LICENSE](https://github.com/chengzuopeng/ccgauge/blob/main/LICENSE).

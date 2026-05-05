@@ -5,10 +5,10 @@
 **本地、隐私优先的 AI 编程 CLI 用量看板。** 把 **Claude Code** 与 **OpenAI Codex CLI** 的 token、花费、缓存节省统统聚合到同一个浏览器页面 —— 数据全程不离开你的电脑。
 
 [![npm version](https://img.shields.io/npm/v/ccgauge?color=4F46E5&style=flat-square)](https://www.npmjs.com/package/ccgauge)
-[![license](https://img.shields.io/npm/l/ccgauge?color=4F46E5&style=flat-square)](./LICENSE)
+[![license](https://img.shields.io/npm/l/ccgauge?color=4F46E5&style=flat-square)](https://github.com/chengzuopeng/ccgauge/blob/main/LICENSE)
 [![node](https://img.shields.io/node/v/ccgauge?color=4F46E5&style=flat-square)](#)
 
-[English](./README.md) · [简体中文](./README.zh-CN.md)
+[English](https://github.com/chengzuopeng/ccgauge/blob/main/README.md) · [简体中文](https://github.com/chengzuopeng/ccgauge/blob/main/README.zh-CN.md)
 
 </div>
 
@@ -18,7 +18,7 @@ npx ccgauge
 
 一行命令。ccgauge 自动读 Claude Code 和 Codex CLI 在本地写下的 JSONL 会话文件，按 天 / 项目 / 模型 / 会话 计算 token 用量与**美元等值花费**，在浏览器里打开统一看板，顶部一键切换数据源。**无登录、无遥测、无任何外网调用。**
 
-![概览 — 中文 / Light](./docs/screenshots/overview-zh-light.png)
+![概览 — 中文 / Light](https://raw.githubusercontent.com/chengzuopeng/ccgauge/main/docs/screenshots/overview-zh-light.png)
 
 ---
 
@@ -267,4 +267,4 @@ pnpm publish --access public  # 会自动先跑 pnpm build（prepublishOnly）
 
 ## 许可证
 
-MIT —— 详见 [LICENSE](./LICENSE)。
+MIT —— 详见 [LICENSE](https://github.com/chengzuopeng/ccgauge/blob/main/LICENSE)。

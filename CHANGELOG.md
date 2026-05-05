@@ -5,6 +5,21 @@ All notable changes to **ccgauge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] — 2026-05-05
+
+### Fixed
+
+- README screenshots and the English ↔ 简体中文 cross-link now use
+  absolute GitHub URLs so the npm package page renders the hero image
+  inline and the language switcher no longer 404s. Relative paths only
+  resolve on GitHub, not on `npmjs.com`.
+
+### Added
+
+- `repository`, `homepage`, `bugs`, and `author` fields in
+  `package.json` so the npm sidebar links back to GitHub Issues / repo
+  / maintainer profile.
+
 ## [0.3.0] — 2026-05-05
 
 This release adds **OpenAI Codex CLI** as a first-class data source alongside
@@ -118,5 +133,6 @@ of HTML to the browser.
 - Initial public release as `ccgauge`: local Next.js dashboard for
   Claude Code token usage, cost, and 5-hour block tracking.
 
+[0.3.1]: https://github.com/chengzuopeng/ccgauge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.1.1...v0.2.0
