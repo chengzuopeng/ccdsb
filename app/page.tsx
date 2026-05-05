@@ -126,12 +126,18 @@ async function OverviewContent({ source }: { source: 'claude' | 'codex' }) {
 
   const costFootnote = provider.costFootnoteKey ? t(provider.costFootnoteKey) : '';
 
+  // Use the active source's stats for the overview header so users don't see
+  // global file/record counts when the dashboard is filtered to one provider.
+  const sourceStat = scan.bySource.find((s) => s.source === source);
+  const sourceFileCount = sourceStat?.filesScanned ?? 0;
+  const sourceRecordCount = sourceStat?.assistantRecords ?? records.length;
+
   return (
     <PageShell
       title={t('overview.title')}
       desc={t('overview.subtitle', {
-        count: scan.stats.assistantRecords.toLocaleString(),
-        files: scan.stats.filesScanned,
+        count: sourceRecordCount.toLocaleString(),
+        files: sourceFileCount,
         ms: scan.stats.durationMs,
       })}
     >

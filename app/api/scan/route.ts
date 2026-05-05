@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { clearScanCache, getCachedScan } from '@/lib/data-loader/scan';
+import { getCachedScan, getIndexerStatus } from '@/lib/data-loader/scan';
 import { detectAvailableProviders } from '@/lib/providers';
+import { withApiErrorHandling } from '@/lib/api/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
-  clearScanCache();
+export const POST = withApiErrorHandling(async () => {
   const result = await getCachedScan({ force: true });
   const available = await detectAvailableProviders();
   return NextResponse.json({
@@ -14,10 +14,11 @@ export async function POST() {
     stats: result.stats,
     bySource: result.bySource,
     availableProviders: available,
+    indexer: getIndexerStatus(),
   });
-}
+});
 
-export async function GET() {
+export const GET = withApiErrorHandling(async () => {
   const result = await getCachedScan();
   const available = await detectAvailableProviders();
   return NextResponse.json({
@@ -25,5 +26,6 @@ export async function GET() {
     stats: result.stats,
     bySource: result.bySource,
     availableProviders: available,
+    indexer: getIndexerStatus(),
   });
-}
+});

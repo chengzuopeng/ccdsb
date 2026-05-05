@@ -55,6 +55,7 @@ export default async function SessionDetailPage({
       model: r.model,
       input: r.usage.input_tokens,
       output: r.usage.output_tokens,
+      reasoning: r.usage.reasoning_tokens ?? 0,
       cacheRead: r.usage.cache_read_input_tokens,
       cacheCreation: r.usage.cache_creation_input_tokens,
       cost: costOfRecord(r).total,
@@ -141,6 +142,14 @@ export default async function SessionDetailPage({
                 <div>
                   <span className="text-text-tertiary">{t('session.token.out')}</span>{' '}
                   <span className="text-text-secondary">{formatTokensCompact(m.output, locale)}</span>
+                  {m.reasoning > 0 && (
+                    <span
+                      className="text-text-tertiary text-[10px] ml-1"
+                      title={t('usage.breakdown.reasoningNote')}
+                    >
+                      ({t('usage.breakdown.reasoning')} {formatTokensCompact(m.reasoning, locale)})
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span className="text-text-tertiary">{t('session.token.cacheR')}</span>{' '}

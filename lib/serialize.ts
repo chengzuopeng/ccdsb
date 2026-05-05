@@ -56,6 +56,8 @@ export interface UsageTableRow {
   outputTokens: number;
   cacheReadTokens: number;
   cacheCreationTokens: number;
+  /** Subset of outputTokens. Display-only; not double-counted in totals/cost. */
+  reasoningTokens: number;
   totalTokens: number;
   cost: number;
   costInput: number;
@@ -78,6 +80,7 @@ export function recordsToTableRows(records: AssistantRecord[]): UsageTableRow[] 
       outputTokens: r.usage.output_tokens,
       cacheReadTokens: r.usage.cache_read_input_tokens,
       cacheCreationTokens: r.usage.cache_creation_input_tokens,
+      reasoningTokens: r.usage.reasoning_tokens ?? 0,
       totalTokens:
         r.usage.input_tokens +
         r.usage.output_tokens +
@@ -105,6 +108,8 @@ export interface UsageTurnRow {
   outputTokens: number;
   cacheReadTokens: number;
   cacheCreationTokens: number;
+  /** Sum of children reasoningTokens. Subset of outputTokens. */
+  reasoningTokens: number;
   totalTokens: number;
   cost: number;
   costInput: number;
@@ -140,6 +145,7 @@ export function recordsToTurnRows(
       outputTokens: r.usage.output_tokens,
       cacheReadTokens: r.usage.cache_read_input_tokens,
       cacheCreationTokens: r.usage.cache_creation_input_tokens,
+      reasoningTokens: r.usage.reasoning_tokens ?? 0,
       totalTokens:
         r.usage.input_tokens +
         r.usage.output_tokens +
@@ -169,6 +175,7 @@ export function recordsToTurnRows(
     let outputTokens = 0;
     let cacheReadTokens = 0;
     let cacheCreationTokens = 0;
+    let reasoningTokens = 0;
     let cost = 0;
     let costInput = 0;
     let costOutput = 0;
@@ -181,6 +188,7 @@ export function recordsToTurnRows(
       outputTokens += c.outputTokens;
       cacheReadTokens += c.cacheReadTokens;
       cacheCreationTokens += c.cacheCreationTokens;
+      reasoningTokens += c.reasoningTokens;
       cost += c.cost;
       costInput += c.costInput;
       costOutput += c.costOutput;
@@ -200,6 +208,7 @@ export function recordsToTurnRows(
       outputTokens,
       cacheReadTokens,
       cacheCreationTokens,
+      reasoningTokens,
       totalTokens: inputTokens + outputTokens + cacheReadTokens + cacheCreationTokens,
       cost,
       costInput,

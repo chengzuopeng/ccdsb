@@ -3,11 +3,12 @@ import { getCachedScan } from '@/lib/data-loader/scan';
 import { blockProgress, computeBlocks } from '@/lib/blocks/compute';
 import { resolveSource, filterBySource } from '@/lib/source';
 import { getProvider } from '@/lib/providers';
+import { withApiErrorHandling } from '@/lib/api/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export const GET = withApiErrorHandling(async (req: Request) => {
   const url = new URL(req.url);
   const source = await resolveSource(url.searchParams.get('source'));
   const scan = await getCachedScan();
@@ -16,4 +17,4 @@ export async function GET(req: Request) {
   const blocks = computeBlocks(records, windowMs);
   const progress = blockProgress(records, windowMs);
   return NextResponse.json({ source, blocks, progress, windowMs });
-}
+});

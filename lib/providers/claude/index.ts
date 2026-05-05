@@ -62,6 +62,7 @@ export const claudeAdapter: ProviderAdapter = {
   displayName: { en: 'Claude', zh: 'Claude' },
   shortLabel: 'C',
   color: { fg: '#b45309', bg: '#fef3c7' },
+  parserVersion: 'claude-v1',
   capabilities: {
     hasCacheCreation: true,
     hasReasoningTokens: false,

@@ -33,6 +33,14 @@ export interface ProviderAdapter {
   shortLabel: string;
   color: { fg: string; bg: string };
   capabilities: ProviderCapabilities;
+  /**
+   * Bump this string whenever `parseFile` semantics change in a way that
+   * would produce different `AssistantRecord`s for the same JSONL input
+   * (token counting, field mapping, dedup keys, etc.). Persisted index
+   * entries with a non-matching parserVersion are re-parsed on startup.
+   * Format suggestion: `<source>-vN[-tag]`, e.g. `codex-v2-totaldelta`.
+   */
+  parserVersion: string;
 
   getDirs(): string[];
   shouldSkipDir(name: string): boolean;

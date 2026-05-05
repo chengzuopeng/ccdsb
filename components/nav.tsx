@@ -63,6 +63,7 @@ export function Nav({ availableProviders, initialSource, providerInfos }: Props)
               <Link
                 key={it.href}
                 href={it.href}
+                prefetch={false}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'px-2.5 sm:px-3 py-1.5 text-sm rounded-button font-medium transition-colors whitespace-nowrap shrink-0',

@@ -1,4 +1,4 @@
-import { getCachedScan, getScannedDirsBySource } from '@/lib/data-loader/scan';
+import { getCachedScan, getScannedDirsBySource, getIndexerStatus } from '@/lib/data-loader/scan';
 import { BUILTIN_PRICING } from '@/lib/pricing/builtin';
 import { BUILTIN_PRICING_OPENAI } from '@/lib/providers/codex/pricing';
 import { listProviders, detectAvailableProviders } from '@/lib/providers';
@@ -23,6 +23,7 @@ export default async function SettingsPage() {
   const dirsBySource = getScannedDirsBySource();
   const available = await detectAvailableProviders();
   const providers = listProviders();
+  const indexerStatus = getIndexerStatus();
 
   const pricingTablesBySource: Record<ProviderId, PricingRow[]> = {
     claude: Object.entries(BUILTIN_PRICING).map(([model, p]) => ({
@@ -139,13 +140,48 @@ export default async function SettingsPage() {
         </div>
       </Section>
 
-      <Section title={t('settings.scanStats.title')}>
+      <Section title={t('settings.scanStats.title')} desc={t('settings.indexer.desc')}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <Stat label={t('settings.scanStats.files')} value={String(scan.stats.filesScanned)} />
           <Stat label={t('settings.scanStats.records')} value={scan.stats.recordsParsed.toLocaleString()} />
           <Stat label={t('settings.scanStats.assistant')} value={scan.stats.assistantRecords.toLocaleString()} />
-          <Stat label={t('settings.scanStats.duration')} value={`${scan.stats.durationMs} ms`} />
+          <Stat
+            label={t('settings.indexer.lastIndexedAt')}
+            value={
+              indexerStatus.lastIndexedAt
+                ? new Date(indexerStatus.lastIndexedAt).toLocaleTimeString()
+                : '—'
+            }
+          />
+          <Stat
+            label={t('settings.indexer.indexDuration')}
+            value={indexerStatus.indexDurationMs != null ? `${indexerStatus.indexDurationMs} ms` : '—'}
+          />
+          <Stat
+            label={t('settings.indexer.watchers')}
+            value={String(indexerStatus.watchers)}
+          />
+          <Stat
+            label={t('settings.indexer.loadedFromDisk')}
+            value={indexerStatus.loadedFromDisk ? t('common.yes') : t('common.no')}
+          />
+          <Stat
+            label={t('settings.indexer.status')}
+            value={indexerStatus.isIndexing ? t('settings.indexer.indexing') : t('settings.indexer.idle')}
+          />
         </div>
+        {indexerStatus.errors.length > 0 && (
+          <div className="mt-4 text-xs text-warning space-y-1">
+            <div className="font-medium">{t('settings.indexer.recentErrors')}</div>
+            <ul className="list-disc list-inside space-y-0.5 num-mono text-text-tertiary">
+              {indexerStatus.errors.slice(-3).map((e, i) => (
+                <li key={i} className="truncate" title={e}>
+                  {e}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Section>
 
       {providers.map((p) => {

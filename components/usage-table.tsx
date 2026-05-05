@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   formatUSDPrecise,
@@ -16,18 +16,7 @@ import { useT, useI18n } from '@/lib/i18n/context';
 import type { Locale } from '@/lib/i18n/dict';
 import { HoverCard } from '@/components/hover-card';
 import { ScrollShadows } from '@/components/scroll-shadows';
-
-const PAGE_SIZE = 25;
-
-type SortKey =
-  | 'timestamp'
-  | 'cost'
-  | 'inputTokens'
-  | 'outputTokens'
-  | 'cacheReadTokens'
-  | 'cacheCreationTokens'
-  | 'totalTokens'
-  | 'callCount';
+import type { SortKey } from '@/lib/usage-query';
 
 type ColumnId =
   | 'time'
@@ -96,98 +85,28 @@ function loadVisible(): Record<ColumnId, boolean> {
   }
 }
 
-export interface UsageTableMeta {
-  range?: string;
-  granularity?: string;
-  models?: string[];
-  projects?: string[];
+interface UsageTableProps {
+  rows: UsageTurnRow[];
+  totalCount: number;
+  page: number;
+  pageCount: number;
+  sort: { key: SortKey; dir: 'asc' | 'desc' };
+  query: string;
 }
 
-const VALID_SORT_KEYS: SortKey[] = [
-  'timestamp',
-  'cost',
-  'inputTokens',
-  'outputTokens',
-  'cacheReadTokens',
-  'cacheCreationTokens',
-  'totalTokens',
-  'callCount',
-];
-
-export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageTableMeta }) {
+export function UsageTable({ rows, totalCount, page, pageCount, sort, query }: UsageTableProps) {
   const t = useT();
   const { locale } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
 
-  const urlSort = params.get('sort');
-  const urlDir = params.get('dir');
-  const urlPage = Number(params.get('page') || '1');
-  const urlQuery = params.get('q') || '';
-
-  const initialSortKey: SortKey =
-    urlSort && (VALID_SORT_KEYS as string[]).includes(urlSort) ? (urlSort as SortKey) : 'timestamp';
-  const initialSortDir: 'asc' | 'desc' = urlDir === 'asc' ? 'asc' : 'desc';
-  const initialPage = Number.isFinite(urlPage) && urlPage > 0 ? urlPage - 1 : 0;
-
-  const [page, setPageState] = useState(initialPage);
-  const [sortKey, setSortKeyState] = useState<SortKey>(initialSortKey);
-  const [sortDir, setSortDirState] = useState<'asc' | 'desc'>(initialSortDir);
-  const [query, setQueryState] = useState(urlQuery);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [visible, setVisible] = useState<Record<ColumnId, boolean>>(defaultVisible);
   const [colsOpen, setColsOpen] = useState(false);
+  const [queryInput, setQueryInput] = useState(query);
   const colsRef = useRef<HTMLDivElement>(null);
-
-  const writeUrl = (
-    next: { sort?: SortKey; dir?: 'asc' | 'desc'; page?: number; q?: string },
-    replace = false,
-  ) => {
-    const sp = new URLSearchParams(params.toString());
-    const apply = (k: string, v: string | undefined, def?: string) => {
-      if (v === undefined) return;
-      if (!v || v === def) sp.delete(k);
-      else sp.set(k, v);
-    };
-    if (next.sort !== undefined) apply('sort', next.sort, 'timestamp');
-    if (next.dir !== undefined) apply('dir', next.dir, 'desc');
-    if (next.page !== undefined) apply('page', next.page > 0 ? String(next.page + 1) : '', '');
-    if (next.q !== undefined) apply('q', next.q.trim(), '');
-    const qs = sp.toString();
-    const url = qs ? `${pathname}?${qs}` : pathname;
-    if (replace) router.replace(url);
-    else router.replace(url);
-  };
-
-  function setPage(n: number) {
-    setPageState(n);
-    writeUrl({ page: n });
-  }
-
-  function applySort(key: SortKey) {
-    let nextKey = key;
-    let nextDir: 'asc' | 'desc' = 'desc';
-    if (sortKey === key) {
-      nextKey = key;
-      nextDir = sortDir === 'asc' ? 'desc' : 'asc';
-    }
-    setSortKeyState(nextKey);
-    setSortDirState(nextDir);
-    setPageState(0);
-    writeUrl({ sort: nextKey, dir: nextDir, page: 0 });
-  }
-
-  // Debounce query → URL
-  const queryTimer = useRef<number | null>(null);
-  function setQuery(q: string) {
-    setQueryState(q);
-    setPageState(0);
-    if (queryTimer.current) window.clearTimeout(queryTimer.current);
-    queryTimer.current = window.setTimeout(() => {
-      writeUrl({ q, page: 0 });
-    }, 250);
-  }
+  const queryDebounceRef = useRef<number | null>(null);
 
   useEffect(() => {
     setVisible(loadVisible());
@@ -200,6 +119,10 @@ export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageT
   }, [visible]);
 
   useEffect(() => {
+    setQueryInput(query);
+  }, [query]);
+
+  useEffect(() => {
     function onClick(e: MouseEvent) {
       if (colsRef.current && !colsRef.current.contains(e.target as Node)) setColsOpen(false);
     }
@@ -207,38 +130,49 @@ export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageT
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  const activeColumns = COLUMNS.filter((c) => visible[c.id]);
+  useEffect(() => {
+    return () => {
+      // Cancel any pending debounce so navigating away mid-typing doesn't
+      // fire a stale router.push that would yank the user back to /usage
+      // or stomp on whatever URL they're now on.
+      if (queryDebounceRef.current) {
+        window.clearTimeout(queryDebounceRef.current);
+        queryDebounceRef.current = null;
+      }
+    };
+  }, []);
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return rows;
-    const q = query.toLowerCase();
-    return rows.filter(
-      (r) =>
-        r.models.some((m) => m.toLowerCase().includes(q)) ||
-        r.cwd.toLowerCase().includes(q) ||
-        r.sessionId.toLowerCase().includes(q) ||
-        r.toolNames.some((tool) => tool.toLowerCase().includes(q)) ||
-        r.userText.toLowerCase().includes(q),
-    );
-  }, [rows, query]);
+  function pushParams(updates: Record<string, string | undefined>): void {
+    const sp = new URLSearchParams(params.toString());
+    for (const [k, v] of Object.entries(updates)) {
+      if (v === undefined || v === '') sp.delete(k);
+      else sp.set(k, v);
+    }
+    const qs = sp.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  }
 
-  const sorted = useMemo(() => {
-    const arr = [...filtered];
-    arr.sort((a, b) => {
-      const av = sortKey === 'timestamp' ? a.endTimestamp : (a[sortKey] as number);
-      const bv = sortKey === 'timestamp' ? b.endTimestamp : (b[sortKey] as number);
-      if (av === bv) return 0;
-      if (sortDir === 'asc') return av < bv ? -1 : 1;
-      return av < bv ? 1 : -1;
+  function setQuery(q: string) {
+    setQueryInput(q);
+    if (queryDebounceRef.current) window.clearTimeout(queryDebounceRef.current);
+    queryDebounceRef.current = window.setTimeout(() => {
+      pushParams({ q: q.trim() || undefined, page: undefined });
+    }, 300);
+  }
+
+  function applySort(key: SortKey) {
+    let nextDir: 'asc' | 'desc' = 'desc';
+    if (sort.key === key) nextDir = sort.dir === 'asc' ? 'desc' : 'asc';
+    pushParams({
+      sort: key === 'timestamp' ? undefined : key,
+      dir: nextDir === 'desc' ? undefined : nextDir,
+      page: undefined,
     });
-    return arr;
-  }, [filtered, sortKey, sortDir]);
+  }
 
-  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount - 1);
-  const slice = sorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
-
-  const toggleSort = applySort;
+  function setPage(n: number) {
+    pushParams({ page: n > 0 ? String(n + 1) : undefined });
+  }
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
@@ -250,59 +184,11 @@ export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageT
   }
 
   function exportCsv() {
-    const headers = [
-      'turn_id',
-      'timestamp',
-      'model',
-      'project',
-      'session',
-      'input',
-      'output',
-      'cache_read',
-      'cache_create',
-      'total_tokens',
-      'cost',
-      'tools',
-    ];
-    const lines: string[] = [];
-    lines.push(`# generated_at=${new Date().toISOString()}`);
-    if (meta?.range) lines.push(`# range=${meta.range}`);
-    if (meta?.granularity) lines.push(`# granularity=${meta.granularity}`);
-    if (meta?.models?.length) lines.push(`# models=${meta.models.join(';')}`);
-    if (meta?.projects?.length) lines.push(`# projects=${meta.projects.map((p) => p.replace(/[,;]/g, ' ')).join(';')}`);
-    if (query.trim()) lines.push(`# search=${query.trim()}`);
-    lines.push(`# turns=${sorted.length}`);
-    lines.push(`# rows=${sorted.reduce((s, t) => s + t.callCount, 0)}`);
-    lines.push(headers.join(','));
-    for (const turn of sorted) {
-      for (const r of turn.children) {
-        lines.push(
-          [
-            turn.turnId,
-            r.timestamp,
-            r.model,
-            csvEscape(r.cwd),
-            r.sessionId,
-            r.inputTokens,
-            r.outputTokens,
-            r.cacheReadTokens,
-            r.cacheCreationTokens,
-            r.totalTokens,
-            r.cost.toFixed(6),
-            csvEscape(r.toolNames.join(';')),
-          ].join(','),
-        );
-      }
-    }
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ccgauge-usage-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const sp = new URLSearchParams(params.toString());
+    window.location.href = `/api/export/usage?${sp.toString()}`;
   }
 
+  const activeColumns = COLUMNS.filter((c) => visible[c.id]);
   const colSpan = activeColumns.length + 1;
   const visibleCount = activeColumns.length;
 
@@ -310,16 +196,14 @@ export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageT
     <div>
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <input
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-          }}
+          value={queryInput}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder={t('common.searchPlaceholder')}
           className="px-3 py-1.5 text-sm rounded-button border border-border bg-bg-surface focus:outline-none focus:border-border-hi w-72 placeholder:text-text-tertiary text-text-primary"
         />
         <div className="flex items-center gap-3">
           <span className="text-xs text-text-tertiary tabular-nums">
-            {t('common.rows', { count: sorted.length.toLocaleString() })}
+            {t('common.rows', { count: totalCount.toLocaleString() })}
           </span>
           <div ref={colsRef} className="relative">
             <button onClick={() => setColsOpen((o) => !o)} className="btn">
@@ -377,9 +261,9 @@ export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageT
                   <Th
                     key={c.id}
                     align={c.align}
-                    sorted={c.sortKey ? sortKey === c.sortKey : false}
-                    dir={sortDir}
-                    onClick={c.sortKey ? () => toggleSort(c.sortKey!) : undefined}
+                    sorted={c.sortKey ? sort.key === c.sortKey : false}
+                    dir={sort.dir}
+                    onClick={c.sortKey ? () => applySort(c.sortKey!) : undefined}
                   >
                     {t(c.labelKey)}
                   </Th>
@@ -387,7 +271,7 @@ export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageT
               </tr>
             </thead>
             <tbody>
-              {slice.map((turn) => {
+              {rows.map((turn) => {
                 const isOpen = expanded.has(turn.turnId);
                 const userText = turn.userText.trim() || t('usage.turn.noPrompt');
                 return (
@@ -405,7 +289,7 @@ export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageT
                   />
                 );
               })}
-              {slice.length === 0 && (
+              {rows.length === 0 && (
                 <tr>
                   <td colSpan={colSpan} className="px-3 py-8 text-center text-text-tertiary text-sm">
                     {t('common.noMatchingRows')}
@@ -419,28 +303,28 @@ export function UsageTable({ rows, meta }: { rows: UsageTurnRow[]; meta?: UsageT
 
       {pageCount > 1 && (
         <div className="flex items-center justify-between mt-3 text-xs text-text-secondary">
-          <span>{t('common.pageOf', { page: safePage + 1, total: pageCount })}</span>
+          <span>{t('common.pageOf', { page: page + 1, total: pageCount })}</span>
           <div className="flex items-center gap-2">
-            <button onClick={() => setPage(0)} disabled={safePage === 0} className="btn-ghost disabled:opacity-40">
+            <button onClick={() => setPage(0)} disabled={page === 0} className="btn-ghost disabled:opacity-40">
               {t('common.first')}
             </button>
             <button
-              onClick={() => setPage(safePage - 1)}
-              disabled={safePage === 0}
+              onClick={() => setPage(page - 1)}
+              disabled={page === 0}
               className="btn-ghost disabled:opacity-40"
             >
               {t('common.prev')}
             </button>
             <button
-              onClick={() => setPage(safePage + 1)}
-              disabled={safePage >= pageCount - 1}
+              onClick={() => setPage(page + 1)}
+              disabled={page >= pageCount - 1}
               className="btn-ghost disabled:opacity-40"
             >
               {t('common.next')}
             </button>
             <button
               onClick={() => setPage(pageCount - 1)}
-              disabled={safePage >= pageCount - 1}
+              disabled={page >= pageCount - 1}
               className="btn-ghost disabled:opacity-40"
             >
               {t('common.last')}
@@ -685,6 +569,7 @@ type BreakdownInput = Pick<
   | 'outputTokens'
   | 'cacheReadTokens'
   | 'cacheCreationTokens'
+  | 'reasoningTokens'
   | 'totalTokens'
   | 'cost'
   | 'costInput'
@@ -752,16 +637,30 @@ function TokenBreakdown({
           </span>
           {items.map((it) => (
             <Fragment key={it.key}>
-              <span className="inline-flex items-center gap-1.5 text-text-secondary">
-                <span className={cn('w-2 h-2 rounded-sm shrink-0', it.dot)} />
+              <span className="inline-flex items-center gap-2 text-text-secondary">
+                <span className={cn('w-2 h-2 rounded-sm', it.dot)} />
                 {it.label}
               </span>
               <span className={cn('num-mono text-right', it.tone)}>
                 {formatTokensCompact(it.tokens, locale)}
               </span>
               <span className="num-mono text-right text-text-secondary">
-                {it.cost > 0 ? formatUSDPrecise(it.cost) : '—'}
+                {formatUSDPrecise(it.cost)}
               </span>
+              {it.key === 'output' && row.reasoningTokens > 0 && (
+                <Fragment key="reasoning-detail">
+                  <span className="inline-flex items-center gap-2 text-text-tertiary pl-4 text-[11px]">
+                    <span className="text-text-tertiary">↳</span>
+                    {t('usage.breakdown.reasoning')}
+                  </span>
+                  <span className="num-mono text-right text-text-tertiary text-[11px]">
+                    {formatTokensCompact(row.reasoningTokens, locale)}
+                  </span>
+                  <span className="text-right text-text-tertiary text-[11px]">
+                    {t('usage.breakdown.reasoningNote')}
+                  </span>
+                </Fragment>
+              )}
             </Fragment>
           ))}
         </div>
@@ -807,11 +706,4 @@ function Th({
       </span>
     </th>
   );
-}
-
-function csvEscape(s: string): string {
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
 }

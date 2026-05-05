@@ -3,7 +3,7 @@ import { aggregateByTime, aggregateTotals, type Granularity } from '@/lib/aggreg
 import { Section, PageShell, EmptyState } from '@/components/section';
 import { TokenStackChart, type TokenStackDatum } from '@/components/charts/token-stack-chart';
 import { UsageTable } from '@/components/usage-table';
-import { recordsToTurnRows } from '@/lib/serialize';
+import { recordsToTurnRows, type UsageTurnRow } from '@/lib/serialize';
 import { RangePicker } from '@/components/range-picker';
 import { rangeToDates } from '@/lib/range';
 import { GranularityPicker } from '@/components/granularity-picker';
@@ -16,14 +16,54 @@ import { tFn } from '@/lib/i18n/dict';
 import { getServerLocale } from '@/lib/i18n/server';
 import { resolveSource, filterBySource } from '@/lib/source';
 import { getProvider } from '@/lib/providers';
+import {
+  USAGE_PAGE_SIZE,
+  isSortKey,
+  parseUsagePageParam,
+  type SortKey,
+} from '@/lib/usage-query';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+function filterTurnsByQuery(turns: UsageTurnRow[], q: string): UsageTurnRow[] {
+  if (!q) return turns;
+  const needle = q.toLowerCase();
+  return turns.filter(
+    (t) =>
+      t.userText.toLowerCase().includes(needle) ||
+      t.cwd.toLowerCase().includes(needle) ||
+      t.sessionId.toLowerCase().includes(needle) ||
+      t.models.some((m) => m.toLowerCase().includes(needle)) ||
+      t.toolNames.some((tool) => tool.toLowerCase().includes(needle)),
+  );
+}
+
+function sortTurns(turns: UsageTurnRow[], key: SortKey, dir: 'asc' | 'desc'): UsageTurnRow[] {
+  const arr = turns.slice();
+  arr.sort((a, b) => {
+    const av = key === 'timestamp' ? a.endTimestamp : (a[key] as number);
+    const bv = key === 'timestamp' ? b.endTimestamp : (b[key] as number);
+    if (av === bv) return 0;
+    return (dir === 'asc' ? 1 : -1) * (av < bv ? -1 : 1);
+  });
+  return arr;
+}
+
 export default async function UsagePage({
   searchParams,
 }: {
-  searchParams: Promise<{ source?: string; range?: string; gran?: string; models?: string; projects?: string }>;
+  searchParams: Promise<{
+    source?: string;
+    range?: string;
+    gran?: string;
+    models?: string;
+    projects?: string;
+    q?: string;
+    sort?: string;
+    dir?: string;
+    page?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const source = await resolveSource(sp.source);
@@ -31,6 +71,10 @@ export default async function UsagePage({
   const gran = (sp.gran || (range === '1d' ? 'hour' : 'day')) as Granularity;
   const models = sp.models ? sp.models.split(',').filter(Boolean) : [];
   const projects = sp.projects ? sp.projects.split(',').filter(Boolean) : [];
+  const query = (sp.q || '').trim();
+  const sortKey: SortKey = sp.sort && isSortKey(sp.sort) ? sp.sort : 'timestamp';
+  const sortDir: 'asc' | 'desc' = sp.dir === 'asc' ? 'asc' : 'desc';
+  const pageNum = parseUsagePageParam(sp.page);
 
   const t = await getServerT();
   const locale = await getServerLocale();
@@ -66,7 +110,13 @@ export default async function UsagePage({
     return true;
   });
 
-  const turnRows = recordsToTurnRows(filteredRecords, allSourceUsers, scan.parentMap);
+  const allTurns = recordsToTurnRows(filteredRecords, allSourceUsers, scan.parentMap);
+  const searched = filterTurnsByQuery(allTurns, query);
+  const sorted = sortTurns(searched, sortKey, sortDir);
+  const totalCount = sorted.length;
+  const pageCount = Math.max(1, Math.ceil(totalCount / USAGE_PAGE_SIZE));
+  const safePage = Math.min(pageNum, pageCount - 1);
+  const pageSlice = sorted.slice(safePage * USAGE_PAGE_SIZE, (safePage + 1) * USAGE_PAGE_SIZE);
 
   const allModels = Array.from(new Set(allSourceRecords.map((r) => r.model))).sort();
   const allProjects = Array.from(new Set(allSourceRecords.map((r) => r.cwd).filter(Boolean))).sort();
@@ -83,7 +133,7 @@ export default async function UsagePage({
   return (
     <PageShell
       title={t('usage.title')}
-      desc={t('usage.subtitle', { count: turnRows.length.toLocaleString() })}
+      desc={t('usage.subtitle', { count: totalCount.toLocaleString() })}
       right={<RangePicker defaultValue="7d" />}
     >
       {allSourceRecords.length === 0 ? (
@@ -117,8 +167,12 @@ export default async function UsagePage({
 
           <Section title={t('usage.requests.title')} desc={t('usage.requests.desc')}>
             <UsageTable
-              rows={turnRows}
-              meta={{ range, granularity: gran, models, projects }}
+              rows={pageSlice}
+              totalCount={totalCount}
+              page={safePage}
+              pageCount={pageCount}
+              sort={{ key: sortKey, dir: sortDir }}
+              query={query}
             />
           </Section>
         </>

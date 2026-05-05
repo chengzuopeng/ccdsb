@@ -103,6 +103,12 @@ export interface AssistantRecord {
   usage: Required<Pick<Usage, 'input_tokens' | 'output_tokens' | 'cache_creation_input_tokens' | 'cache_read_input_tokens'>> & {
     cache_creation_5m: number;
     cache_creation_1h: number;
+    /**
+     * Reasoning tokens (OpenAI o-series / Codex). For display only — these
+     * are already included in `output_tokens` and billed at the output
+     * rate. Anthropic models leave this undefined.
+     */
+    reasoning_tokens?: number;
   };
   toolNames: string[];
   hasThinking: boolean;

@@ -27,6 +27,11 @@ export const codexAdapter: ProviderAdapter = {
   displayName: { en: 'Codex', zh: 'Codex' },
   shortLabel: 'X',
   color: { fg: '#047857', bg: '#d1fae5' },
+  // v2: switched from last_token_usage to total_token_usage delta (fixed
+  //     ~26% over-counting from duplicate/refresh token_count events).
+  // v3: split reasoning_tokens out as a display-only breakdown alongside
+  //     output_tokens (which still includes reasoning for billing).
+  parserVersion: 'codex-v3-reasoning-detail',
   capabilities: {
     hasCacheCreation: false,
     hasReasoningTokens: true,

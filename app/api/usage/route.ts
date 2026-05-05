@@ -9,11 +9,12 @@ import {
 } from '@/lib/aggregator';
 import { rangeToDates } from '@/lib/range';
 import { resolveSource, filterBySource } from '@/lib/source';
+import { withApiErrorHandling } from '@/lib/api/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export const GET = withApiErrorHandling(async (req: Request) => {
   const url = new URL(req.url);
   const source = await resolveSource(url.searchParams.get('source'));
   const range = url.searchParams.get('range') || 'all';
@@ -50,4 +51,4 @@ export async function GET(req: Request) {
     });
   }
   return NextResponse.json({ error: 'invalid view' }, { status: 400 });
-}
+});

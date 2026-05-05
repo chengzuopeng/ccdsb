@@ -1,9 +1,18 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, promises as fs } from 'node:fs';
 import readline from 'node:readline';
 import type { AssistantRecord, UserRecord } from '@/lib/types';
 import type { ParsedFile } from '../types';
 
 const TEXT_PREVIEW_MAX = 200;
+
+async function fileMtimeIso(file: string): Promise<string> {
+  try {
+    const stat = await fs.stat(file);
+    return new Date(stat.mtimeMs).toISOString();
+  } catch {
+    return new Date().toISOString();
+  }
+}
 
 interface CodexEvent {
   timestamp?: string;
@@ -60,6 +69,23 @@ export async function parseCodexJsonlFile(file: string): Promise<ParsedFile> {
   let defaultCwd = '';
   let userIdx = 0;
   let assistantIdx = 0;
+  // Track the cumulative `total_token_usage` we've already accounted for so
+  // we can derive each emitted record's tokens as a forward-only delta.
+  // Codex sometimes emits multiple token_count events that re-state the
+  // same totals (refresh / partial-state events); using `last_token_usage`
+  // directly leads to ~26% over-counting. Computing the delta against the
+  // previous total ignores duplicates and clamps backwards moves to 0.
+  let prevTotal: { input: number; cached: number; output: number; reasoning: number } | null = null;
+  // Some events (especially older Codex versions or replay/import paths) drop
+  // the top-level `timestamp` field. Downstream sorting and time bucketing
+  // assume an ISO string, so we keep a fallback chain:
+  //   1. event.timestamp                              (preferred)
+  //   2. session_meta.payload.timestamp               (file-level baseline)
+  //   3. last seen valid timestamp                    (monotonic continuity)
+  //   4. file mtime                                   (file-level last resort)
+  //   5. now()                                        (final fallback)
+  const fileMtime = await fileMtimeIso(file);
+  let lastValidTs = fileMtime;
 
   const turn: TurnState = {
     turnId: null,
@@ -81,12 +107,17 @@ export async function parseCodexJsonlFile(file: string): Promise<ParsedFile> {
     }
     if (!evt || typeof evt !== 'object' || !evt.type) continue;
     const payload = (evt.payload ?? {}) as Record<string, unknown>;
-    const ts = asString(evt.timestamp);
+    const rawTs = asString(evt.timestamp);
+    const ts = rawTs || lastValidTs;
+    if (rawTs) lastValidTs = rawTs;
 
     if (evt.type === 'session_meta') {
       sessionId = asString(payload.id);
       defaultCwd = asString(payload.cwd);
       cliVersion = asString(payload.cli_version) || undefined;
+      // Use session_meta.payload.timestamp as a baseline if event-level was missing.
+      const metaTs = asString(payload.timestamp);
+      if (metaTs) lastValidTs = metaTs;
       if (!turn.cwd) turn.cwd = defaultCwd;
       continue;
     }
@@ -143,12 +174,76 @@ export async function parseCodexJsonlFile(file: string): Promise<ParsedFile> {
       if (sub === 'token_count') {
         const info = payload.info as Record<string, unknown> | null | undefined;
         if (!info) continue;
+        const total = info.total_token_usage as Record<string, unknown> | undefined;
         const last = info.last_token_usage as Record<string, unknown> | undefined;
-        if (!last) continue;
-        const cached = asNumber(last.cached_input_tokens);
-        const rawInput = asNumber(last.input_tokens);
-        const output = asNumber(last.output_tokens);
-        const reasoning = asNumber(last.reasoning_output_tokens);
+        // Prefer total_token_usage delta; fall back to last_token_usage only
+        // for events that don't include totals (very old codex versions).
+        const cur = total
+          ? {
+              input: asNumber(total.input_tokens),
+              cached: asNumber(total.cached_input_tokens),
+              output: asNumber(total.output_tokens),
+              reasoning: asNumber(total.reasoning_output_tokens),
+            }
+          : null;
+
+        let deltaInput: number;
+        let deltaCached: number;
+        let deltaOutput: number;
+        let deltaReasoning: number;
+
+        if (cur) {
+          if (prevTotal === null) {
+            // First token_count in this file represents the running total so far.
+            deltaInput = cur.input;
+            deltaCached = cur.cached;
+            deltaOutput = cur.output;
+            deltaReasoning = cur.reasoning;
+          } else {
+            deltaInput = Math.max(0, cur.input - prevTotal.input);
+            deltaCached = Math.max(0, cur.cached - prevTotal.cached);
+            deltaOutput = Math.max(0, cur.output - prevTotal.output);
+            deltaReasoning = Math.max(0, cur.reasoning - prevTotal.reasoning);
+          }
+          // No forward progress at all — duplicate/refresh event, skip.
+          if (
+            deltaInput === 0 &&
+            deltaCached === 0 &&
+            deltaOutput === 0 &&
+            deltaReasoning === 0
+          ) {
+            continue;
+          }
+          // Per-field max guards against partial-state refreshes that move
+          // some counters backward without a real "tokens lost" signal.
+          if (prevTotal === null) {
+            prevTotal = { ...cur };
+          } else {
+            prevTotal = {
+              input: Math.max(prevTotal.input, cur.input),
+              cached: Math.max(prevTotal.cached, cur.cached),
+              output: Math.max(prevTotal.output, cur.output),
+              reasoning: Math.max(prevTotal.reasoning, cur.reasoning),
+            };
+          }
+        } else if (last) {
+          // No total_token_usage on this event — treat last_token_usage as the
+          // delta, with no dedup. Old codex format / legacy fixture path.
+          deltaInput = asNumber(last.input_tokens);
+          deltaCached = asNumber(last.cached_input_tokens);
+          deltaOutput = asNumber(last.output_tokens);
+          deltaReasoning = asNumber(last.reasoning_output_tokens);
+          if (
+            deltaInput === 0 &&
+            deltaCached === 0 &&
+            deltaOutput === 0 &&
+            deltaReasoning === 0
+          ) {
+            continue;
+          }
+        } else {
+          continue;
+        }
 
         const uuid = `${sessionId}::a${assistantIdx++}`;
         const requestId = turn.turnId
@@ -168,12 +263,16 @@ export async function parseCodexJsonlFile(file: string): Promise<ParsedFile> {
           model: turn.model || 'gpt-unknown',
           messageId: requestId,
           usage: {
-            input_tokens: Math.max(0, rawInput - cached),
-            output_tokens: output + reasoning,
+            input_tokens: Math.max(0, deltaInput - deltaCached),
+            // output_tokens already includes reasoning (per OpenAI API
+            // billing convention). reasoning_tokens below is a display-only
+            // breakdown that MUST NOT be added again to total/cost.
+            output_tokens: deltaOutput + deltaReasoning,
             cache_creation_input_tokens: 0,
-            cache_read_input_tokens: cached,
+            cache_read_input_tokens: deltaCached,
             cache_creation_5m: 0,
             cache_creation_1h: 0,
+            reasoning_tokens: deltaReasoning,
           },
           toolNames: [...turn.toolNames],
           hasThinking: turn.hasThinking,

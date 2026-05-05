@@ -27,9 +27,21 @@ const a = parsed.assistant;
 const sumInput = a.reduce((s, r) => s + r.usage.input_tokens, 0);
 const sumCacheRead = a.reduce((s, r) => s + r.usage.cache_read_input_tokens, 0);
 const sumOutput = a.reduce((s, r) => s + r.usage.output_tokens, 0);
+const sumReasoning = a.reduce((s, r) => s + (r.usage.reasoning_tokens ?? 0), 0);
 assert.equal(sumInput, 1500, 'input_tokens after subtracting cached');
 assert.equal(sumCacheRead, 2000, 'cached_input_tokens flows to cache_read');
 assert.equal(sumOutput, 260, 'output + reasoning merged into output_tokens');
+// Each emitted record should also expose reasoning as a display-only breakdown
+// (subset of output_tokens; not counted again in totals/cost).
+assert.equal(sumReasoning, 60, 'reasoning_tokens (display-only) is present per record');
+for (const rec of a) {
+  if (rec.usage.reasoning_tokens && rec.usage.reasoning_tokens > 0) {
+    assert.ok(
+      rec.usage.output_tokens >= rec.usage.reasoning_tokens,
+      `output_tokens (${rec.usage.output_tokens}) must include reasoning_tokens (${rec.usage.reasoning_tokens})`,
+    );
+  }
+}
 
 assert.equal(a[0].model, 'gpt-5');
 assert.equal(a[1].model, 'gpt-5');
