@@ -42,31 +42,38 @@ export function TokenStackChart({ data, height = 'h-72' }: { data: TokenStackDat
   return (
     <div className={`${height} w-full`}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 12, right: 8, bottom: 4, left: 8 }}>
-          <CartesianGrid stroke="rgb(var(--chart-grid))" strokeDasharray="3 3" vertical={false} />
+        <BarChart data={data} margin={{ top: 12, right: 8, bottom: 4, left: 8 }} barCategoryGap="22%">
+          <CartesianGrid
+            stroke="rgb(var(--chart-grid))"
+            strokeOpacity={0.6}
+            strokeDasharray="3 3"
+            vertical={false}
+          />
           <XAxis
             dataKey="label"
             tick={{ fill: 'rgb(var(--chart-axis))', fontSize: 11 }}
             tickLine={false}
-            axisLine={{ stroke: 'rgb(var(--chart-grid))' }}
+            axisLine={false}
             interval="preserveStartEnd"
             minTickGap={32}
+            tickMargin={8}
           />
           <YAxis
             tickFormatter={(v) => formatTokensCompact(Number(v), locale)}
             tick={{ fill: 'rgb(var(--chart-axis))', fontSize: 11 }}
             tickLine={false}
-            axisLine={{ stroke: 'rgb(var(--chart-grid))' }}
+            axisLine={false}
             width={56}
+            tickMargin={4}
           />
           <Tooltip
             content={<TokenStackTooltip />}
-            cursor={{ fill: 'rgb(var(--text-primary) / 0.04)' }}
+            cursor={{ fill: 'rgb(var(--text-primary) / 0.05)', radius: 4 }}
           />
           <Bar dataKey="input" stackId="a" fill={COLORS.input} isAnimationActive={false} />
           <Bar dataKey="cacheCreation" stackId="a" fill={COLORS.cacheCreation} isAnimationActive={false} />
           <Bar dataKey="cacheRead" stackId="a" fill={COLORS.cacheRead} isAnimationActive={false} />
-          <Bar dataKey="output" stackId="a" fill={COLORS.output} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          <Bar dataKey="output" stackId="a" fill={COLORS.output} radius={[4, 4, 0, 0]} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
       <div className="flex items-center flex-wrap justify-center gap-4 text-xs text-text-secondary mt-2">
@@ -99,7 +106,7 @@ function TokenStackTooltip(props: {
   const d = props.payload[0].payload;
   const total = d.input + d.output + d.cacheRead + d.cacheCreation;
   return (
-    <div className="card border-border-hi shadow-lg p-3 text-xs min-w-[200px]">
+    <div className="card-elevated border border-border-hi rounded-card p-3 text-xs min-w-[200px]">
       <div className="font-medium text-text-primary mb-2">{props.label}</div>
       <div className="space-y-1">
         <Row color={COLORS.input} label={t('chart.legend.input')} value={d.input} locale={locale} />

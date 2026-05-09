@@ -25,13 +25,14 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        'card card-pad flex flex-col gap-2 min-h-[128px] transition-colors',
-        accent === 'brand' && 'border-brand/30',
-        accent === 'success' && 'border-success/30',
-        accent === 'warning' && 'border-warning/30',
+        'card card-pad relative flex flex-col gap-2 min-h-[132px] overflow-hidden',
+        'transition-[box-shadow,border-color,transform] duration-150 ease-out-soft',
+        'hover:shadow-card-hover hover:-translate-y-px',
+        accent !== 'default' && 'pt-[18px] sm:pt-[22px]', // make room for accent bar
         className,
       )}
     >
+      {accent !== 'default' && <AccentBar tone={accent} />}
       <div className="label truncate">{label}</div>
       <div className="flex items-baseline gap-2 flex-wrap min-w-0">
         <div className="num-hero min-w-0 max-w-full">{value}</div>
@@ -57,6 +58,20 @@ export function KpiCard({
   );
 }
 
+function AccentBar({ tone }: { tone: 'brand' | 'success' | 'warning' }) {
+  const cls = {
+    brand: 'from-brand/0 via-brand/70 to-brand/0',
+    success: 'from-success/0 via-success/70 to-success/0',
+    warning: 'from-warning/0 via-warning/70 to-warning/0',
+  }[tone];
+  return (
+    <div
+      aria-hidden
+      className={cn('absolute left-0 right-0 top-0 h-[3px] bg-gradient-to-r', cls)}
+    />
+  );
+}
+
 function DeltaPill({
   value,
   positiveIsGood = true,
@@ -71,8 +86,10 @@ function DeltaPill({
   return (
     <span
       className={cn(
-        'pill text-[11px] font-medium whitespace-nowrap',
-        good ? 'text-success bg-success/10' : 'text-danger bg-danger/10',
+        'pill text-[11px] font-medium whitespace-nowrap border',
+        good
+          ? 'text-success bg-success/10 border-success/20'
+          : 'text-danger bg-danger/10 border-danger/20',
       )}
       title={title}
     >
@@ -98,7 +115,7 @@ function ProgressBar({
   return (
     <div className="h-1.5 w-full bg-bg-surface-hi rounded-full overflow-hidden">
       <div
-        className={cn('h-full rounded-full transition-all', colorMap[tone])}
+        className={cn('h-full rounded-full transition-all duration-500 ease-out-soft', colorMap[tone])}
         style={{ width: `${pct * 100}%` }}
       />
     </div>
@@ -107,7 +124,7 @@ function ProgressBar({
 
 export function KpiSkeleton() {
   return (
-    <div className="card card-pad min-h-[128px] animate-pulse">
+    <div className="card card-pad min-h-[132px] animate-pulse">
       <div className="h-3 w-20 bg-bg-surface-hi rounded mb-3" />
       <div className="h-8 w-32 bg-bg-surface-hi rounded mb-2" />
       <div className="h-3 w-24 bg-bg-surface-hi rounded mt-auto" />

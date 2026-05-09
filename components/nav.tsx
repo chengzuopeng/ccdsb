@@ -38,11 +38,11 @@ export function Nav({ availableProviders, initialSource, providerInfos }: Props)
   const pathname = usePathname();
   const t = useT();
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-bg-base/80 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-bg-base/85 backdrop-blur-md supports-[backdrop-filter]:bg-bg-base/70">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center gap-2 sm:gap-4">
         <Link
           href="/"
-          className="flex items-center gap-2 font-semibold tracking-tight whitespace-nowrap shrink-0"
+          className="flex items-center gap-2 font-semibold tracking-tight whitespace-nowrap shrink-0 text-text-primary hover:opacity-90 transition-opacity"
           aria-label="ccgauge home"
         >
           <Logo className="w-7 h-7" />
@@ -52,7 +52,7 @@ export function Nav({ availableProviders, initialSource, providerInfos }: Props)
           </span>
         </Link>
         <nav
-          className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto scrollbar-thin"
+          className="flex-1 min-w-0 flex items-center gap-0.5 overflow-x-auto scrollbar-thin"
           aria-label="Primary"
         >
           {ITEMS.map((it) => {
@@ -66,13 +66,20 @@ export function Nav({ availableProviders, initialSource, providerInfos }: Props)
                 prefetch={false}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'px-2.5 sm:px-3 py-1.5 text-sm rounded-button font-medium transition-colors whitespace-nowrap shrink-0',
+                  'relative px-2.5 sm:px-3 py-1.5 text-sm rounded-button font-medium whitespace-nowrap shrink-0',
+                  'transition-colors duration-150',
                   active
-                    ? 'text-text-primary bg-bg-surface-hi'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface',
+                    ? 'text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-hi/60',
                 )}
               >
                 {t(it.tk)}
+                {active && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-2 right-2 -bottom-[12px] h-[2px] bg-brand rounded-full"
+                  />
+                )}
               </Link>
             );
           })}

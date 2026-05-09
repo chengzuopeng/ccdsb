@@ -6,13 +6,14 @@
 :root,
 .theme-dark {
   --bg-base: 10 10 10;
-  --bg-surface: 20 20 20;
-  --bg-surface-hi: 28 28 28;
-  --border: 38 38 38;
-  --border-hi: 64 64 64;
+  --bg-surface: 22 22 22;
+  --bg-surface-hi: 32 32 34;
+  --bg-elevated: 38 38 42;
+  --border: 38 38 42;
+  --border-hi: 64 64 70;
   --text-primary: 250 250 250;
-  --text-secondary: 163 163 163;
-  --text-tertiary: 115 115 115;
+  --text-secondary: 168 168 174;
+  --text-tertiary: 120 120 128;
   --brand: 129 140 248;
   --brand-hover: 165 180 252;
   --success: 34 197 94;
@@ -22,19 +23,24 @@
   --chart-output: 251 146 60;
   --chart-cache-read: 52 211 153;
   --chart-cache-create: 167 139 250;
-  --chart-grid: 38 38 38;
-  --chart-axis: 115 115 115;
+  --chart-grid: 38 38 42;
+  --chart-axis: 120 120 128;
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.02), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+  --shadow-card-hover: 0 1px 0 0 rgb(255 255 255 / 0.04), 0 8px 24px -8px rgb(0 0 0 / 0.6);
+  --shadow-popover: 0 4px 12px -2px rgb(0 0 0 / 0.4), 0 16px 48px -8px rgb(0 0 0 / 0.6);
+  --ring-focus: 129 140 248;
 }
 
 .theme-light {
-  --bg-base: 255 255 255;
-  --bg-surface: 250 250 250;
-  --bg-surface-hi: 244 244 245;
-  --border: 228 228 231;
-  --border-hi: 212 212 216;
-  --text-primary: 23 23 23;
+  --bg-base: 252 252 253;
+  --bg-surface: 255 255 255;
+  --bg-surface-hi: 247 247 249;
+  --bg-elevated: 250 250 252;
+  --border: 226 226 232;
+  --border-hi: 200 200 208;
+  --text-primary: 17 17 23;
   --text-secondary: 82 82 91;
-  --text-tertiary: 161 161 170;
+  --text-tertiary: 145 145 156;
   --brand: 79 70 229;
   --brand-hover: 67 56 202;
   --success: 22 163 74;
@@ -44,8 +50,12 @@
   --chart-output: 234 88 12;
   --chart-cache-read: 22 163 74;
   --chart-cache-create: 124 58 237;
-  --chart-grid: 228 228 231;
+  --chart-grid: 232 232 238;
   --chart-axis: 113 113 122;
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.04);
+  --shadow-card-hover: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 8px 32px -8px rgb(15 23 42 / 0.06);
+  --shadow-popover: 0 8px 24px -4px rgb(15 23 42 / 0.08), 0 16px 48px -8px rgb(15 23 42 / 0.08);
+  --ring-focus: 79 70 229;
 }
 
 :root {
@@ -63,10 +73,7 @@ html {
   /* Force the html element to be a scroll container with the scrollbar
      always laid out. Without this, navigations between pages with different
      content heights flip-flop the viewport scrollbar in/out, which shifts
-     the centered nav bar horizontally by the scrollbar width.
-     `overflow-y: scroll` is the bulletproof, universally-supported fix.
-     `scrollbar-gutter: stable` is the modern equivalent and acts as a
-     belt-and-suspenders for browsers that honor it. */
+     the centered nav bar horizontally by the scrollbar width. */
   overflow-y: scroll;
   scrollbar-gutter: stable;
 }
@@ -76,7 +83,9 @@ body {
   background: rgb(var(--bg-base));
   color: rgb(var(--text-primary));
   font-family: var(--font-sans);
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
@@ -85,7 +94,7 @@ body {
 }
 
 ::selection {
-  background: rgb(var(--brand) / 0.3);
+  background: rgb(var(--brand) / 0.25);
   color: rgb(var(--text-primary));
 }
 
@@ -97,33 +106,69 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--border-hi));
-  border-radius: 5px;
+  background: rgb(var(--border-hi) / 0.7);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--text-tertiary));
+  background: rgb(var(--text-tertiary) / 0.7);
+  background-clip: padding-box;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: rgb(var(--border-hi) / 0.5);
+  border: 0;
+  border-radius: 3px;
+}
+
+/* Keyboard-only focus ring (mouse clicks won't trigger it). */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--ring-focus) / 0.6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer components {
   .card {
-    @apply rounded-card border bg-bg-surface;
+    @apply rounded-card border border-border bg-bg-surface;
+    box-shadow: var(--shadow-card);
+  }
+  .card-interactive {
+    @apply card transition-all duration-150;
+  }
+  .card-interactive:hover {
+    border-color: rgb(var(--border-hi));
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  .card-elevated {
+    background: rgb(var(--bg-elevated));
+    box-shadow: var(--shadow-popover);
   }
   .card-pad {
-    @apply p-6;
+    @apply p-5 sm:p-6;
   }
   .label {
-    @apply text-xs uppercase tracking-wide text-text-tertiary font-medium;
+    @apply text-[11px] uppercase tracking-[0.06em] text-text-tertiary font-semibold;
   }
   .num-hero {
-    @apply text-3xl sm:text-4xl font-semibold text-text-primary tabular-nums tracking-tight break-words;
+    @apply text-3xl sm:text-[2rem] sm:leading-[2.25rem] font-semibold text-text-primary tabular-nums tracking-tight break-words;
   }
   .num-mid {
     @apply text-2xl font-semibold text-text-primary tabular-nums;
@@ -138,18 +183,61 @@ body {
     @apply text-danger;
   }
   .pill {
-    @apply inline-flex items-center px-2 py-0.5 rounded-button text-xs font-medium;
+    @apply inline-flex items-center px-2 py-0.5 rounded-button text-xs font-medium leading-5;
   }
   .pill-muted {
     @apply pill bg-bg-surface-hi text-text-secondary border border-border;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-button text-sm font-medium border border-border bg-bg-surface hover:bg-bg-surface-hi hover:border-border-hi transition-colors;
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-button text-sm font-medium border border-border bg-bg-surface text-text-primary;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms,
+      transform 100ms,
+      box-shadow 150ms;
+  }
+  .btn:hover:not(:disabled) {
+    background: rgb(var(--bg-surface-hi));
+    border-color: rgb(var(--border-hi));
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
   }
   .btn-brand {
-    @apply btn bg-brand/15 border-brand/40 text-brand hover:bg-brand/25 hover:border-brand/60;
+    @apply btn;
+    background: rgb(var(--brand) / 0.12);
+    border-color: rgb(var(--brand) / 0.4);
+    color: rgb(var(--brand));
+  }
+  .btn-brand:hover:not(:disabled) {
+    background: rgb(var(--brand) / 0.2);
+    border-color: rgb(var(--brand) / 0.6);
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-button text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-hi transition-colors;
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-button text-sm font-medium text-text-secondary;
+    transition: background-color 150ms, color 150ms;
   }
+  .btn-ghost:hover:not(:disabled) {
+    color: rgb(var(--text-primary));
+    background: rgb(var(--bg-surface-hi));
+  }
+  .btn-ghost:disabled {
+    @apply opacity-40 cursor-not-allowed;
+  }
+  .section-header {
+    background: linear-gradient(
+      to bottom,
+      rgb(var(--bg-surface)) 0%,
+      rgb(var(--bg-surface-hi) / 0.4) 100%
+    );
+  }
+}
+
+/* Utility: hairline divider used inside cards (between header and body). */
+.divider-soft {
+  border-top: 1px solid rgb(var(--border));
 }

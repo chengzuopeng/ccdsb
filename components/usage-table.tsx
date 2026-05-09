@@ -359,10 +359,17 @@ function RowsForTurn({
   locale: Locale;
   t: Translator;
 }) {
-  const modelLabel =
+  const baseModel =
     turn.models.length === 1
       ? shortenModel(turn.models[0])
       : `${shortenModel(turn.models[0])} +${turn.models.length - 1}`;
+  // Append effort tag (Codex). Single effort → `· high`. Multiple → `· high+1`.
+  const effortSuffix = turn.efforts.length
+    ? turn.efforts.length === 1
+      ? ` · ${turn.efforts[0]}`
+      : ` · ${turn.efforts[0]}+${turn.efforts.length - 1}`
+    : '';
+  const modelLabel = baseModel + effortSuffix;
   const toolsLabel = turn.toolNames.length
     ? turn.toolNames.slice(0, 3).join(', ') + (turn.toolNames.length > 3 ? '…' : '')
     : '—';
@@ -511,10 +518,28 @@ function renderChildCell(id: ColumnId, r: UsageTableRow, locale: Locale, t: Tran
           {formatDateTime(r.timestamp)}
         </span>
       );
-    case 'prompt':
-      return <span className="text-xs">—</span>;
+    case 'prompt': {
+      // Child rows reuse the prompt column to surface which tool(s) this
+      // single API call invoked — saves the user from also turning on the
+      // 'tools' column just to see that.
+      if (!r.toolNames.length) {
+        return <span className="text-xs text-text-tertiary">—</span>;
+      }
+      const all = r.toolNames.join(', ');
+      const display = r.toolNames.slice(0, 3).join(', ') + (r.toolNames.length > 3 ? '…' : '');
+      return (
+        <span className="block text-xs text-text-secondary truncate max-w-[280px]" title={all}>
+          {display}
+        </span>
+      );
+    }
     case 'model':
-      return <span className="whitespace-nowrap">{shortenModel(r.model)}</span>;
+      return (
+        <span className="whitespace-nowrap">
+          {shortenModel(r.model)}
+          {r.effort ? ` · ${r.effort}` : ''}
+        </span>
+      );
     case 'project':
       return (
         <span className="block truncate max-w-[160px]" title={r.cwd}>

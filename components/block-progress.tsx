@@ -64,6 +64,10 @@ export function BlockProgress({ initial }: Props) {
           <div className="num-mono text-text-secondary mt-0.5">{initial.requests}</div>
         </div>
       </div>
+
+      <div className="mt-3 text-[11px] leading-relaxed text-text-tertiary">
+        {t('block.disclaimer')}
+      </div>
     </div>
   );
 }

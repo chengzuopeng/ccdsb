@@ -31,7 +31,9 @@ export const codexAdapter: ProviderAdapter = {
   //     ~26% over-counting from duplicate/refresh token_count events).
   // v3: split reasoning_tokens out as a display-only breakdown alongside
   //     output_tokens (which still includes reasoning for billing).
-  parserVersion: 'codex-v3-reasoning-detail',
+  // v4: persist `effort` from turn_context onto each emitted record so the
+  //     UI can tag the model column (e.g. `gpt-5.2-codex · high`).
+  parserVersion: 'codex-v4-effort',
   capabilities: {
     hasCacheCreation: false,
     hasReasoningTokens: true,

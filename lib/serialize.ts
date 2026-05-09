@@ -65,6 +65,8 @@ export interface UsageTableRow {
   costCacheRead: number;
   costCacheWrite: number;
   toolNames: string[];
+  /** Provider-specific reasoning depth (Codex: low/medium/high/minimal). */
+  effort?: string;
 }
 
 export function recordsToTableRows(records: AssistantRecord[]): UsageTableRow[] {
@@ -92,6 +94,7 @@ export function recordsToTableRows(records: AssistantRecord[]): UsageTableRow[] 
       costCacheRead: c.cacheRead,
       costCacheWrite: c.cacheCreation5m + c.cacheCreation1h,
       toolNames: r.toolNames,
+      effort: r.effort,
     };
   });
 }
@@ -117,6 +120,8 @@ export interface UsageTurnRow {
   costCacheRead: number;
   costCacheWrite: number;
   toolNames: string[];
+  /** Distinct effort levels seen across children (empty if none reported). */
+  efforts: string[];
   userText: string;
   children: UsageTableRow[];
 }
@@ -157,6 +162,7 @@ export function recordsToTurnRows(
       costCacheRead: c.cacheRead,
       costCacheWrite: c.cacheCreation5m + c.cacheCreation1h,
       toolNames: r.toolNames,
+      effort: r.effort,
     };
     const list = groups.get(turnId);
     if (list) list.push(child);
@@ -171,6 +177,7 @@ export function recordsToTurnRows(
     const last = children[children.length - 1];
     const modelSet = new Set<string>();
     const toolSet = new Set<string>();
+    const effortSet = new Set<string>();
     let inputTokens = 0;
     let outputTokens = 0;
     let cacheReadTokens = 0;
@@ -184,6 +191,7 @@ export function recordsToTurnRows(
     for (const c of children) {
       modelSet.add(c.model);
       for (const t of c.toolNames) toolSet.add(t);
+      if (c.effort) effortSet.add(c.effort);
       inputTokens += c.inputTokens;
       outputTokens += c.outputTokens;
       cacheReadTokens += c.cacheReadTokens;
@@ -216,6 +224,7 @@ export function recordsToTurnRows(
       costCacheRead,
       costCacheWrite,
       toolNames: Array.from(toolSet),
+      efforts: Array.from(effortSet),
       userText: userRec?.textPreview ?? '',
       children,
     });

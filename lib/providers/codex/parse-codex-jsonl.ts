@@ -278,6 +278,7 @@ export async function parseCodexJsonlFile(file: string): Promise<ParsedFile> {
           hasThinking: turn.hasThinking,
           textPreview: turn.pendingTextPreview,
           filePath: file,
+          effort: turn.effort,
         });
         parentLinks.push([uuid, turn.userUuid]);
 

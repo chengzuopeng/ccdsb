@@ -114,6 +114,12 @@ export interface AssistantRecord {
   hasThinking: boolean;
   textPreview: string;
   filePath: string;
+  /**
+   * Provider-specific reasoning depth / effort tag.
+   *   - Codex: turn_context.effort  (low / medium / high / minimal)
+   *   - Claude: undefined (no equivalent in the JSONL)
+   */
+  effort?: string;
 }
 
 export interface UserRecord {

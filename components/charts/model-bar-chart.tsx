@@ -26,21 +26,23 @@ export function ModelBarChart({ models }: { models: ModelSummary[] }) {
   const max = Math.max(...models.map((m) => m.cost), 0.0001);
   const totalCost = models.reduce((s, m) => s + m.cost, 0);
   return (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {models.map((m) => {
         const pct = totalCost > 0 ? m.cost / totalCost : 0;
         return (
-          <div key={m.model} className="space-y-1.5">
+          <div key={m.model} className="space-y-1.5 group">
             <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="font-medium text-text-primary">{shortenModel(m.model)}</span>
-              <span className="text-xs text-text-secondary tabular-nums flex-1 text-right">
+              <span className="font-medium text-text-primary truncate">{shortenModel(m.model)}</span>
+              <span className="text-xs text-text-tertiary tabular-nums flex-1 text-right">
                 {formatTokensCompact(m.totalTokens, locale)} · {formatPct(pct)}
               </span>
-              <span className="num-mono text-text-primary min-w-[80px] text-right">{formatUSD(m.cost)}</span>
+              <span className="num-mono font-medium text-text-primary min-w-[80px] text-right">
+                {formatUSD(m.cost)}
+              </span>
             </div>
-            <div className="h-2 w-full bg-bg-surface-hi rounded overflow-hidden">
+            <div className="h-2 w-full bg-bg-surface-hi rounded-full overflow-hidden">
               <div
-                className="h-full rounded"
+                className="h-full rounded-full transition-all duration-500 ease-out-soft group-hover:brightness-110"
                 style={{ width: `${(m.cost / max) * 100}%`, background: colorFor(m.model) }}
               />
             </div>

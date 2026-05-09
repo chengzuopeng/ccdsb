@@ -15,6 +15,8 @@ import {
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
 import { resolveSource, filterBySource } from '@/lib/source';
 import { getProvider } from '@/lib/providers';
+import { computeActivityStats, pickTokenComparison } from '@/lib/aggregator/activity';
+import { ActivityStatsSection } from '@/components/activity-stats';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -202,6 +204,23 @@ async function OverviewContent({ source }: { source: 'claude' | 'codex' }) {
       <Section title={t('overview.costByModel.title')} desc={t('overview.costByModel.desc')}>
         <ModelBarChart models={monthModels.slice(0, 8)} />
       </Section>
+
+      <ActivityStatsSection
+        stats={computeActivityStats(records, { source })}
+        comparison={pickTokenComparison(
+          records.reduce(
+            (s, r) =>
+              s +
+              r.usage.input_tokens +
+              r.usage.output_tokens +
+              r.usage.cache_read_input_tokens +
+              r.usage.cache_creation_input_tokens,
+            0,
+          ),
+        )}
+        shortenModel={shorten}
+        locale={locale}
+      />
     </PageShell>
   );
 }

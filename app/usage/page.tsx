@@ -16,6 +16,7 @@ import { tFn } from '@/lib/i18n/dict';
 import { getServerLocale } from '@/lib/i18n/server';
 import { resolveSource, filterBySource } from '@/lib/source';
 import { getProvider } from '@/lib/providers';
+import { AutoRefresh } from '@/components/auto-refresh';
 import {
   USAGE_PAGE_SIZE,
   isSortKey,
@@ -136,6 +137,7 @@ export default async function UsagePage({
       desc={t('usage.subtitle', { count: totalCount.toLocaleString() })}
       right={<RangePicker defaultValue="7d" />}
     >
+      <AutoRefresh intervalMs={15_000} />
       {allSourceRecords.length === 0 ? (
         <EmptyState title={t('common.empty.title')} desc={t('common.empty.desc')} />
       ) : (

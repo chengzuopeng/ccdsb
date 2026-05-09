@@ -46,6 +46,18 @@ const config: Config = {
         card: '12px',
         button: '8px',
       },
+      boxShadow: {
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        popover: 'var(--shadow-popover)',
+      },
+      transitionTimingFunction: {
+        'out-soft': 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      gridTemplateColumns: {
+        // 24 columns: hour-of-day heatmap on the overview activity card.
+        24: 'repeat(24, minmax(0, 1fr))',
+      },
     },
   },
   plugins: [],
