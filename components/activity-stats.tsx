@@ -3,27 +3,21 @@ import { Section } from '@/components/section';
 import type { ActivityStats, TokenComparison } from '@/lib/aggregator/activity';
 import type { Locale } from '@/lib/i18n/dict';
 import { tFn } from '@/lib/i18n/dict';
-import { formatTokensCompact } from '@/lib/utils';
 
 interface Props {
   stats: ActivityStats;
   comparison: TokenComparison | null;
-  shortenModel: (m: string) => string;
   locale: Locale;
 }
 
-export function ActivityStatsSection({ stats, comparison, shortenModel, locale }: Props) {
+export function ActivityStatsSection({ stats, comparison, locale }: Props) {
   const t = (key: string, vars?: Record<string, string | number>) => tFn(locale, key, vars);
 
   const tiles: Array<{ label: string; value: string }> = [
-    { label: t('activity.sessions'), value: stats.sessions.toLocaleString() },
-    { label: t('activity.messages'), value: stats.messages.toLocaleString() },
-    { label: t('activity.totalTokens'), value: formatTokensCompact(stats.totalTokens, locale) },
     { label: t('activity.activeDays'), value: stats.activeDays.toLocaleString() },
     { label: t('activity.currentStreak'), value: t('activity.streakValue', { n: stats.currentStreak }) },
     { label: t('activity.longestStreak'), value: t('activity.streakValue', { n: stats.longestStreak }) },
     { label: t('activity.peakHour'), value: stats.peakHour < 0 ? '—' : formatHour(stats.peakHour, locale) },
-    { label: t('activity.favoriteModel'), value: stats.favoriteModel ? shortenModel(stats.favoriteModel) : '—' },
   ];
 
   return (
@@ -68,36 +62,38 @@ function Heatmap({ data, max, locale }: { data: number[][]; max: number; locale:
   // Show every 6th hour as a column label below the grid.
   const HOURS = [0, 6, 12, 18];
   return (
-    <div className="space-y-1.5">
-      <div className="grid grid-cols-[auto_1fr] gap-2">
-        {/* Day labels */}
-        <div className="flex flex-col gap-[3px] pt-[1px] pr-1 text-[10px] text-text-tertiary tabular-nums">
-          {Array.from({ length: 7 }).map((_, dow) => (
-            <div key={dow} className="h-[14px] leading-[14px]">
-              {dow % 2 === 1 ? t(`activity.dow.${dow}`) : ''}
-            </div>
-          ))}
+    <div className="overflow-x-auto pb-1">
+      <div className="w-max space-y-1.5">
+        <div className="grid grid-cols-[auto_auto] gap-2">
+          {/* Day labels */}
+          <div className="flex flex-col gap-[3px] pt-[1px] pr-1 text-[10px] text-text-tertiary tabular-nums">
+            {Array.from({ length: 7 }).map((_, dow) => (
+              <div key={dow} className="h-[14px] leading-[14px]">
+                {dow % 2 === 1 ? t(`activity.dow.${dow}`) : ''}
+              </div>
+            ))}
+          </div>
+          {/* Cells: 7 rows × 24 cols */}
+          <div className="flex flex-col gap-[3px]">
+            {data.map((row, dow) => (
+              <div key={dow} className="grid gap-[3px] [grid-template-columns:repeat(24,14px)]">
+                {row.map((count, hour) => (
+                  <Cell key={hour} count={count} max={max} dow={dow} hour={hour} locale={locale} />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
-        {/* Cells: 7 rows × 24 cols */}
-        <div className="flex flex-col gap-[3px]">
-          {data.map((row, dow) => (
-            <div key={dow} className="grid grid-cols-24 gap-[3px]">
-              {row.map((count, hour) => (
-                <Cell key={hour} count={count} max={max} dow={dow} hour={hour} locale={locale} />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* Hour scale */}
-      <div className="grid grid-cols-[auto_1fr] gap-2">
-        <div className="text-[10px] text-text-tertiary opacity-0 select-none pr-1">.</div>
-        <div className="grid grid-cols-24 text-[10px] text-text-tertiary tabular-nums">
-          {Array.from({ length: 24 }).map((_, h) => (
-            <div key={h} className="text-center leading-none">
-              {HOURS.includes(h) ? formatHourShort(h, locale) : ''}
-            </div>
-          ))}
+        {/* Hour scale */}
+        <div className="grid grid-cols-[auto_auto] gap-2">
+          <div className="text-[10px] text-text-tertiary opacity-0 select-none pr-1">.</div>
+          <div className="grid [grid-template-columns:repeat(24,14px)] text-[10px] text-text-tertiary tabular-nums gap-[3px]">
+            {Array.from({ length: 24 }).map((_, h) => (
+              <div key={h} className="text-center leading-none">
+                {HOURS.includes(h) ? formatHourShort(h, locale) : ''}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -132,7 +128,7 @@ function Cell({
   return (
     <div
       title={title}
-      className={cn('h-[14px] w-full rounded-[3px]', !count && 'bg-bg-surface-hi')}
+      className={cn('h-[14px] w-[14px] rounded-[3px]', !count && 'bg-bg-surface-hi')}
       style={style}
     />
   );

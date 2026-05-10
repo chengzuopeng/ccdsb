@@ -218,7 +218,6 @@ async function OverviewContent({ source }: { source: 'claude' | 'codex' }) {
             0,
           ),
         )}
-        shortenModel={shorten}
         locale={locale}
       />
     </PageShell>
