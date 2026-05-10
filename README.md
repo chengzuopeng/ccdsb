@@ -397,7 +397,7 @@ This repo is a working Next.js project — run the dashboard against your live d
 git clone https://github.com/chengzuopeng/ccgauge.git
 cd ccgauge
 pnpm install
-pnpm dev               # http://localhost:3737
+pnpm dev               # http://localhost:3738
 ```
 
 Scripts:

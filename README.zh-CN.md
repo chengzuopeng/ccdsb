@@ -392,7 +392,7 @@ lib/providers/<name>/
 git clone https://github.com/chengzuopeng/ccgauge.git
 cd ccgauge
 pnpm install
-pnpm dev               # http://localhost:3737
+pnpm dev               # http://localhost:3738
 ```
 
 常用脚本：

@@ -4,7 +4,8 @@
  *
  *   node scripts/screenshots.mjs
  *
- * Requires the dev server (or production CLI) running on http://127.0.0.1:3737.
+ * Requires the dev server running on http://127.0.0.1:3738.
+ * For a production CLI instance, pass CCGAUGE_BASE=http://127.0.0.1:3737.
  * Drops files into docs/screenshots/.
  *
  * Run-once: pnpm dlx playwright install chromium
@@ -17,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const OUT = resolve(ROOT, 'docs/screenshots');
-const BASE = process.env.CCGAUGE_BASE || 'http://127.0.0.1:3737';
+const BASE = process.env.CCGAUGE_BASE || 'http://127.0.0.1:3738';
 
 const VIEWPORT = { width: 1440, height: 900 };
 
