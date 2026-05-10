@@ -11,6 +11,8 @@ const { parseCodexJsonlFile } = await import(join(root, 'lib/providers/codex/par
 const { resolveCodexPricing, BUILTIN_PRICING_OPENAI } = await import(join(root, 'lib/providers/codex/pricing.ts'));
 const { costFromUsage } = await import(join(root, 'lib/pricing/cost-from-usage.ts'));
 const { shortenCodexModel } = await import(join(root, 'lib/providers/codex/shorten-model.ts'));
+const { parseDateLike, parseLocalDateOnly } = await import(join(root, 'lib/date-utils.ts'));
+const { isUsageRange, normalizeUsageRange, rangeToDates } = await import(join(root, 'lib/range.ts'));
 
 const fixture = join(root, 'lib/providers/codex/__fixtures__/sample.jsonl');
 const parsed = await parseCodexJsonlFile(fixture);
@@ -91,5 +93,14 @@ assert.ok(r3.pricing);
 
 assert.ok('gpt-5' in BUILTIN_PRICING_OPENAI);
 assert.ok('gpt-5-mini' in BUILTIN_PRICING_OPENAI);
+
+assert.ok(parseLocalDateOnly('2026-02-28'), 'valid date-only should parse');
+assert.equal(parseLocalDateOnly('2026-02-31'), null, 'overflow date-only should be rejected');
+assert.equal(parseDateLike('2026-02-31T00:00:00Z'), null, 'overflow ISO timestamp should be rejected');
+assert.ok(parseDateLike('2026-05-10T00:00:00Z'), 'valid ISO timestamp should parse');
+assert.equal(isUsageRange('30d'), true);
+assert.equal(isUsageRange('last_decade'), false);
+assert.equal(normalizeUsageRange('last_decade', '7d'), '7d');
+assert.ok(rangeToDates('7d').from instanceof Date);
 
 console.log('\nAll codex parser + pricing assertions passed.');

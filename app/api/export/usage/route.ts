@@ -1,10 +1,10 @@
 import { getCachedScan } from '@/lib/data-loader/scan';
 import { recordsToTurnRows } from '@/lib/serialize';
-import { rangeToDates } from '@/lib/range';
+import { isUsageRange, rangeToDates } from '@/lib/range';
 import { resolveSource, filterBySource } from '@/lib/source';
 import type { UsageTurnRow } from '@/lib/serialize';
 import { isSortKey, type SortKey } from '@/lib/usage-query';
-import { withApiErrorHandling } from '@/lib/api/error-handler';
+import { badRequest, withApiErrorHandling } from '@/lib/api/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,7 +52,11 @@ function sortTurns(turns: UsageTurnRow[], key: SortKey, dir: 'asc' | 'desc'): Us
 export const GET = withApiErrorHandling(async (req: Request) => {
   const url = new URL(req.url);
   const source = await resolveSource(url.searchParams.get('source'));
-  const range = url.searchParams.get('range') || 'all';
+  const rangeRaw = url.searchParams.get('range') || 'all';
+  if (!isUsageRange(rangeRaw)) {
+    return badRequest(`invalid range: ${rangeRaw}`, 'invalid_range');
+  }
+  const range = rangeRaw;
   const models = url.searchParams.get('models')?.split(',').filter(Boolean) ?? [];
   const projects = url.searchParams.get('projects')?.split(',').filter(Boolean) ?? [];
   const query = (url.searchParams.get('q') || '').trim();

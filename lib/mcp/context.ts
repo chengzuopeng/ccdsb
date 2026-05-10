@@ -1,5 +1,6 @@
 import { getIndexer } from '@/lib/data-loader/indexer';
 import type { ProviderId } from '@/lib/types';
+import { atEndOfDay, atStartOfDay, parseDateLike } from '@/lib/date-utils';
 
 /** Cache namespace for the MCP server's own indexer instance. Keeps it
  *  disjoint from the web dashboard's persisted file. */
@@ -97,31 +98,13 @@ export function parseDateRange(args: {
 }
 
 function parseStrictDate(s: string, field: 'from' | 'to', isUpperBound: boolean): Date {
-  // Plain YYYY-MM-DD → start (or end) of that day in local time.
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-    const [y, m, d] = s.split('-').map(Number);
-    const dt = new Date(y, m - 1, d);
-    return isUpperBound ? atEndOfDay(dt) : dt;
-  }
-  const dt = new Date(s);
-  if (Number.isNaN(dt.getTime())) {
+  const dt = parseDateLike(s, { upperBoundDateOnly: isUpperBound });
+  if (!dt) {
     throw new Error(
       `invalid '${field}' argument: ${JSON.stringify(s)}. Expected YYYY-MM-DD or a full ISO 8601 timestamp.`,
     );
   }
   return dt;
-}
-
-function atStartOfDay(d: Date): Date {
-  const r = new Date(d);
-  r.setHours(0, 0, 0, 0);
-  return r;
-}
-
-function atEndOfDay(d: Date): Date {
-  const r = new Date(d);
-  r.setHours(23, 59, 59, 999);
-  return r;
 }
 
 function startOfWeek(d: Date): Date {

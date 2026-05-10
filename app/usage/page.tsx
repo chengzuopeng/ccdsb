@@ -1,11 +1,11 @@
 import { getCachedScan } from '@/lib/data-loader/scan';
-import { aggregateByTime, aggregateTotals, type Granularity } from '@/lib/aggregator';
+import { aggregateByTime, aggregateTotals, isGranularity } from '@/lib/aggregator';
 import { Section, PageShell, EmptyState } from '@/components/section';
 import { TokenStackChart, type TokenStackDatum } from '@/components/charts/token-stack-chart';
 import { UsageTable } from '@/components/usage-table';
 import { recordsToTurnRows, type UsageTurnRow } from '@/lib/serialize';
 import { RangePicker } from '@/components/range-picker';
-import { rangeToDates } from '@/lib/range';
+import { normalizeUsageRange, rangeToDates } from '@/lib/range';
 import { GranularityPicker } from '@/components/granularity-picker';
 import { ModelFilter } from '@/components/model-filter';
 import { ProjectFilter } from '@/components/project-filter';
@@ -68,8 +68,8 @@ export default async function UsagePage({
 }) {
   const sp = await searchParams;
   const source = await resolveSource(sp.source);
-  const range = sp.range || '7d';
-  const gran = (sp.gran || (range === '1d' ? 'hour' : 'day')) as Granularity;
+  const range = normalizeUsageRange(sp.range, '7d');
+  const gran = isGranularity(sp.gran) ? sp.gran : range === '1d' ? 'hour' : 'day';
   const models = sp.models ? sp.models.split(',').filter(Boolean) : [];
   const projects = sp.projects ? sp.projects.split(',').filter(Boolean) : [];
   const query = (sp.q || '').trim();

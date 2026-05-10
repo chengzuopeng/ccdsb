@@ -22,7 +22,8 @@ export function SegmentedPicker({ paramKey, defaultValue, options, ariaLabel }: 
   const pathname = usePathname();
   const params = useSearchParams();
   const t = useT();
-  const current = params.get(paramKey) || defaultValue;
+  const rawCurrent = params.get(paramKey) || defaultValue;
+  const current = options.some((o) => o.value === rawCurrent) ? rawCurrent : defaultValue;
   const groupRef = useRef<HTMLDivElement>(null);
 
   function set(v: string) {

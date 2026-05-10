@@ -46,3 +46,12 @@ export function withApiErrorHandling<T extends RouteHandler>(handler: T): T {
   };
   return wrapped as T;
 }
+
+export function badRequest(message: string, code = 'bad_request'): Response {
+  const body: ApiError = {
+    error: 'bad_request',
+    code,
+    message: sanitizeMessage(message),
+  };
+  return NextResponse.json(body, { status: 400 });
+}

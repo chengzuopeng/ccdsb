@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ProviderId } from '@/lib/types';
+import { isLocalDateOnly, parseDateLike } from '@/lib/date-utils';
 
 /** Source filter for any analytical tool. `all` is the default — when used,
  *  the tool returns combined totals AND a per-source breakdown so the LLM
@@ -16,9 +17,7 @@ export type GranularityArg = z.infer<typeof granularitySchema>;
  *  caller can't accidentally collapse the window to all-time without
  *  knowing it. */
 function isValidDateString(s: string): boolean {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return true;
-  const dt = new Date(s);
-  return !Number.isNaN(dt.getTime());
+  return parseDateLike(s) !== null;
 }
 
 const dateBoundSchema = z
@@ -76,7 +75,7 @@ export const daySchema = z
       const lower = s.toLowerCase();
       if ((SPECIAL_DAYS as readonly string[]).includes(lower)) return true;
       if ((WEEKDAYS as readonly string[]).includes(lower)) return true;
-      return /^\d{4}-\d{2}-\d{2}$/.test(s);
+      return isLocalDateOnly(s);
     },
     {
       message: 'must be "today", "yesterday", a weekday name (monday..sunday), or YYYY-MM-DD',
