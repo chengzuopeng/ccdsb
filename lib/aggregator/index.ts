@@ -11,7 +11,12 @@ import { costOfRecord } from '../pricing/calculate';
 import { getProvider } from '../providers';
 import { projectNameFromCwd } from '../utils';
 
-export type Granularity = 'hour' | 'day' | 'week' | 'month';
+export const GRANULARITIES = ['hour', 'day', 'week', 'month'] as const;
+export type Granularity = (typeof GRANULARITIES)[number];
+
+export function isGranularity(v: unknown): v is Granularity {
+  return typeof v === 'string' && (GRANULARITIES as readonly string[]).includes(v);
+}
 
 /** Public so callers (e.g. MCP formatters) can re-bucket records under
  *  the same key scheme to layer extra fields on top of `aggregateByTime`. */

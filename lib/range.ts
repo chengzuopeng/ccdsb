@@ -1,6 +1,20 @@
-export function rangeToDates(range: string): { from?: Date; to?: Date } {
+export const USAGE_RANGES = ['1d', '7d', '30d', '90d', 'all'] as const;
+export type UsageRange = (typeof USAGE_RANGES)[number];
+
+export function isUsageRange(v: unknown): v is UsageRange {
+  return typeof v === 'string' && (USAGE_RANGES as readonly string[]).includes(v);
+}
+
+export function normalizeUsageRange(
+  raw: string | null | undefined,
+  fallback: UsageRange = '7d',
+): UsageRange {
+  return isUsageRange(raw) ? raw : fallback;
+}
+
+export function rangeToDates(range: UsageRange): { from?: Date; to?: Date } {
   const now = new Date();
-  if (!range || range === 'all') return {};
+  if (range === 'all') return {};
   if (range === '1d') {
     const from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return { from };

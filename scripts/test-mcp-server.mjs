@@ -192,18 +192,29 @@ try {
   });
   const codexTools = JSON.parse(dayCodex.content[0].text).top_tools;
   const claudeTools = JSON.parse(dayClaude.content[0].text).top_tools;
-  // Equal arrays would only happen by coincidence (e.g. both empty). If
-  // either side has any tools, the lists shouldn't be identical to "all".
   const dayAll = await rpc('tools/call', {
     name: 'daily_summary',
     arguments: { date: 'today', source: 'all' },
   });
-  const allTools = JSON.parse(dayAll.content[0].text).top_tools;
-  if (codexTools.length > 0 || claudeTools.length > 0) {
-    assert.notDeepStrictEqual(
-      codexTools,
-      allTools,
-      'top_tools(codex) should not equal top_tools(all) when codex/claude differ',
+  const allPayload = JSON.parse(dayAll.content[0].text);
+  const allTools = allPayload.top_tools;
+  const allCounts = new Map(allTools.map((t) => [t.tool, t.count]));
+  for (const t of [...codexTools, ...claudeTools]) {
+    assert.ok(
+      (allCounts.get(t.tool) ?? 0) >= t.count,
+      `all top_tools count for ${t.tool} should be >= source-specific count`,
+    );
+  }
+  const codexRequests = allPayload.bySource.codex.requests;
+  const claudeRequests = allPayload.bySource.claude.requests;
+  if (codexRequests > 0 && claudeRequests > 0 && allTools.length > 0) {
+    const bothSourcesEqualAll =
+      JSON.stringify(codexTools) === JSON.stringify(allTools) &&
+      JSON.stringify(claudeTools) === JSON.stringify(allTools);
+    assert.equal(
+      bothSourcesEqualAll,
+      false,
+      'top_tools(codex) and top_tools(claude) should not both equal top_tools(all)',
     );
   }
   console.log(
@@ -283,8 +294,18 @@ try {
   );
   await expectRejected(
     'tools/call',
+    { name: 'usage_summary', arguments: { from: '2026-02-31' } },
+    'invalid from "2026-02-31"',
+  );
+  await expectRejected(
+    'tools/call',
     { name: 'daily_summary', arguments: { date: 'someday' } },
     'invalid daily_summary date "someday"',
+  );
+  await expectRejected(
+    'tools/call',
+    { name: 'daily_summary', arguments: { date: '2026-02-31' } },
+    'invalid daily_summary date "2026-02-31"',
   );
   console.log('strict validation OK · invalid range/from/date all rejected');
 

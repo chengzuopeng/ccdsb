@@ -5,11 +5,11 @@ import {
   aggregateByProject,
   aggregateByTime,
   aggregateTotals,
-  type Granularity,
+  isGranularity,
 } from '@/lib/aggregator';
-import { rangeToDates } from '@/lib/range';
+import { isUsageRange, rangeToDates } from '@/lib/range';
 import { resolveSource, filterBySource } from '@/lib/source';
-import { withApiErrorHandling } from '@/lib/api/error-handler';
+import { badRequest, withApiErrorHandling } from '@/lib/api/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,8 +17,16 @@ export const dynamic = 'force-dynamic';
 export const GET = withApiErrorHandling(async (req: Request) => {
   const url = new URL(req.url);
   const source = await resolveSource(url.searchParams.get('source'));
-  const range = url.searchParams.get('range') || 'all';
-  const gran = (url.searchParams.get('gran') || 'day') as Granularity;
+  const rangeRaw = url.searchParams.get('range') || 'all';
+  if (!isUsageRange(rangeRaw)) {
+    return badRequest(`invalid range: ${rangeRaw}`, 'invalid_range');
+  }
+  const range = rangeRaw;
+  const granRaw = url.searchParams.get('gran') || 'day';
+  if (!isGranularity(granRaw)) {
+    return badRequest(`invalid granularity: ${granRaw}`, 'invalid_granularity');
+  }
+  const gran = granRaw;
   const models = url.searchParams.get('models')?.split(',').filter(Boolean) ?? undefined;
   const projects = url.searchParams.get('projects')?.split(',').filter(Boolean) ?? undefined;
   const view = url.searchParams.get('view') || 'time';

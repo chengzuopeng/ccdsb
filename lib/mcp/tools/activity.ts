@@ -13,6 +13,7 @@ import {
   type FlatModelEntry,
 } from '../formatters';
 import type { AssistantRecord, ProviderId } from '@/lib/types';
+import { parseLocalDateOnly } from '@/lib/date-utils';
 
 function asTextResult(payload: unknown) {
   return {
@@ -66,10 +67,9 @@ function parseDayArg(input: string | undefined): {
     const { start, end } = dayOf(target);
     return { from: start, to: end, label: lower };
   }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
-    const [y, m, d] = input.split('-').map(Number);
-    const dt = new Date(y, m - 1, d);
-    const { start, end } = dayOf(dt);
+  const explicitDate = parseLocalDateOnly(input);
+  if (explicitDate) {
+    const { start, end } = dayOf(explicitDate);
     return { from: start, to: end, label: input };
   }
   // Schema-rejected inputs should never reach here. If they do (e.g. a
