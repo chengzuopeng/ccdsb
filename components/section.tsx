@@ -7,11 +7,27 @@ interface SectionProps {
   right?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Render the description inline next to the title (default: stacked below). */
+  inlineDesc?: boolean;
+  /** Make the inner content area grow to fill the section (for equal-height rows). */
+  fillBody?: boolean;
 }
 
-export function Section({ title, desc, right, children, className }: SectionProps) {
+export function Section({
+  title,
+  desc,
+  right,
+  children,
+  className,
+  inlineDesc,
+  fillBody,
+}: SectionProps) {
   return (
-    <section className={cn('card overflow-hidden', className)}>
+    // No vertical margin baked in here — let the parent layout (PageShell's
+    // `space-y-*`, grid `gap-*`, or an explicit `mt-*` in `className`)
+    // control spacing. Sections used as the root of a stretched flex/grid
+    // cell rely on starting at y=0 so siblings line up.
+    <section className={cn('card overflow-hidden', fillBody && 'flex flex-col', className)}>
       {(title || right) && (
         <header
           className={cn(
@@ -20,18 +36,27 @@ export function Section({ title, desc, right, children, className }: SectionProp
             'px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border',
           )}
         >
-          <div className="min-w-0">
+          <div className={cn('min-w-0', inlineDesc && 'sm:flex sm:items-baseline sm:gap-2.5')}>
             {title && (
               <h2 className="text-[15px] font-semibold text-text-primary tracking-tight leading-tight">
                 {title}
               </h2>
             )}
-            {desc && <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">{desc}</p>}
+            {desc && (
+              <p
+                className={cn(
+                  'text-xs text-text-secondary leading-relaxed',
+                  inlineDesc ? 'mt-1 sm:mt-0' : 'mt-1.5',
+                )}
+              >
+                {desc}
+              </p>
+            )}
           </div>
           {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
         </header>
       )}
-      <div className="p-5 sm:p-6">{children}</div>
+      <div className={cn('p-5 sm:p-6', fillBody && 'flex-1 flex flex-col')}>{children}</div>
     </section>
   );
 }

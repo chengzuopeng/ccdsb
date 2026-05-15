@@ -89,7 +89,6 @@ async function OverviewContent({ source }: { source: 'claude' | 'codex' }) {
 
   const hasYesterday = yest.totalTokens > 0 || yest.cost > 0;
   const tokenDelta = yest.totalTokens > 0 ? ((today.totalTokens - yest.totalTokens) / yest.totalTokens) * 100 : NaN;
-  const costDelta = yest.cost > 0 ? ((today.cost - yest.cost) / yest.cost) * 100 : NaN;
   const firstTimeDelta = !hasYesterday && (today.totalTokens > 0 || today.cost > 0)
     ? { firstTime: true as const, label: t('overview.delta.firstTime') }
     : null;
@@ -126,8 +125,6 @@ async function OverviewContent({ source }: { source: 'claude' | 'codex' }) {
   const topModelPct =
     topModel && month.cost > 0 ? formatPct(topModel.cost / month.cost) : '—';
 
-  const costFootnote = provider.costFootnoteKey ? t(provider.costFootnoteKey) : '';
-
   // Use the active source's stats for the overview header so users don't see
   // global file/record counts when the dashboard is filtered to one provider.
   const sourceStat = scan.bySource.find((s) => s.source === source);
@@ -143,19 +140,12 @@ async function OverviewContent({ source }: { source: 'claude' | 'codex' }) {
         ms: scan.stats.durationMs,
       })}
     >
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label={t('overview.kpi.tokensToday')}
           value={fmtTokens(today.totalTokens)}
           hint={t('overview.kpi.tokensToday.hint', { count: today.requests })}
           delta={Number.isFinite(tokenDelta) ? { value: tokenDelta, positiveIsGood: false } : firstTimeDelta}
-          deltaTitle={t('overview.delta.title')}
-        />
-        <KpiCard
-          label={t('overview.kpi.costToday')}
-          value={formatUSD(today.cost)}
-          hint={costFootnote || t('common.savedTodayViaCache', { amount: formatUSD(today.saved) })}
-          delta={Number.isFinite(costDelta) ? { value: costDelta, positiveIsGood: false } : firstTimeDelta}
           deltaTitle={t('overview.delta.title')}
         />
         <KpiCard
@@ -179,47 +169,43 @@ async function OverviewContent({ source }: { source: 'claude' | 'codex' }) {
           hint={topModel ? t('overview.kpi.topModel.hint', { pct: topModelPct }) : ''}
           accent="brand"
         />
-        <KpiCard
-          label={t('overview.kpi.activeSessions')}
-          value={String(new Set(todayRecs.map((r) => r.sessionId)).size)}
-          hint={t('overview.kpi.activeSessions.hint', {
-            count: new Set(todayRecs.map((r) => r.cwd)).size,
-          })}
-        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <Section
-            title={t('overview.trend.title')}
-            desc={t('overview.trend.desc')}
-            right={<span className="text-xs text-text-tertiary">{activeDaysHint}</span>}
-          >
-            <TokenStackChart data={trendData} />
-          </Section>
+      <Section
+        title={t('overview.trend.title')}
+        desc={t('overview.trend.desc')}
+        right={<span className="text-xs text-text-tertiary">{activeDaysHint}</span>}
+      >
+        <TokenStackChart data={trendData} />
+      </Section>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+        <div className="lg:col-span-2 flex">
+          <ActivityStatsSection
+            stats={computeActivityStats(records, { source })}
+            comparison={pickTokenComparison(
+              records.reduce(
+                (s, r) =>
+                  s +
+                  r.usage.input_tokens +
+                  r.usage.output_tokens +
+                  r.usage.cache_read_input_tokens +
+                  r.usage.cache_creation_input_tokens,
+                0,
+              ),
+            )}
+            locale={locale}
+            className="flex-1"
+          />
         </div>
-        <BlockProgress initial={serializedBlock} />
+        <div className="flex">
+          <BlockProgress initial={serializedBlock} className="flex-1" />
+        </div>
       </div>
 
       <Section title={t('overview.costByModel.title')} desc={t('overview.costByModel.desc')}>
         <ModelBarChart models={monthModels.slice(0, 8)} />
       </Section>
-
-      <ActivityStatsSection
-        stats={computeActivityStats(records, { source })}
-        comparison={pickTokenComparison(
-          records.reduce(
-            (s, r) =>
-              s +
-              r.usage.input_tokens +
-              r.usage.output_tokens +
-              r.usage.cache_read_input_tokens +
-              r.usage.cache_creation_input_tokens,
-            0,
-          ),
-        )}
-        locale={locale}
-      />
     </PageShell>
   );
 }

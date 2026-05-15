@@ -1,22 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatUSD, formatTokensCompact } from '@/lib/utils';
+import { cn, formatUSD, formatTokensCompact } from '@/lib/utils';
 import type { SerializedProgress } from '@/lib/serialize';
 import { useT, useI18n } from '@/lib/i18n/context';
 
 interface Props {
   initial: SerializedProgress;
+  className?: string;
 }
 
-export function BlockProgress({ initial }: Props) {
+export function BlockProgress({ initial, className }: Props) {
   const t = useT();
   const { locale } = useI18n();
   const fmtTokens = (n: number) => formatTokensCompact(n, locale);
 
   if (!initial.hasBlock || !initial.endTime || !initial.startTime) {
     return (
-      <div className="card card-pad min-h-[180px] flex flex-col">
+      <div className={cn('card card-pad min-h-[180px] flex flex-col', className)}>
         <div className="label">{t('block.title')}</div>
         <div className="text-sm text-text-tertiary mt-4">{t('block.empty')}</div>
         <div className="text-xs text-text-tertiary mt-1">{t('block.emptyDesc')}</div>
@@ -25,7 +26,7 @@ export function BlockProgress({ initial }: Props) {
   }
 
   return (
-    <div className="card card-pad min-h-[180px]">
+    <div className={cn('card card-pad min-h-[180px] flex flex-col', className)}>
       <div className="flex items-center justify-between">
         <div className="label">{t('block.title')}</div>
         <span className="pill bg-success/10 text-success border border-success/20">
@@ -65,7 +66,7 @@ export function BlockProgress({ initial }: Props) {
         </div>
       </div>
 
-      <div className="mt-3 text-[11px] leading-relaxed text-text-tertiary">
+      <div className="mt-auto pt-3 text-[11px] leading-relaxed text-text-tertiary">
         {t('block.disclaimer')}
       </div>
     </div>
