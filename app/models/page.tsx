@@ -4,7 +4,8 @@ import { Section, PageShell, EmptyState } from '@/components/section';
 import { TokenStackChart, type TokenStackDatum } from '@/components/charts/token-stack-chart';
 import { formatTokensCompact, formatUSD, formatPct } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
-import { resolveSource, filterBySource } from '@/lib/source';
+import { resolveSource, filterBySource, expandSources } from '@/lib/source';
+import { combineTimeBuckets } from '@/lib/source-merge';
 import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
@@ -21,8 +22,11 @@ export default async function ModelsPage({
   const locale = await getServerLocale();
   const scan = await getCachedScan();
   const records = filterBySource(scan.records, source);
-  const provider = getProvider(source);
-  const shorten = (m: string) => provider.shortenModel(m);
+  const sources = expandSources(source);
+  // Each model entry carries its own `source`; use it to pick the right
+  // shortener for mixed lists.
+  const shortenFor = (m: { source: typeof sources[number]; model: string }) =>
+    getProvider(m.source).shortenModel(m.model);
 
   if (records.length === 0) {
     return (
@@ -31,13 +35,21 @@ export default async function ModelsPage({
       </PageShell>
     );
   }
-  const models = aggregateByModel(records, { source });
+  // Claude and Codex model names are disjoint (claude-* vs gpt-*/o-*) so
+  // simple concatenation + sort produces a clean mixed list with no
+  // collision risk.
+  const models = sources
+    .flatMap((s) => aggregateByModel(records, { source: s }))
+    .sort((a, b) => b.cost - a.cost);
   const total = models.reduce((s, m) => s + m.cost, 0);
   const totalTokens = models.reduce((s, m) => s + m.totalTokens, 0);
 
   const thirtyAgo = new Date();
   thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-  const trend: TokenStackDatum[] = aggregateByTime(records, 'day', { source, from: thirtyAgo }).map((b) => ({
+  const trendBuckets = combineTimeBuckets(
+    sources.map((s) => aggregateByTime(records, 'day', { source: s, from: thirtyAgo })),
+  );
+  const trend: TokenStackDatum[] = trendBuckets.map((b) => ({
     label: b.label,
     input: b.inputTokens,
     output: b.outputTokens,
@@ -58,10 +70,28 @@ export default async function ModelsPage({
               ? m.cacheReadTokens / Math.max(1, m.cacheReadTokens + m.inputTokens + m.cacheCreationTokens)
               : 0;
           return (
-            <div key={m.model} className="card card-pad space-y-3">
+            // Use a (source, model) compound key — same model name can't
+            // appear under two sources today (Claude vs OpenAI namespaces
+            // are disjoint), but the compound key future-proofs against
+            // any naming collision and keeps the All view stable.
+            <div key={`${m.source}:${m.model}`} className="card card-pad space-y-3">
               <div className="flex items-baseline justify-between gap-2">
                 <div>
-                  <div className="font-semibold text-text-primary">{shorten(m.model)}</div>
+                  <div className="font-semibold text-text-primary flex items-center gap-2">
+                    <span>{shortenFor(m)}</span>
+                    {source === 'all' && (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-text-tertiary font-medium">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getProvider(m.source).logoSrc}
+                          alt=""
+                          aria-hidden
+                          className="w-3.5 h-3.5 rounded-[3px] object-contain"
+                        />
+                        {m.source === 'claude' ? 'Claude' : 'Codex'}
+                      </span>
+                    )}
+                  </div>
                   <div className="num-mono text-xs text-text-tertiary">{m.model}</div>
                 </div>
                 {!m.pricingResolved && (

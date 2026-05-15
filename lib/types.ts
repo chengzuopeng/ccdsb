@@ -230,6 +230,10 @@ export interface BlockSummary {
 
 export interface SessionSummary {
   sessionId: string;
+  /** Provider this session originated from. A session never spans both
+   *  providers; populated by the aggregator from the first record's
+   *  source. Used by the All view to label rows in mixed lists. */
+  source: ProviderId;
   cwd: string;
   projectName: string;
   startTime: string;
@@ -250,6 +254,10 @@ export interface SessionSummary {
 }
 
 export interface ProjectSummary {
+  /** Provider these aggregated records came from. For the All view,
+   *  the same `cwd` may appear twice — once per source — so this field
+   *  is the disambiguator. */
+  source: ProviderId;
   cwd: string;
   projectName: string;
   sessions: number;

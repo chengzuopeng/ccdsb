@@ -49,3 +49,7 @@ yarn.lock
 site/node_modules/
 site/dist/
 site/.astro/
+
+# playwright-mcp artefacts (console logs + page snapshots dropped here
+# by the browser tool during ad-hoc verification runs)
+.playwright-mcp/

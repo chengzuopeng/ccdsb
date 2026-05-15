@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ScreenshotGallery from '../../components/ScreenshotGallery.astro';
 import { localePath } from '../../i18n/utils';
 
 const locale = 'zh';
@@ -105,6 +106,45 @@ const sections: Section[] = [
 ];
 
 const installSnippet = 'npx ccgauge';
+
+const screenshots = [
+  {
+    src: '/images/screenshots/overview-en-dark.png',
+    alt: 'ccgauge Overview 仪表盘深色主题截图，展示 KPI 与 token 趋势。',
+    title: 'Overview',
+    meta: '深色 · English · KPI 与花费总览',
+  },
+  {
+    src: '/images/screenshots/usage-en-dark.png',
+    alt: 'ccgauge Usage 页面深色主题截图，展示按 turn 和 call 聚合的用量表。',
+    title: 'Usage',
+    meta: 'turn 聚合 · 过滤 · 可导出表格',
+  },
+  {
+    src: '/images/screenshots/sessions-en-dark.png',
+    alt: 'ccgauge Sessions 页面深色主题截图，展示会话汇总和模型分布。',
+    title: 'Sessions',
+    meta: '会话钻取与模型构成',
+  },
+  {
+    src: '/images/screenshots/projects-en-dark.png',
+    alt: 'ccgauge Projects 页面深色主题截图，展示项目花费和 token 分布。',
+    title: 'Projects',
+    meta: 'worktree 感知的项目分析',
+  },
+  {
+    src: '/images/screenshots/models-en-dark.png',
+    alt: 'ccgauge Models 页面深色主题截图，展示模型对比卡片。',
+    title: 'Models',
+    meta: '按模型比较 token 与花费',
+  },
+  {
+    src: '/images/screenshots/settings-zh-light.png',
+    alt: 'ccgauge Settings 页面浅色中文截图，展示偏好设置和数据源检测。',
+    title: 'Settings',
+    meta: '浅色 · 中文 · 数据源与偏好检查',
+  },
+];
 ---
 
 <BaseLayout
@@ -135,6 +175,17 @@ const installSnippet = 'npx ccgauge';
       </ol>
     </div>
   </nav>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14">
+    <div class="max-w-3xl mb-8">
+      <div class="pill-brand mb-3">产品截图</div>
+      <h2 class="heading-section">文档里展示的是真实跑起来的仪表盘。</h2>
+      <p class="lede mt-3">
+        这些截图来自本机正在运行的 ccgauge 应用，所以功能导览看到的是实际产品界面，不再是占位插图。
+      </p>
+    </div>
+    <ScreenshotGallery items={screenshots} />
+  </section>
 
   {sections.map((s) => (
     <section id={s.id} class="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 scroll-mt-24">

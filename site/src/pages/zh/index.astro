@@ -31,8 +31,8 @@ const mcpSnippet = `{
     title="看清楚 Claude Code 到底"
     titleAccent="花了你多少钱。"
     lede="ccgauge 是 Claude Code 与 OpenAI Codex CLI 的本地用量看板。按项目、模型、会话维度追踪 token、花费、缓存节省、5 小时 block 进度 —— 全程不出本机。"
-    imageSrc="hero-dashboard.svg"
-    imageAlt="ccgauge 仪表盘的风格化插画，悬浮在深色空间中，带 Indigo 色调图表和 7×24 热力图。"
+    imageSrc="screenshots/overview-en-dark.png"
+    imageAlt="ccgauge Overview 仪表盘真实截图，深色主题，展示 KPI、token 趋势、缓存命中率和 5 小时 block。"
   >
     <a slot="cta" href={GITHUB_URL} class="btn-brand" target="_blank" rel="noopener noreferrer">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -72,15 +72,15 @@ const mcpSnippet = `{
       icon="◇"
       title="双数据源统一看板"
       body="Claude Code 与 OpenAI Codex CLI 共用一份看板，顶部一键切换；URL 与 cookie 记忆你的选择。"
-      imageSrc="feature-dashboard.svg"
-      imageAlt="ccgauge 仪表盘风格化截图，展示 overview KPI 与趋势图。"
+      imageSrc="screenshots/overview-en-dark.png"
+      imageAlt="ccgauge Overview 仪表盘真实截图，展示多数据源 KPI 与趋势图。"
     />
     <FeatureCard
       icon="▣"
       title="命令行报告"
       body={'无 server 无浏览器，一条 `ccgauge report` 直接在终端打出彩色对齐的报告 —— 趋势、Top-N、JSON 输出皆可，管道友好。'}
-      imageSrc="feature-cli.svg"
-      imageAlt="终端窗口展示 ccgauge report 输出，带 ASCII 柱状图。"
+      imageSrc="feature-cli.webp"
+      imageAlt="生成的终端报告视觉图，展示 token 与花费分析。"
       ctaLabel="查看 CLI 文档"
       ctaHref={localePath(locale, 'cli')}
     />
@@ -88,8 +88,8 @@ const mcpSnippet = `{
       icon="◈"
       title="MCP 服务"
       body="让 Claude Desktop / Cursor / Cline 直接查你的用量。8 个 MCP tool 覆盖总数、时间序列、按模型 / 项目 / 会话钻取。"
-      imageSrc="feature-mcp.svg"
-      imageAlt="MCP 集成抽象网络图。"
+      imageSrc="feature-mcp.webp"
+      imageAlt="生成的 MCP 集成视觉图，本地服务节点连接到结构化用量工具。"
       ctaLabel="MCP 接入指南"
       ctaHref={localePath(locale, 'mcp')}
     />
@@ -97,13 +97,15 @@ const mcpSnippet = `{
       icon="⌬"
       title="活跃度热力图"
       body="7 天 × 24 小时网格，hover 看消息数、token、占总数和占峰值比例。你的高产时段一目了然。"
+      imageSrc="feature-heatmap.webp"
+      imageAlt="生成的 7 天乘 24 小时活跃度热力图视觉图，包含 tooltip 和侧边统计。"
     />
     <FeatureCard
       icon="🔒"
       title="100% 本地、零遥测"
       body="ccgauge 只读取你 CLI 自己写的 JSONL 文件，零网络调用。默认绑 127.0.0.1。MIT 开源。"
-      imageSrc="feature-privacy.svg"
-      imageAlt="半透明 Indigo 盾牌叠在风格化硬盘剪影上。"
+      imageSrc="feature-privacy.webp"
+      imageAlt="生成的本地隐私视觉图，包含盾牌、锁定文件和被阻断的外联路径。"
       ctaLabel="隐私设计理念"
       ctaHref={localePath(locale, 'privacy')}
     />
@@ -111,8 +113,8 @@ const mcpSnippet = `{
       icon="🌐"
       title="双语 + 主题"
       body="中文 / 英文界面 + CLI 全语贯通；深 / 浅 / 跟随系统三档主题，首次加载零闪烁。npm 跨平台安装。"
-      imageSrc="feature-i18n.svg"
-      imageAlt="两个堆叠的浏览器框，分别展示拉丁字符与 CJK 字符块，由 Indigo 弧线相连。"
+      imageSrc="feature-i18n.webp"
+      imageAlt="生成的双语与主题切换视觉图，包含深浅两个仪表盘面板。"
     />
   </FeatureGrid>
 

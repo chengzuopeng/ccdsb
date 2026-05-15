@@ -45,7 +45,7 @@ interface ColumnDef {
 
 const COLUMNS: ColumnDef[] = [
   { id: 'time', labelKey: 'usage.col.time', sortKey: 'timestamp', defaultVisible: true },
-  { id: 'duration', labelKey: 'usage.col.duration', align: 'right', sortKey: 'durationMs', defaultVisible: true },
+  { id: 'duration', labelKey: 'usage.col.duration', align: 'right', sortKey: 'durationMs', defaultVisible: false },
   { id: 'prompt', labelKey: 'usage.col.userMessage', defaultVisible: true },
   { id: 'model', labelKey: 'usage.col.model', defaultVisible: true },
   { id: 'project', labelKey: 'usage.col.project', defaultVisible: true },
@@ -57,12 +57,12 @@ const COLUMNS: ColumnDef[] = [
   { id: 'cacheWrite', labelKey: 'usage.col.cacheWrite', align: 'right', sortKey: 'cacheCreationTokens', defaultVisible: false },
   { id: 'total', labelKey: 'usage.col.total', align: 'right', sortKey: 'totalTokens', defaultVisible: true },
   { id: 'cost', labelKey: 'usage.col.cost', align: 'right', sortKey: 'cost', defaultVisible: false },
-  { id: 'tools', labelKey: 'usage.col.tools', defaultVisible: true },
+  { id: 'tools', labelKey: 'usage.col.tools', defaultVisible: false },
 ];
 
 // Bumped when defaults change so existing localStorage entries don't pin
 // users to the old visibility set.
-const STORAGE_KEY = 'ccgauge.usage.cols.v3';
+const STORAGE_KEY = 'ccgauge.usage.cols.v4';
 
 function defaultVisible(): Record<ColumnId, boolean> {
   return COLUMNS.reduce(
@@ -543,8 +543,13 @@ function renderChildCell(
 ): React.ReactNode {
   switch (id) {
     case 'time':
+      // Visual indent for child rows is done via `translate-x` rather than
+      // `padding-left` so the cell's intrinsic content width matches the
+      // parent row exactly. Padding here would feed into `table-layout: auto`
+      // and force the browser to re-balance every column on expand,
+      // producing a visible horizontal jitter across the whole table.
       return (
-        <span className="num-mono whitespace-nowrap pl-5 text-xs">
+        <span className="num-mono whitespace-nowrap text-xs inline-block translate-x-5">
           {formatDateTime(r.timestamp)}
         </span>
       );

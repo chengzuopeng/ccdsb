@@ -14,8 +14,10 @@ import {
   shortHash,
 } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
-import { resolveSource, filterBySource } from '@/lib/source';
+import { resolveSource, filterBySource, expandSources } from '@/lib/source';
+import { combineTimeBuckets, combineTotals } from '@/lib/source-merge';
 import { getProvider } from '@/lib/providers';
+import { resolveCanonicalCwd } from '@/lib/project-label';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -31,22 +33,39 @@ export default async function ProjectDetailPage({
   const sp = await searchParams;
   const source = await resolveSource(sp.source);
   const cwd = decodeURIComponent(id);
+  // Resolve to the canonical (main repo) path so that clicking a project
+  // card that was created from a merged worktree group still shows all
+  // records from every worktree of that project. Also handles old bookmarks
+  // that pointed directly at a worktree cwd.
+  const canonicalCwd = resolveCanonicalCwd(cwd);
   const t = await getServerT();
   const locale = await getServerLocale();
   const scan = await getCachedScan();
-  const provider = getProvider(source);
-  const shorten = (m: string) => provider.shortenModel(m);
+  const sources = expandSources(source);
+  // For mixed-source rows on this page (sessions table) the model
+  // shortener needs to read each row's own provider.
+  const shortenFor = (s: { source: typeof sources[number] }) => (m: string) =>
+    getProvider(s.source).shortenModel(m);
 
-  const records = filterBySource(scan.records, source).filter((r) => r.cwd === cwd);
+  // Include records from any worktree that resolves to the same canonical root.
+  const records = filterBySource(scan.records, source)
+    .filter((r) => resolveCanonicalCwd(r.cwd) === canonicalCwd);
   if (records.length === 0) notFound();
   const userRecords = filterBySource(scan.userRecords, source);
 
-  const totals = aggregateTotals(records, { source });
-  const sessions = aggregateBySession(records, userRecords, { source });
+  const totals = combineTotals(sources.map((s) => aggregateTotals(records, { source: s })));
+  // Sessions in the project detail list: per-source then concat. Sessions
+  // never cross providers, so concatenation is safe.
+  const sessions = sources
+    .flatMap((s) => aggregateBySession(records, userRecords, { source: s }))
+    .sort((a, b) => b.endTime.localeCompare(a.endTime));
 
   const thirtyAgo = new Date();
   thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-  const trend: TokenStackDatum[] = aggregateByTime(records, 'day', { source, from: thirtyAgo }).map((b) => ({
+  const trendBuckets = combineTimeBuckets(
+    sources.map((s) => aggregateByTime(records, 'day', { source: s, from: thirtyAgo })),
+  );
+  const trend: TokenStackDatum[] = trendBuckets.map((b) => ({
     label: b.label,
     input: b.inputTokens,
     output: b.outputTokens,
@@ -58,8 +77,8 @@ export default async function ProjectDetailPage({
 
   return (
     <PageShell
-      title={projectNameFromCwd(cwd)}
-      desc={cwd}
+      title={projectNameFromCwd(canonicalCwd)}
+      desc={canonicalCwd}
       right={
         <Link href={`/projects?source=${source}`} className="btn-ghost">
           {t('common.allProjectsLink')}
@@ -100,7 +119,7 @@ export default async function ProjectDetailPage({
                 {sessions.map((s) => (
                   <tr key={s.sessionId} className="border-b border-border last:border-b-0 hover:bg-bg-surface-hi/40">
                     <td className="px-3 py-2.5">
-                      <Link href={`/sessions/${encodeURIComponent(s.sessionId)}?source=${source}`} className="hover:text-brand">
+                      <Link href={`/sessions/${encodeURIComponent(s.sessionId)}?source=${s.source}`} className="hover:text-brand">
                         <div className="font-medium truncate max-w-[280px]">
                           {s.title || t('sessions.untitled', { hash: shortHash(s.sessionId) })}
                         </div>
@@ -108,7 +127,7 @@ export default async function ProjectDetailPage({
                       </Link>
                     </td>
                     <td className="px-3 py-2.5 text-xs text-text-secondary">
-                      {s.models.map(shorten).join(', ')}
+                      {s.models.map(shortenFor(s)).join(', ')}
                     </td>
                     <td className="px-3 py-2.5 num-mono text-right">{s.requests}</td>
                     <td className="px-3 py-2.5 num-mono text-right">{formatTokensCompact(s.totalTokens, locale)}</td>

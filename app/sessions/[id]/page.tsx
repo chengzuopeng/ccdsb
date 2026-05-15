@@ -31,16 +31,24 @@ export default async function SessionDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const source = await resolveSource(sp.source);
+  // Even if the user lands here with `?source=all`, a single session lives
+  // entirely inside one provider. Find which one by scanning all records
+  // for the sessionId, then key everything off the record's own source.
+  // Preserve `?source=all` on back-links so the user returns to their
+  // original filter context rather than getting silently downgraded.
+  const requestedSource = await resolveSource(sp.source);
   const sessionId = decodeURIComponent(id);
   const t = await getServerT();
   const locale = await getServerLocale();
   const scan = await getCachedScan();
+
+  const sessionRecords = scan.records.filter((r) => r.sessionId === sessionId);
+  if (sessionRecords.length === 0) notFound();
+  // All records in a session share the same provider (Claude Code / Codex
+  // never co-author a single sessionId); take the first.
+  const source = sessionRecords[0].source;
   const provider = getProvider(source);
   const shorten = (m: string) => provider.shortenModel(m);
-
-  const sessionRecords = filterBySource(scan.records, source).filter((r) => r.sessionId === sessionId);
-  if (sessionRecords.length === 0) notFound();
 
   const userRecords = filterBySource(scan.userRecords, source);
   const sessions = aggregateBySession(sessionRecords, userRecords, { source });
@@ -81,13 +89,13 @@ export default async function SessionDetailPage({
         <>
           <span className="num-mono">{shortHash(sessionId, 16)}</span>
           {' · '}
-          <Link href={`/projects/${encodeURIComponent(session.cwd)}?source=${source}`} className="hover:text-brand">
+          <Link href={`/projects/${encodeURIComponent(session.cwd)}?source=${requestedSource}`} className="hover:text-brand">
             {projectNameFromCwd(session.cwd)}
           </Link>
         </>
       }
       right={
-        <Link href={`/sessions?source=${source}`} className="btn-ghost">
+        <Link href={`/sessions?source=${requestedSource}`} className="btn-ghost">
           {t('common.allSessions')}
         </Link>
       }

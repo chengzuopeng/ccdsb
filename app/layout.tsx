@@ -41,6 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     bg: p.color.bg,
     displayEn: p.displayName.en,
     displayZh: p.displayName.zh,
+    logoSrc: p.logoSrc,
   }));
 
   return (

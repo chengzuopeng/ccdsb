@@ -168,6 +168,7 @@ export function aggregateByProject(
     let s = map.get(cwd);
     if (!s) {
       s = {
+        source: opts.source,
         cwd,
         projectName: projectNameFromCwd(cwd),
         sessions: 0,
@@ -221,6 +222,7 @@ export function aggregateBySession(
     if (!s) {
       s = {
         sessionId: sid,
+        source: rec.source,
         cwd: rec.cwd,
         projectName: projectNameFromCwd(rec.cwd),
         startTime: rec.timestamp,

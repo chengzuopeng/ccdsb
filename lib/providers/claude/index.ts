@@ -62,6 +62,7 @@ export const claudeAdapter: ProviderAdapter = {
   displayName: { en: 'Claude', zh: 'Claude' },
   shortLabel: 'C',
   color: { fg: '#b45309', bg: '#fef3c7' },
+  logoSrc: '/claude-logo.webp',
   // v1 → v3 (no v2 ever shipped on npm): user records now carry an
   // `isSynthetic` flag so skill metadata + <system-reminder> blocks can
   // still be displayed as the per-call "prompt" on child rows, but are

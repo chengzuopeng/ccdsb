@@ -22,7 +22,9 @@ export interface ActivityStats {
 }
 
 interface Opts {
-  source: ProviderId;
+  /** Provider to scope by. `'all'` includes records from every provider —
+   *  used by the Overview "All" view to show combined activity. */
+  source: ProviderId | 'all';
   /** Optional cap on how far back the streak walk looks. Defaults to 365. */
   streakWindowDays?: number;
 }
@@ -33,7 +35,10 @@ export function computeActivityStats(
   records: AssistantRecord[],
   opts: Opts,
 ): ActivityStats {
-  const filtered = records.filter((r) => r.source === opts.source);
+  const filtered =
+    opts.source === 'all'
+      ? records
+      : records.filter((r) => r.source === opts.source);
   if (filtered.length === 0) {
     return {
       sessions: 0,

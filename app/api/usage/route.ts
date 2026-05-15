@@ -8,7 +8,8 @@ import {
   isGranularity,
 } from '@/lib/aggregator';
 import { isUsageRange, rangeToDates } from '@/lib/range';
-import { resolveSource, filterBySource } from '@/lib/source';
+import { resolveSource, filterBySource, expandSources } from '@/lib/source';
+import { combineTimeBuckets, combineTotals } from '@/lib/source-merge';
 import { badRequest, withApiErrorHandling } from '@/lib/api/error-handler';
 
 export const runtime = 'nodejs';
@@ -32,31 +33,37 @@ export const GET = withApiErrorHandling(async (req: Request) => {
   const view = url.searchParams.get('view') || 'time';
 
   const dates = rangeToDates(range);
-  const opts = { source, from: dates.from, to: dates.to, models, projects };
+  const baseOpts = { from: dates.from, to: dates.to, models, projects };
 
   const scan = await getCachedScan();
   const records = filterBySource(scan.records, source);
+  const sources = expandSources(source);
+
+  const totals = combineTotals(
+    sources.map((s) => aggregateTotals(records, { ...baseOpts, source: s })),
+  );
+
   if (view === 'time') {
-    const buckets = aggregateByTime(records, gran, opts);
-    return NextResponse.json({
-      source,
-      totals: aggregateTotals(records, opts),
-      buckets,
-    });
+    const buckets = combineTimeBuckets(
+      sources.map((s) => aggregateByTime(records, gran, { ...baseOpts, source: s })),
+    );
+    return NextResponse.json({ source, totals, buckets });
   }
   if (view === 'model') {
-    return NextResponse.json({
-      source,
-      totals: aggregateTotals(records, opts),
-      models: aggregateByModel(records, opts),
-    });
+    // Model name spaces are disjoint across providers — flatMap + sort.
+    const modelList = sources
+      .flatMap((s) => aggregateByModel(records, { ...baseOpts, source: s }))
+      .sort((a, b) => b.cost - a.cost);
+    return NextResponse.json({ source, totals, models: modelList });
   }
   if (view === 'project') {
-    return NextResponse.json({
-      source,
-      totals: aggregateTotals(records, opts),
-      projects: aggregateByProject(records, opts),
-    });
+    // Same cwd may appear once per source in the All view — that's the
+    // documented behaviour, callers can group by (cwd, source) if they
+    // want to merge client-side.
+    const projectList = sources
+      .flatMap((s) => aggregateByProject(records, { ...baseOpts, source: s }))
+      .sort((a, b) => b.cost - a.cost);
+    return NextResponse.json({ source, totals, projects: projectList });
   }
   return NextResponse.json({ error: 'invalid view' }, { status: 400 });
 });

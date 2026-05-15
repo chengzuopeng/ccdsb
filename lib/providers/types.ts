@@ -32,6 +32,10 @@ export interface ProviderAdapter {
   displayName: { en: string; zh: string };
   shortLabel: string;
   color: { fg: string; bg: string };
+  /** Path (under /public) of the provider's brand-mark image. Used by
+   *  the source switcher and settings page as the primary identifier;
+   *  `shortLabel` + `color` remain as fallbacks. */
+  logoSrc: string;
   capabilities: ProviderCapabilities;
   /**
    * Bump this string whenever `parseFile` semantics change in a way that

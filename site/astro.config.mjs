@@ -8,6 +8,7 @@ export default defineConfig({
   //   - <link rel="alternate"> hreflang URLs in BaseLayout.astro
   site: 'https://ccgauge.dev',
   trailingSlash: 'always',
+  devToolbar: { enabled: false },
   integrations: [
     tailwind({ applyBaseStyles: false }),
     // NOTE: @astrojs/sitemap was deliberately omitted. Its 3.7+ releases

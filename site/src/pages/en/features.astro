@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ScreenshotGallery from '../../components/ScreenshotGallery.astro';
 import { localePath } from '../../i18n/utils';
 
 const locale = 'en';
@@ -105,6 +106,45 @@ const sections: Section[] = [
 ];
 
 const installSnippet = 'npx ccgauge';
+
+const screenshots = [
+  {
+    src: '/images/screenshots/overview-en-dark.png',
+    alt: 'ccgauge overview dashboard in dark mode, showing KPI cards and the token usage trend.',
+    title: 'Overview',
+    meta: 'Dark · English · KPI and cost summary',
+  },
+  {
+    src: '/images/screenshots/usage-en-dark.png',
+    alt: 'ccgauge usage page in dark mode, showing per-turn and per-call usage rows.',
+    title: 'Usage',
+    meta: 'Turn grouping · filters · export-ready rows',
+  },
+  {
+    src: '/images/screenshots/sessions-en-dark.png',
+    alt: 'ccgauge sessions page in dark mode, showing session rollups and model mix.',
+    title: 'Sessions',
+    meta: 'Conversation drill-down and model mix',
+  },
+  {
+    src: '/images/screenshots/projects-en-dark.png',
+    alt: 'ccgauge projects page in dark mode, showing project spend and token distribution.',
+    title: 'Projects',
+    meta: 'Worktree-aware project analytics',
+  },
+  {
+    src: '/images/screenshots/models-en-dark.png',
+    alt: 'ccgauge models page in dark mode, showing model comparison cards.',
+    title: 'Models',
+    meta: 'Per-model cost and token comparison',
+  },
+  {
+    src: '/images/screenshots/settings-zh-light.png',
+    alt: 'ccgauge settings page in light mode and Chinese locale, showing preferences and detected data sources.',
+    title: 'Settings',
+    meta: 'Light · 中文 · source and preference checks',
+  },
+];
 ---
 
 <BaseLayout
@@ -137,6 +177,18 @@ const installSnippet = 'npx ccgauge';
       </ol>
     </div>
   </nav>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14">
+    <div class="max-w-3xl mb-8">
+      <div class="pill-brand mb-3">Product screenshots</div>
+      <h2 class="heading-section">The docs now show the real running dashboard.</h2>
+      <p class="lede mt-3">
+        These captures come from the local ccgauge app running on this machine, so the feature
+        tour reflects the actual product surfaces instead of placeholder art.
+      </p>
+    </div>
+    <ScreenshotGallery items={screenshots} />
+  </section>
 
   {sections.map((s) => (
     <section id={s.id} class="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 scroll-mt-24">

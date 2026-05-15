@@ -8,31 +8,77 @@ import { useT, useI18n } from '@/lib/i18n/context';
 interface Props {
   initial: SerializedProgress;
   className?: string;
+  /** Optional small inline tag after the title (e.g. "· Claude"). */
+  sourceLabel?: string;
+  /** Compact mode shrinks padding + min-height so two cards fit on one
+   *  row at most viewport widths. */
+  compact?: boolean;
+  /** Replaces the default top-right slot — by default that slot is the
+   *  "live" pill on an active block, nothing on the empty state. The
+   *  All view passes a source-switcher tablist here instead. */
+  headerRight?: React.ReactNode;
 }
 
-export function BlockProgress({ initial, className }: Props) {
+export function BlockProgress({
+  initial,
+  className,
+  sourceLabel,
+  compact,
+  headerRight,
+}: Props) {
   const t = useT();
   const { locale } = useI18n();
   const fmtTokens = (n: number) => formatTokensCompact(n, locale);
 
+  const cardCls = cn(
+    'card flex flex-col',
+    compact ? 'p-4 min-h-[160px]' : 'card-pad min-h-[180px]',
+    className,
+  );
+
+  const headerLeft = (
+    <div className="flex items-center gap-2 min-w-0">
+      <div className="label whitespace-nowrap">{t('block.title')}</div>
+      {sourceLabel && (
+        <span className="text-[10px] uppercase tracking-wide text-text-tertiary font-medium whitespace-nowrap">
+          · {sourceLabel}
+        </span>
+      )}
+    </div>
+  );
+
   if (!initial.hasBlock || !initial.endTime || !initial.startTime) {
     return (
-      <div className={cn('card card-pad min-h-[180px] flex flex-col', className)}>
-        <div className="label">{t('block.title')}</div>
+      <div className={cardCls}>
+        <div className="flex items-center justify-between gap-2">
+          {headerLeft}
+          {/* No default right-slot in the empty state; the switcher (if
+              caller passed one) lives here so users can still switch to
+              another provider whose block IS active. */}
+          {headerRight}
+        </div>
         <div className="text-sm text-text-tertiary mt-4">{t('block.empty')}</div>
         <div className="text-xs text-text-tertiary mt-1">{t('block.emptyDesc')}</div>
       </div>
     );
   }
 
+  // Default right-slot for an active block is the "live" pill; the
+  // visible countdown below already conveys liveness, so a caller-provided
+  // headerRight (e.g. tab switcher) cleanly replaces it without losing
+  // critical info.
+  const defaultLivePill = (
+    <span className="pill bg-success/10 text-success border border-success/20 whitespace-nowrap">
+      <span className="w-1.5 h-1.5 rounded-full bg-success mr-1 animate-pulse" />
+      {t('common.live')}
+    </span>
+  );
+
   return (
-    <div className={cn('card card-pad min-h-[180px] flex flex-col', className)}>
-      <div className="flex items-center justify-between">
-        <div className="label">{t('block.title')}</div>
-        <span className="pill bg-success/10 text-success border border-success/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-success mr-1 animate-pulse" />
-          {t('common.live')}
-        </span>
+    <div className={cardCls}>
+      <div className="flex items-center justify-between gap-2">
+        {headerLeft}
+        {headerRight ?? defaultLivePill}
       </div>
 
       <LiveCountdown

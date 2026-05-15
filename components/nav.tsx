@@ -26,11 +26,14 @@ interface ProviderInfo {
   bg: string;
   displayEn: string;
   displayZh: string;
+  /** Optional path to a brand-logo image (under /public). When set,
+   *  SourceSwitcher renders the image instead of the colored letter chip. */
+  logoSrc?: string;
 }
 
 interface Props {
   availableProviders: ProviderId[];
-  initialSource: ProviderId;
+  initialSource: ProviderId | 'all';
   providerInfos: ProviderInfo[];
 }
 

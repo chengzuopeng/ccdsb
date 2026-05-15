@@ -31,8 +31,8 @@ const mcpSnippet = `{
     title="See how much Claude Code is actually"
     titleAccent="costing you."
     lede="ccgauge is a local-only dashboard for Claude Code and OpenAI Codex CLI. Track tokens, cost, cache savings, and 5h-block usage across every project, model, and session — without sending a single byte off your machine."
-    imageSrc="hero-dashboard.svg"
-    imageAlt="Stylized illustration of the ccgauge dashboard floating in dark space, with indigo chart accents and a 7×24 heatmap grid."
+    imageSrc="screenshots/overview-en-dark.png"
+    imageAlt="Real ccgauge overview dashboard screenshot in dark mode, showing KPI cards, token trend chart, cache hit rate, and active 5-hour block."
   >
     <a slot="cta" href={GITHUB_URL} class="btn-brand" target="_blank" rel="noopener noreferrer">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -74,15 +74,15 @@ const mcpSnippet = `{
       icon="◇"
       title="Multi-source analytics"
       body="One unified dashboard for both Claude Code and OpenAI Codex CLI. Switch sources with one click; URL and cookie remember your choice."
-      imageSrc="feature-dashboard.svg"
-      imageAlt="Stylized ccgauge dashboard showing overview KPIs and trend chart."
+      imageSrc="screenshots/overview-en-dark.png"
+      imageAlt="Real ccgauge overview dashboard showing source-aware KPIs and trend charts."
     />
     <FeatureCard
       icon="▣"
       title="CLI report"
       body={'No server, no browser — just `ccgauge report`. Colored summary, trend chart, top-N breakdown, JSON output. Pipes cleanly into your scripts.'}
-      imageSrc="feature-cli.svg"
-      imageAlt="Terminal window showing ccgauge report output with an ASCII bar chart."
+      imageSrc="feature-cli.webp"
+      imageAlt="Generated terminal-style report visual with cost and token analytics."
       ctaLabel="Read the CLI reference"
       ctaHref={localePath(locale, 'cli')}
     />
@@ -90,8 +90,8 @@ const mcpSnippet = `{
       icon="◈"
       title="MCP server"
       body="Let Claude Desktop / Cursor / Cline query your usage directly. Eight MCP tools cover totals, time series, per-model and per-session breakdowns."
-      imageSrc="feature-mcp.svg"
-      imageAlt="Abstract network diagram showing MCP integration."
+      imageSrc="feature-mcp.webp"
+      imageAlt="Generated MCP integration visual with a local server node connected to structured usage tools."
       ctaLabel="MCP integration guide"
       ctaHref={localePath(locale, 'mcp')}
     />
@@ -99,13 +99,15 @@ const mcpSnippet = `{
       icon="⌬"
       title="Activity heatmap"
       body="7×24 day-of-week × hour-of-day grid with hover tooltips for message counts, tokens, and share-of-total. Find your peak coding hours at a glance."
+      imageSrc="feature-heatmap.webp"
+      imageAlt="Generated analytics visual focused on a 7 by 24 activity heatmap and hover tooltip."
     />
     <FeatureCard
       icon="🔒"
       title="100% local, zero telemetry"
       body="ccgauge reads your existing JSONL session files and never makes outbound calls. Bind to 127.0.0.1 by default. Open source, MIT."
-      imageSrc="feature-privacy.svg"
-      imageAlt="Translucent indigo shield over a stylized disk silhouette."
+      imageSrc="feature-privacy.webp"
+      imageAlt="Generated local privacy visual with a shield, locked files, and a blocked outbound network path."
       ctaLabel="Privacy by design"
       ctaHref={localePath(locale, 'privacy')}
     />
@@ -113,8 +115,8 @@ const mcpSnippet = `{
       icon="🌐"
       title="Bilingual, themeable"
       body="English and 简体中文 throughout the UI and CLI. Dark / light / system themes with no flash on first paint. Cross-platform npm install."
-      imageSrc="feature-i18n.svg"
-      imageAlt="Two stacked browser mockups showing Latin and CJK character blocks linked by an indigo arc."
+      imageSrc="feature-i18n.webp"
+      imageAlt="Generated bilingual and theme-switching visual with dark and light dashboard panels."
     />
   </FeatureGrid>
 

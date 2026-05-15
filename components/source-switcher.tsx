@@ -12,11 +12,19 @@ interface ProviderInfo {
   bg: string;
   displayEn: string;
   displayZh: string;
+  /** Optional path to a brand-logo image (under /public). When set,
+   *  rendered as <img> in place of the colored letter chip. */
+  logoSrc?: string;
 }
+
+/** Tri-state source selector. `'all'` is only an option when both providers
+ *  are detected on disk — otherwise the segmented control collapses (or
+ *  hides entirely if only one provider is present). */
+type Choice = ProviderId | 'all';
 
 interface Props {
   available: ProviderId[];
-  initial: ProviderId;
+  initial: Choice;
   providers: ProviderInfo[];
 }
 
@@ -32,6 +40,12 @@ function deepLinkRoute(pathname: string): boolean {
   return /^\/sessions\/[^/]+|^\/projects\/[^/]+/.test(pathname);
 }
 
+function isChoice(v: string | null | undefined, available: ProviderId[]): v is Choice {
+  if (!v) return false;
+  if (v === 'all') return available.length >= 2;
+  return (available as string[]).includes(v);
+}
+
 export function SourceSwitcher({ available, initial, providers }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -39,16 +53,18 @@ export function SourceSwitcher({ available, initial, providers }: Props) {
   const t = useT();
   const { locale } = useI18n();
   const [pending, startTransition] = useTransition();
-  const urlSource = searchParams.get('source') as ProviderId | null;
-  const [current, setCurrent] = useState<ProviderId>(urlSource ?? initial);
+  const urlSource = searchParams.get('source');
+  const urlChoice: Choice | null = isChoice(urlSource, available) ? (urlSource as Choice) : null;
+  const [current, setCurrent] = useState<Choice>(urlChoice ?? initial);
 
   useEffect(() => {
-    if (urlSource && urlSource !== current) setCurrent(urlSource);
-  }, [urlSource, current]);
+    if (urlChoice && urlChoice !== current) setCurrent(urlChoice);
+  }, [urlChoice, current]);
 
+  // Only one provider on disk → hide the switcher entirely; nothing to choose.
   if (available.length < 2) return null;
 
-  const select = (id: ProviderId) => {
+  const select = (id: Choice) => {
     if (id === current) return;
     setCurrent(id);
     setCookie(id);
@@ -62,6 +78,10 @@ export function SourceSwitcher({ available, initial, providers }: Props) {
     });
   };
 
+  // Order: All · Claude · Codex. "全部" leads so users always see the
+  // broadest-scope option first; per-provider buttons follow.
+  const orderedProviders = providers.filter((p) => available.includes(p.id));
+
   return (
     <div
       role="group"
@@ -69,36 +89,133 @@ export function SourceSwitcher({ available, initial, providers }: Props) {
       className="inline-flex items-center rounded-md border border-border bg-bg-surface p-0.5 gap-0.5"
       title={t('nav.source')}
     >
-      {providers
-        .filter((p) => available.includes(p.id))
-        .map((p) => {
-          const isActive = p.id === current;
-          const label = locale === 'zh' ? p.displayZh : p.displayEn;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => select(p.id)}
-              aria-pressed={isActive}
-              disabled={pending}
-              className={`px-2.5 h-6 text-xs inline-flex items-center gap-1.5 rounded transition-all ${
-                isActive
-                  ? 'bg-brand-strong text-white font-semibold shadow-sm ring-1 ring-brand/40'
-                  : 'text-text-tertiary font-medium hover:text-text-primary hover:bg-bg-surface-hi'
-              }`}
-            >
-              <span
-                className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none ${
-                  isActive ? 'ring-1 ring-white/40' : ''
+      <AllButton
+        active={current === 'all'}
+        label={t('source.all')}
+        onSelect={() => select('all')}
+        disabled={pending}
+        providers={orderedProviders}
+      />
+      {orderedProviders.map((p) => {
+        const isActive = p.id === current;
+        const label = locale === 'zh' ? p.displayZh : p.displayEn;
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => select(p.id)}
+            aria-pressed={isActive}
+            disabled={pending}
+            className={`px-2.5 h-6 text-xs inline-flex items-center gap-1.5 rounded transition-all ${
+              isActive
+                ? 'bg-brand-strong text-white font-semibold shadow-sm ring-1 ring-brand/40'
+                : 'text-text-tertiary font-medium hover:text-text-primary hover:bg-bg-surface-hi'
+            }`}
+          >
+            <ProviderMark provider={p} active={isActive} />
+            <span>{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Brand mark: prefers the provider's logo image if available; otherwise
+ *  falls back to the original colored chip with the short-letter label. */
+function ProviderMark({ provider, active }: { provider: ProviderInfo; active: boolean }) {
+  if (provider.logoSrc) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={provider.logoSrc}
+        alt=""
+        aria-hidden
+        className={`w-4 h-4 rounded-[3px] object-contain shrink-0 ${
+          active ? 'ring-1 ring-white/40' : ''
+        }`}
+      />
+    );
+  }
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none ${
+        active ? 'ring-1 ring-white/40' : ''
+      }`}
+      style={{ background: provider.bg, color: provider.fg }}
+    >
+      {provider.shortLabel}
+    </span>
+  );
+}
+
+function AllButton({
+  active,
+  label,
+  onSelect,
+  disabled,
+  providers,
+}: {
+  active: boolean;
+  label: string;
+  onSelect: () => void;
+  disabled: boolean;
+  providers: ProviderInfo[];
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      disabled={disabled}
+      className={`px-2.5 h-6 text-xs inline-flex items-center gap-1.5 rounded transition-all ${
+        active
+          ? 'bg-brand-strong text-white font-semibold shadow-sm ring-1 ring-brand/40'
+          : 'text-text-tertiary font-medium hover:text-text-primary hover:bg-bg-surface-hi'
+      }`}
+    >
+      <span
+        className="relative inline-flex items-center w-[26px] h-4 shrink-0"
+        aria-hidden
+      >
+        {providers.slice(0, 2).map((p, i) => {
+          // Stacked brand marks visually communicate "both providers
+          // contribute to this view". Use the real logos when available;
+          // fall back to the colored letter chip otherwise.
+          const left = i === 0 ? 0 : 10;
+          if (p.logoSrc) {
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={p.id}
+                src={p.logoSrc}
+                alt=""
+                className={`absolute w-4 h-4 rounded-[3px] object-contain ring-1 ${
+                  active ? 'ring-white/40' : 'ring-bg-surface'
                 }`}
-                style={{ background: p.bg, color: p.fg }}
-              >
-                {p.shortLabel}
-              </span>
-              <span>{label}</span>
-            </button>
+                style={{ left, zIndex: providers.length - i }}
+              />
+            );
+          }
+          return (
+            <span
+              key={p.id}
+              className={`absolute inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none ring-1 ${
+                active ? 'ring-white/40' : 'ring-bg-surface'
+              }`}
+              style={{
+                background: p.bg,
+                color: p.fg,
+                left,
+                zIndex: providers.length - i,
+              }}
+            >
+              {p.shortLabel}
+            </span>
           );
         })}
-    </div>
+      </span>
+      <span>{label}</span>
+    </button>
   );
 }

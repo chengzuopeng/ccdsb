@@ -6,13 +6,84 @@ import {
   formatTokensCompact,
   formatUSD,
   formatRelative,
+  projectNameFromCwd,
 } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
-import { resolveSource, filterBySource } from '@/lib/source';
+import { resolveSource, filterBySource, expandSources } from '@/lib/source';
 import { getProvider } from '@/lib/providers';
+import { resolveCanonicalCwd } from '@/lib/project-label';
+import type { AssistantRecord, ProjectSummary } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+/**
+ * Collapses multiple ProjectSummary entries that belong to the same git
+ * repository (main + worktrees) into a single entry, keyed by
+ * (canonicalCwd, source).  Token / cost / request stats are summed and
+ * timestamps take min/max; sessions count is recomputed by unioning every
+ * sessionId encountered across all sub-projects so it matches the detail
+ * page (where the aggregator naturally de-dupes across worktrees).
+ *
+ * The merged entry's `cwd` is the canonical path (main repo dir) and its
+ * `projectName` is derived from that path — so the card and detail-page
+ * URL are stable regardless of which worktree the records actually lived in.
+ */
+function mergeWorktreeProjects(
+  projects: ProjectSummary[],
+  records: AssistantRecord[],
+): ProjectSummary[] {
+  const grouped = new Map<string, ProjectSummary>();
+
+  for (const p of projects) {
+    const canonical = resolveCanonicalCwd(p.cwd);
+    // Keep source in the key so All-view still shows one row per provider.
+    const key = `${p.source}::${canonical}`;
+    const existing = grouped.get(key);
+    if (!existing) {
+      grouped.set(key, {
+        ...p,
+        cwd: canonical,
+        projectName: projectNameFromCwd(canonical),
+      });
+    } else {
+      existing.requests += p.requests;
+      existing.inputTokens += p.inputTokens;
+      existing.outputTokens += p.outputTokens;
+      existing.cacheReadTokens += p.cacheReadTokens;
+      existing.cacheCreationTokens += p.cacheCreationTokens;
+      existing.totalTokens += p.totalTokens;
+      existing.cost += p.cost;
+      existing.saved += p.saved;
+      if (p.firstActivity < existing.firstActivity) existing.firstActivity = p.firstActivity;
+      if (p.lastActivity > existing.lastActivity) existing.lastActivity = p.lastActivity;
+      for (const m of p.models) {
+        if (!existing.models.includes(m)) existing.models.push(m);
+      }
+    }
+  }
+
+  // Recompute unique session counts by scanning the underlying records.
+  // Plain summation over-counts when one sessionId touches multiple cwds
+  // (rare, but still wrong on principle) and diverges from the detail page
+  // which always sees a unioned record set.
+  const sessionSets = new Map<string, Set<string>>();
+  for (const r of records) {
+    const key = `${r.source}::${resolveCanonicalCwd(r.cwd)}`;
+    let set = sessionSets.get(key);
+    if (!set) {
+      set = new Set();
+      sessionSets.set(key, set);
+    }
+    set.add(r.sessionId);
+  }
+  for (const [key, p] of grouped) {
+    const set = sessionSets.get(key);
+    if (set) p.sessions = set.size;
+  }
+
+  return Array.from(grouped.values());
+}
 
 export default async function ProjectsPage({
   searchParams,
@@ -25,8 +96,7 @@ export default async function ProjectsPage({
   const locale = await getServerLocale();
   const scan = await getCachedScan();
   const records = filterBySource(scan.records, source);
-  const provider = getProvider(source);
-  const shorten = (m: string) => provider.shortenModel(m);
+  const sources = expandSources(source);
 
   if (records.length === 0) {
     return (
@@ -35,8 +105,16 @@ export default async function ProjectsPage({
       </PageShell>
     );
   }
-  const projects = aggregateByProject(records, { source });
+  // Aggregate per source, then collapse all git worktrees that share the
+  // same canonical repo root into a single project row. For 'all' this
+  // still produces up to 2 rows per canonical project (one per provider).
+  const rawProjects = sources.flatMap((s) => aggregateByProject(records, { source: s }));
+  const projects = mergeWorktreeProjects(rawProjects, records).sort((a, b) => b.cost - a.cost);
   const totalCost = projects.reduce((s, p) => s + p.cost, 0);
+  // Each project row has its own `source` — use it to pick the right
+  // model name shortener instead of a page-level provider.
+  const shortenFor = (p: { source: typeof sources[number] }) => (m: string) =>
+    getProvider(p.source).shortenModel(m);
 
   return (
     <PageShell title={t('projects.title')} desc={t('projects.subtitle', { count: projects.length })}>
@@ -45,14 +123,28 @@ export default async function ProjectsPage({
           const pct = totalCost > 0 ? p.cost / totalCost : 0;
           return (
             <Link
-              key={p.cwd}
-              href={`/projects/${encodeURIComponent(p.cwd)}?source=${source}`}
+              // For All view, the same cwd appears once per source; keep
+              // both card identities stable with a (cwd, source) compound key.
+              key={`${p.source}:${p.cwd}`}
+              href={`/projects/${encodeURIComponent(p.cwd)}?source=${p.source}`}
               className="card card-pad hover:border-border-hi transition-colors group"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-semibold text-text-primary truncate group-hover:text-brand transition-colors">
-                    {p.projectName}
+                  <div className="font-semibold text-text-primary truncate group-hover:text-brand transition-colors flex items-center gap-2">
+                    <span className="truncate">{p.projectName}</span>
+                    {source === 'all' && (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-text-tertiary font-medium shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getProvider(p.source).logoSrc}
+                          alt=""
+                          aria-hidden
+                          className="w-3.5 h-3.5 rounded-[3px] object-contain"
+                        />
+                        {p.source === 'claude' ? 'Claude' : 'Codex'}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-text-tertiary truncate mt-0.5" title={p.cwd}>
                     {p.cwd}
@@ -75,7 +167,7 @@ export default async function ProjectsPage({
                 <span className="whitespace-nowrap">
                   {t('common.lastActivity')} {formatRelative(p.lastActivity, locale)}
                 </span>
-                <span className="truncate">{p.models.map(shorten).join(', ')}</span>
+                <span className="truncate">{p.models.map(shortenFor(p)).join(', ')}</span>
               </div>
             </Link>
           );

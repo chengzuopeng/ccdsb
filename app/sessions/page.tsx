@@ -10,7 +10,7 @@ import {
   shortHash,
 } from '@/lib/utils';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
-import { resolveSource, filterBySource } from '@/lib/source';
+import { resolveSource, filterBySource, expandSources } from '@/lib/source';
 import { getProvider } from '@/lib/providers';
 
 export const dynamic = 'force-dynamic';
@@ -28,8 +28,11 @@ export default async function SessionsPage({
   const scan = await getCachedScan();
   const records = filterBySource(scan.records, source);
   const userRecords = filterBySource(scan.userRecords, source);
-  const provider = getProvider(source);
-  const shorten = (m: string) => provider.shortenModel(m);
+  const sources = expandSources(source);
+  // For mixed-source rows the model shortener needs to know each row's
+  // provider — sessions already carry `source` after aggregation.
+  const shortenFor = (s: { source: typeof sources[number] }) => (m: string) =>
+    getProvider(s.source).shortenModel(m);
 
   if (records.length === 0) {
     return (
@@ -39,7 +42,12 @@ export default async function SessionsPage({
     );
   }
 
-  const sessions = aggregateBySession(records, userRecords, { source });
+  // List-style aggregator: run per source and concatenate. Sessions never
+  // span providers, so there's no risk of cross-source merging in the
+  // aggregator's `sessionId` keying.
+  const sessions = sources
+    .flatMap((s) => aggregateBySession(records, userRecords, { source: s }))
+    .sort((a, b) => b.endTime.localeCompare(a.endTime));
 
   return (
     <PageShell
@@ -66,7 +74,7 @@ export default async function SessionsPage({
                 <tr key={s.sessionId} className="border-b border-border last:border-b-0 hover:bg-bg-surface-hi/40">
                   <td className="px-3 py-2.5">
                     <Link
-                      href={`/sessions/${encodeURIComponent(s.sessionId)}?source=${source}`}
+                      href={`/sessions/${encodeURIComponent(s.sessionId)}?source=${s.source}`}
                       className="text-text-primary hover:text-brand"
                     >
                       <div className="font-medium truncate max-w-[280px]" title={s.title || s.sessionId}>
@@ -79,7 +87,7 @@ export default async function SessionsPage({
                     {s.projectName}
                   </td>
                   <td className="px-3 py-2.5 text-text-secondary text-xs">
-                    {s.models.map(shorten).join(', ')}
+                    {s.models.map(shortenFor(s)).join(', ')}
                   </td>
                   <td className="px-3 py-2.5 num-mono text-right text-text-secondary">{s.requests}</td>
                   <td className="px-3 py-2.5 num-mono text-right text-text-secondary">

@@ -14,7 +14,8 @@ import { formatTokensCompact, formatUSD, formatPct } from '@/lib/utils';
 import { getServerT } from '@/lib/i18n/server';
 import { tFn } from '@/lib/i18n/dict';
 import { getServerLocale } from '@/lib/i18n/server';
-import { resolveSource, filterBySource } from '@/lib/source';
+import { resolveSource, filterBySource, expandSources } from '@/lib/source';
+import { combineTimeBuckets, combineTotals } from '@/lib/source-merge';
 import { getProvider } from '@/lib/providers';
 import { AutoRefresh } from '@/components/auto-refresh';
 import { OverviewToggle } from '@/components/overview-toggle';
@@ -87,16 +88,22 @@ export default async function UsagePage({
   const allSourceUsers = filterBySource(scan.userRecords, source);
   const dates = rangeToDates(range);
 
-  const opts = {
-    source,
+  const sources = expandSources(source);
+  // Run per-source then merge — `aggregateTotals` / `aggregateByTime`
+  // require a concrete ProviderId, so the All view dispatches twice and
+  // combines numeric results before they hit the KPI cards / chart.
+  const baseOpts = {
     from: dates.from,
     to: dates.to,
     models: models.length ? models : undefined,
     projects: projects.length ? projects : undefined,
   };
-
-  const totals = aggregateTotals(allSourceRecords, opts);
-  const buckets = aggregateByTime(allSourceRecords, gran, opts);
+  const totals = combineTotals(
+    sources.map((s) => aggregateTotals(allSourceRecords, { ...baseOpts, source: s })),
+  );
+  const buckets = combineTimeBuckets(
+    sources.map((s) => aggregateByTime(allSourceRecords, gran, { ...baseOpts, source: s })),
+  );
   const trend: TokenStackDatum[] = buckets.map((b) => ({
     label: b.label,
     input: b.inputTokens,
@@ -131,8 +138,15 @@ export default async function UsagePage({
         Math.max(1, totals.cacheReadTokens + totals.inputTokens + totals.cacheCreationTokens)
       : 0;
 
-  const provider = getProvider(source);
-  const costFootnote = provider.costFootnoteKey ? t(provider.costFootnoteKey) : '';
+  // Cost note is hidden in the All view (decided UX): the merged number
+  // mixes Codex's "API equivalent" with Claude's API-exact value, so a
+  // single footnote would be misleading either way.
+  const costFootnote =
+    source === 'all'
+      ? ''
+      : getProvider(source).costFootnoteKey
+        ? t(getProvider(source).costFootnoteKey as string)
+        : '';
 
   return (
     <PageShell
@@ -168,6 +182,7 @@ export default async function UsagePage({
               title={t('usage.trend')}
               desc={t('usage.trend.gran', { gran: tFn(locale, `gran.${gran}`) })}
               right={<GranularityPicker defaultValue={gran} />}
+              className="mt-4"
             >
               <TokenStackChart data={trend} />
             </Section>

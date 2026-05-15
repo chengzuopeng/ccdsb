@@ -23,7 +23,7 @@ const ratioClass =
       <span class="ml-3 text-[11px] font-mono text-text-tertiary tabular-nums">ccgauge — localhost:3737</span>
     </div>
     <div class:list={['bg-bg-surface-hi', ratioClass]}>
-      <img src={src} alt={alt} loading="lazy" decoding="async" class="w-full h-full object-cover" />
+      <img src={src} alt={alt} loading="eager" decoding="async" class="w-full h-full object-cover" />
     </div>
   </div>
   {caption && <figcaption class="mt-4 text-center text-sm text-text-tertiary">{caption}</figcaption>}

@@ -16,14 +16,13 @@ interface Props {
   locale: Locale;
   /**
    * Path of the OG image, relative to `/images/`. Defaults to
-   * `og-default.svg` (the placeholder). Replace this default with a real
-   * PNG / JPG when you ship — social-media crawlers don't render SVG OG
-   * images.
+   * `og-default.png`, a generated social card. Social-media crawlers do not
+   * reliably render SVG OG images.
    */
   ogImage?: string;
 }
 
-const { title, description, locale, ogImage = 'og-default.svg' } = Astro.props;
+const { title, description, locale, ogImage = 'og-default.png' } = Astro.props;
 const fullTitle = title === SITE_TITLE ? title : `${title} · ${SITE_TITLE}`;
 const canonical = new URL(Astro.url.pathname, SITE_URL).toString();
 const ogImageUrl = new URL(`/images/${ogImage}`, SITE_URL).toString();

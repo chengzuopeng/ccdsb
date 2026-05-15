@@ -22,6 +22,7 @@ const en: Dict = {
   // sources
   'source.claude': 'Claude',
   'source.codex': 'Codex',
+  'source.all': 'All',
 
   // cost notes
   'cost.footnote.codex': 'Cost shown is the OpenAI API equivalent (subscription plans pay differently).',
@@ -99,8 +100,12 @@ const en: Dict = {
   'common.error.title': 'Something went wrong',
   'common.error.desc': 'Failed to load this page. Try again.',
   'common.error.retry': 'Retry',
-  'overview.trend.title': 'Token usage trend',
-  'overview.trend.desc': 'Last 30 days · stacked by token type',
+  'overview.trend.title': 'Usage trend',
+  'overview.trend.desc': 'Last 30 days · {metric}',
+  'overview.trend.desc.tokens': 'stacked by token type',
+  'overview.trend.desc.conversations': 'conversations per day',
+  'overview.trend.metric.tokens': 'Tokens',
+  'overview.trend.metric.conversations': 'Conversations',
   'overview.trend.activeDays': '{n} day with activity',
   'overview.trend.activeDays.plural': '{n} days with activity',
   'overview.costByModel.title': 'Cost by model',
@@ -166,6 +171,7 @@ const en: Dict = {
   'chart.tooltip.total': 'Total',
   'chart.tooltip.cost': 'Cost',
   'chart.tooltip.requests': 'Requests',
+  'chart.tooltip.conversations': 'Conversations',
   'chart.empty': 'No data in this range',
   'chart.empty.short': 'No data',
 
@@ -347,6 +353,7 @@ const zh: Dict = {
 
   'source.claude': 'Claude',
   'source.codex': 'Codex',
+  'source.all': '全部',
 
   'cost.footnote.codex': '按 OpenAI API 单价折算估值（订阅计划实际计费不同）',
 
@@ -419,8 +426,12 @@ const zh: Dict = {
   'common.error.title': '出错了',
   'common.error.desc': '加载失败，请重试。',
   'common.error.retry': '重试',
-  'overview.trend.title': 'Token 用量趋势',
-  'overview.trend.desc': '近 30 天 · 按 token 类型堆叠',
+  'overview.trend.title': '用量趋势',
+  'overview.trend.desc': '近 30 天 · {metric}',
+  'overview.trend.desc.tokens': '按 token 类型堆叠',
+  'overview.trend.desc.conversations': '每日对话次数',
+  'overview.trend.metric.tokens': 'Token',
+  'overview.trend.metric.conversations': '对话次数',
   'overview.trend.activeDays': '{n} 天有数据',
   'overview.trend.activeDays.plural': '{n} 天有数据',
   'overview.costByModel.title': '按模型成本分布',
@@ -484,6 +495,7 @@ const zh: Dict = {
   'chart.tooltip.total': '合计',
   'chart.tooltip.cost': '花费',
   'chart.tooltip.requests': '请求数',
+  'chart.tooltip.conversations': '对话次数',
   'chart.empty': '区间内无数据',
   'chart.empty.short': '暂无数据',
 

@@ -39,6 +39,29 @@ const SHOTS = [
   { name: 'settings-zh-light.png', path: '/settings', locale: 'zh', theme: 'light' },
 ];
 
+async function hideDevChrome(page) {
+  await page.addStyleTag({
+    content: `
+      nextjs-portal,
+      next-route-announcer,
+      [data-nextjs-dev-overlay],
+      [data-nextjs-dialog-overlay],
+      [data-nextjs-toast],
+      [data-nextjs-dev-tools-button] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    `,
+  });
+  await page.evaluate(() => {
+    document.querySelector('nextjs-portal')?.remove();
+    document.querySelector('[data-nextjs-dev-overlay]')?.remove();
+    document.querySelector('next-route-announcer')?.remove();
+  });
+}
+
 async function main() {
   await mkdir(OUT, { recursive: true });
 
@@ -58,6 +81,7 @@ async function main() {
     ]);
     const page = await context.newPage();
     await page.goto(BASE + s.path, { waitUntil: 'networkidle' });
+    await hideDevChrome(page);
     // Disable caret, just in case
     await page.evaluate(() => document.activeElement?.blur?.());
     // Make sure animations have settled (we already disabled chart animations,

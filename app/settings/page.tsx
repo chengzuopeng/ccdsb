@@ -77,12 +77,13 @@ export default async function SettingsPage() {
               <div key={source} className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="inline-flex items-center justify-center text-[10px] w-5 h-5 rounded-full font-bold"
-                      style={{ background: provider.color.bg, color: provider.color.fg }}
-                    >
-                      {provider.shortLabel}
-                    </span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={provider.logoSrc}
+                      alt=""
+                      aria-hidden
+                      className="w-5 h-5 rounded-[4px] object-contain shrink-0"
+                    />
                     <span className="text-sm font-semibold text-text-primary">
                       {provider.displayName[locale]}
                     </span>

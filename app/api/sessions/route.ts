@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCachedScan } from '@/lib/data-loader/scan';
 import { aggregateBySession } from '@/lib/aggregator';
-import { resolveSource, filterBySource } from '@/lib/source';
+import { resolveSource, filterBySource, expandSources } from '@/lib/source';
 import { withApiErrorHandling } from '@/lib/api/error-handler';
 
 export const runtime = 'nodejs';
@@ -13,6 +13,10 @@ export const GET = withApiErrorHandling(async (req: Request) => {
   const scan = await getCachedScan();
   const records = filterBySource(scan.records, source);
   const userRecords = filterBySource(scan.userRecords, source);
-  const sessions = aggregateBySession(records, userRecords, { source });
+  // Sessions are single-source by construction; per-source aggregate +
+  // concatenate sorted by end time gives the All view a stable mixed list.
+  const sessions = expandSources(source)
+    .flatMap((s) => aggregateBySession(records, userRecords, { source: s }))
+    .sort((a, b) => b.endTime.localeCompare(a.endTime));
   return NextResponse.json({ source, sessions });
 });
