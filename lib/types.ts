@@ -131,6 +131,12 @@ export interface UserRecord {
   sessionId: string;
   cwd: string;
   textPreview: string;
+  /**
+   * True when textPreview was injected by Claude Code itself rather than
+   * typed by the human (skill metadata, <system-reminder>, etc.). Used to
+   * skip these as turn roots, but they can still be displayed per-call.
+   */
+  isSynthetic?: boolean;
   filePath: string;
 }
 

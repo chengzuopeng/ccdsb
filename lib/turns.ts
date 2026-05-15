@@ -9,6 +9,11 @@ export function buildTurnIndex(
 ): Map<string, string> {
   const userTextMap = new Map<string, string>();
   for (const u of users) {
+    // Synthetic user messages (skill metadata, system-reminders) still carry
+    // text in textPreview so per-call displays can show them, but they must
+    // not be treated as turn roots — that's what wrongly split conversations
+    // in the usage table.
+    if (u.isSynthetic) continue;
     if (u.textPreview && u.textPreview.trim()) userTextMap.set(u.uuid, u.textPreview);
   }
 
