@@ -128,7 +128,46 @@ Background mode persists state under `~/.ccgauge/`:
 | `ccgauge restart [options]` | Stop and re-start with new options. |
 | `ccgauge status [--json]` | Inspect the background service. |
 | `ccgauge open` | Open the running dashboard in your browser. |
-| `ccgauge logs [-f] [-n <lines>]` | Print background logs. |
+| `ccgauge logs [-f] [-n <lines>]` | Print background-service log file (the server's stdout). |
+| `ccgauge report [options]` | Print a formatted **usage report** to stdout (one-shot, no server). |
+| `ccgauge mcp` | Start the MCP server on stdio so LLMs can query usage. |
+
+### Report
+
+A no-server one-shot summary that reads the same JSONL files the dashboard does
+and prints a colored, aligned report:
+
+```bash
+ccgauge report                       # last 7d, all sources, top 10 models
+ccgauge report -r 30d -b project     # 30 days, broken down by project
+ccgauge report -s codex -m gpt-5.5   # only codex, only gpt-5.5*
+ccgauge report --json                # JSON output for scripting
+ccgauge report --since 2026-05-01 --until 2026-05-08
+```
+
+Report options:
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `-r, --range <range>` | `7d` | `today` / `1d` / `7d` / `30d` / `90d` / `all` |
+| `-s, --source <provider>` | `all` | `claude` / `codex` / `all` |
+| `-b, --by <dim>` | `model` | Breakdown dimension: `model` / `project` / `session` |
+| `-g, --gran <granularity>` | `day` | Trend bucket: `hour` / `day` / `week` / `month` |
+| `-n, --limit <n>` | `10` | Rows in the breakdown table |
+| `--since <date>` | — | Override range start (ISO date or `YYYY-MM-DD`) |
+| `--until <date>` | — | Override range end |
+| `-m, --model <pat>` | — | Filter records whose model contains `<pat>` |
+| `--project <pat>` | — | Filter by project basename / cwd substring |
+| `-j, --json` | off | Machine-readable JSON instead of formatted text |
+| `--no-color` | — | Disable ANSI colors (auto-disabled when piped) |
+| `--no-trend` | — | Skip the trend chart |
+| `--no-breakdown` | — | Skip the breakdown table |
+
+Date-only `--since/--until` values use local calendar-day boundaries, so
+`--until 2026-05-08` includes all of May 8.
+
+> The name `report` (not `logs`) avoids clashing with `ccgauge logs`, which tails
+> the background server's stdout log file.
 
 ### Startup options
 

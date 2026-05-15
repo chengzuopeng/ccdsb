@@ -5,6 +5,153 @@ All notable changes to **ccgauge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] — 2026-05-12
+
+A polish release. Everything from 0.x — Claude + Codex parsers, the web
+dashboard, the CLI report, the MCP server — is now considered stable and
+documented. Calling it **1.0** to signal feature-complete: the data layer,
+the cost math, the turn grouping, and the published-tarball shape are all
+settled. Future minor versions will keep the existing surfaces working.
+
+### Highlights
+
+- **Overview "Activity" card** — sessions, messages, total tokens, active
+  days, current/longest streak, peak hour, favorite model, plus a 7×24
+  day-of-week × hour-of-day heatmap with hover tooltips (messages +
+  tokens + share-of-total + share-of-peak). Heat-map cells size to the
+  container so the card looks right at any width. Includes a tongue-in-
+  cheek "you've used ~N× more tokens than _The Little Prince_" comparison.
+- **Conversation-turn grouping handles Skills correctly.** When Claude
+  Code invokes a `Skill`, it injects a synthetic `Base directory for this
+  skill: ...` user message that previously fragmented a single
+  conversation into 2–3 rows in the usage table. We now flag these
+  injections (also `<system-reminder>` blocks and `Caveat:` preludes) as
+  synthetic — they skip turn-boundary detection but still surface as the
+  per-call "prompt" on child rows so you can tell which Skill produced
+  each API call.
+- **`ccgauge report` (CLI)** — formatted terminal usage report. Tokens +
+  Cost summary, trend bar chart, top-N breakdown table, all 0.2 s end to
+  end. Supports `--range`, `--source`, `--by model|project|session`,
+  `--since/--until`, `--model/--project` filters, `--json` machine
+  output, and `--level call|turn` for CSV-style detail.
+- **MCP-aware ergonomics.** The Codex parser records the `effort` field
+  from `turn_context` and surfaces it in the usage table model column
+  (e.g. `GPT-5.2 Codex · high`). The 5h-block card now carries a small
+  disclaimer ("wall-clock progress of the 5h window — not your plan
+  quota") so users don't confuse our local block tracker with Anthropic's
+  actual rate-limit counter.
+
+### Added
+
+- **Activity stats** — `lib/aggregator/activity.ts` computes streaks /
+  heat-map / favorite model / token-comparison; rendered by
+  `components/activity-stats.tsx` on the overview.
+- **Silent auto-refresh on the usage page** — `components/auto-refresh.tsx`
+  re-runs the server render every 15 s via `router.refresh()`. No spinner,
+  no scroll reset, no search/expand state loss; pauses on hidden tabs.
+- **Overview show/hide toggle** on the usage page —
+  `components/overview-toggle.tsx` hides the KPI grid + trend chart for
+  users who only want the table. State persists to localStorage and is
+  applied pre-paint by the no-flash script so collapsed users don't see
+  a flash.
+- **Token-breakdown popover** in the usage table — hover the total cell
+  to see input / output / cache-read / cache-create tokens with their
+  per-component cost.
+- **Codex `effort` field** plumbed from JSONL → AssistantRecord →
+  UsageTableRow → model column display.
+- **Per-call "direct prompt"** on child rows — surfaces skill metadata
+  (`Base directory for this skill: /Users/.../skills/mf-commit`) on the
+  individual API calls inside a Skill block, while the parent turn row
+  shows the real human prompt.
+- **CSV export overhaul** (`app/api/export/usage/route.ts`):
+  - UTF-8 BOM so Excel for Windows / Mac opens it without mojibake.
+  - Expanded column set: `turn_started_at`, `turn_ended_at`, `source`,
+    `model_short`, `effort`, `reasoning_tokens`, `project_name`,
+    `project_path`, `user_prompt`, etc.
+  - `?level=turn` for one row per conversation turn instead of one per
+    API call.
+  - Filename embeds range + level (e.g.
+    `ccgauge-usage-claude-7d-turn-2026-05-12.csv`).
+- **Cross-platform CLI hardening** (`bin/cli.mjs`):
+  - `safeKill(pid, signal)` wraps `process.kill` with `ESRCH` tolerance.
+  - `windowsHide: true` on the background `spawn` so Windows doesn't flash
+    a console window.
+  - `restart` inherits the previous session's `port / host / dir / log`
+    when the user doesn't override them.
+  - `0.0.0.0 / ::` is rewritten to `127.0.0.1` for the browser-open URL.
+  - `getPort` candidates widened to 20 ports past the preferred.
+  - `waitForUrl` per-attempt `AbortSignal.timeout(500)`.
+  - `logs --follow` uses incremental `createReadStream` instead of
+    reading the whole file every tick.
+  - `state.json` carries a `version` field; readers ignore unknown shapes.
+- **`AGENTS.md`** — working agreement for AI coding agents editing the
+  repo. Architecture invariants, common pitfalls, "first file to open"
+  table for typical symptoms.
+
+### Changed
+
+- **Default theme is `dark`** (previously `system`). Existing users keep
+  their explicit choice.
+- **Tools column visible by default** in the usage table; `STORAGE_KEY`
+  bumped to `cols.v3` so existing visibility prefs are reset to the new
+  defaults.
+- **SegmentedPicker (range / granularity) active state** matches the
+  source-switcher: brand-color fill instead of muted gray. Visible in
+  both the page header (`今天 / 7天 / 30天 / 90天 / 全部`) and Section
+  headers (`小时 / 天 / 周 / 月`).
+- **Page header layout** on the usage page — model / project filters
+  moved from the Trend section's right slot up to the page header
+  alongside the range picker. They apply to all of KPI / trend / table,
+  so they belong at the page level rather than scoped to one card.
+- **Overview header** dropped the `costToday` and `activeSessions` KPI
+  cards — they overlapped with the existing trend chart + activity
+  stats.
+- **5h block card** — `{pct}% elapsed` renamed to `Time elapsed {pct}%`
+  / `时间进度 {pct}%`, with a disclaimer line clarifying it's wall-clock
+  progress, not plan quota.
+- **CLI option `-h, --host` → `-H, --host`.** `-h` now reliably resolves
+  to `--help` for `ccgauge start` and friends. Long form `--host` is
+  unchanged.
+- **CLI auto-open semantics:** foreground opens the browser by default
+  (`--no-open` to disable); background never auto-opens (`ccgauge open`
+  to open the running one).
+- **Build pipeline:** moved from `prepublishOnly` to `prepack` so
+  `pnpm pack` also runs the build. Build now strips `@img/sharp-*`
+  binaries + the bundled `typescript` package from `.next/standalone` so
+  the published tarball is cross-platform (no `.node` / `.dylib` files
+  ship). Tarball is ~6.8 MB compressed.
+- **pnpm `node-linker = hoisted`** in `.npmrc`. Next.js standalone +
+  pnpm's default isolated layout produced tarballs missing top-level
+  `node_modules/next` (npm pack drops symlinks). Hoisted sidesteps it.
+- **i18n / Chinese day-of-week labels** changed from one-char (`一 / 二`)
+  to full `周一 / 周二 / …` for clarity.
+
+### Fixed
+
+- **Skill-injection turn splitting** — see Highlights.
+- **5h block height** in the overview row now matches the activity card.
+- **Nav scrollbar artefact** — the nav's `overflow-x-auto` rendered a
+  thin gray scrollbar track on macOS even when content didn't overflow,
+  which read as a divider against the navbar background. Replaced
+  `scrollbar-thin` with a `nav-scroller` rule that hides the bar
+  entirely.
+- **Activity heatmap labels** — y-axis now shows every row (was every
+  other), x-axis labels every 3 hours (was every 6).
+
+### Notes for users upgrading from 0.4.x
+
+- No data-file or storage migration is required. Cached entries are
+  re-parsed automatically on first run (`parserVersion` bumped to
+  `claude-v3-synthetic-flag` and `codex-v4-effort`).
+- Two localStorage keys you may want to clear if you want pristine
+  defaults: `ccgauge.usage.cols.*` (column visibility) and
+  `ccgauge.usage.overview.hidden` (overview collapsed). Otherwise we
+  honor whatever you had.
+- If you scripted around the CSV column order, note that headers have
+  been renamed (`cost` → `cost_usd`, `input` → `input_tokens`, etc.)
+  and new columns were added. The metadata header (lines starting with
+  `#`) now also lists `level=call|turn`.
+
 ## [0.4.0] — 2026-05-05
 
 This release ships an **MCP (Model Context Protocol) server** so any

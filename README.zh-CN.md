@@ -128,7 +128,44 @@ ccgauge stop
 | `ccgauge restart [options]` | 停止再用新参数启动。 |
 | `ccgauge status [--json]` | 查看后台状态。 |
 | `ccgauge open` | 在浏览器打开正在运行的看板。 |
-| `ccgauge logs [-f] [-n <lines>]` | 查看后台日志。 |
+| `ccgauge logs [-f] [-n <lines>]` | 查看后台服务的日志（server stdout）。 |
+| `ccgauge report [options]` | 命令行**用量报告**，直接打到终端（一次性，不起服务）。 |
+| `ccgauge mcp` | 起 MCP 服务（stdio），让 LLM 查你的用量。 |
+
+### 命令行报告（report）
+
+不需要起 server，直接读 JSONL，在终端打印漂亮的彩色对齐报告：
+
+```bash
+ccgauge report                       # 默认：近 7 天 / 所有数据源 / 前 10 个模型
+ccgauge report -r 30d -b project     # 30 天，按项目分组
+ccgauge report -s codex -m gpt-5.5   # 只看 codex 的 gpt-5.5*
+ccgauge report --json                # 输出 JSON 给脚本用
+ccgauge report --since 2026-05-01 --until 2026-05-08
+```
+
+report 参数：
+
+| 参数 | 默认 | 作用 |
+| --- | --- | --- |
+| `-r, --range <range>` | `7d` | `today` / `1d` / `7d` / `30d` / `90d` / `all` |
+| `-s, --source <provider>` | `all` | `claude` / `codex` / `all` |
+| `-b, --by <dim>` | `model` | 分组维度：`model` / `project` / `session` |
+| `-g, --gran <granularity>` | `day` | 趋势粒度：`hour` / `day` / `week` / `month` |
+| `-n, --limit <n>` | `10` | 分组表显示行数 |
+| `--since <date>` | — | 自定义起始日期（覆盖 `--range`，支持 `YYYY-MM-DD`） |
+| `--until <date>` | — | 自定义截止日期 |
+| `-m, --model <pat>` | — | 按模型名子串过滤 |
+| `--project <pat>` | — | 按项目名 / cwd 子串过滤 |
+| `-j, --json` | off | 输出 JSON 而不是格式化文本 |
+| `--no-color` | — | 关掉 ANSI 颜色（管道里会自动关） |
+| `--no-trend` | — | 不画趋势条 |
+| `--no-breakdown` | — | 不打分组表 |
+
+只写日期的 `--since/--until` 会按本地自然日边界处理，所以
+`--until 2026-05-08` 会包含 5 月 8 日整天。
+
+> 用 `report` 而不是 `logs` 是为了避免和 `ccgauge logs`（tail 后台 server 的 stdout）混淆。
 
 ### 启动参数
 
