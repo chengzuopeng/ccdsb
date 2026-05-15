@@ -1,0 +1,213 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { localePath, useTranslations } from '../../i18n/utils';
+import { GITHUB_URL } from '../../consts';
+
+const locale = 'zh';
+const t = useTranslations(locale);
+
+const reads: Array<{ what: string; where: string; why: string }> = [
+  {
+    what: 'Claude Code 的 JSONL 会话文件',
+    where: '~/.claude/projects/',
+    why: 'assistant tokens、模型、cwd、tool call、时间戳的来源。',
+  },
+  {
+    what: 'OpenAI Codex CLI 的 JSONL 会话文件',
+    where: '~/.codex/sessions/',
+    why: '同上，外加 Codex 累计 `token_count` 事件（ccgauge 会做正向 delta）。',
+  },
+  {
+    what: '可选的 config 目录覆盖',
+    where: '$CCGAUGE_CONFIG_DIR',
+    why: '指向其他根目录（比如从另一台机器拷过来的快照）。',
+  },
+];
+
+const writes: Array<{ what: string; where: string; why: string }> = [
+  {
+    what: '磁盘解析缓存',
+    where: '~/.ccgauge/cache/index-v2.json',
+    why: '记忆已解析的 JSONL，让仪表盘启动更快。parserVersion bump 时会失效。',
+  },
+  {
+    what: 'MCP 独立缓存',
+    where: '~/.ccgauge/cache/index-mcp-v2.json',
+    why: '`ccgauge mcp` 单独用的索引文件，避免 MCP 进程和仪表盘抢同一份缓存。',
+  },
+  {
+    what: '后台服务状态',
+    where: '~/.ccgauge/state.json',
+    why: '存 PID / port / log 路径，让 `ccgauge stop|restart|status` 能找到正在跑的实例。',
+  },
+  {
+    what: '后台服务日志',
+    where: '~/.ccgauge/ccgauge.log',
+    why: '抓 detached server 的 stdout/stderr。用 `ccgauge logs -f` 跟。',
+  },
+];
+---
+
+<BaseLayout
+  locale={locale}
+  title="隐私"
+  description="为什么 ccgauge 装在公司或个人电脑上都放心：100% 本地、无遥测、运行时零外网调用、MIT 开源。"
+>
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8">
+    <div class="pill-brand mb-3">隐私</div>
+    <h1 class="heading-hero">一切都留在你的电脑里。</h1>
+    <p class="lede mt-5 max-w-3xl">
+      ccgauge 的设计原则简单粗暴：你的对话记录和 AI 花费跟我们没关系。仪表盘、CLI、MCP 服务全部本地运行，
+      运行时不发任何外网请求。
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="card card-pad">
+        <div class="label mb-2">零外网调用</div>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          运行时不跟任何第三方服务通信。不跟 Anthropic。不跟 OpenAI。不跟 "ccgauge.dev"。
+          默认绑 <span class="font-mono">127.0.0.1</span>。
+        </p>
+      </div>
+      <div class="card card-pad">
+        <div class="label mb-2">零遥测</div>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          没有 analytics、没有错误上报、没有"匿名使用统计"。仪表盘不带跟踪像素，CLI 也不打电话回家。
+        </p>
+      </div>
+      <div class="card card-pad">
+        <div class="label mb-2">无账号、无 API Key</div>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          不需要登录。ccgauge 不需要你的 API key —— token 数从 CLI 自己写的 JSONL 里读。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">ccgauge 读什么</h2>
+    <p class="lede mt-3 max-w-3xl">
+      只读权限，全是你 CLI 早就写好的文件。ccgauge 不会编辑、删除它们，只解析。
+    </p>
+    <div class="mt-6 card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left text-text-tertiary text-xs uppercase tracking-[0.06em]">
+            <th class="px-4 py-3 font-medium">读什么</th>
+            <th class="px-4 py-3 font-medium">读哪里</th>
+            <th class="px-4 py-3 font-medium">为什么</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reads.map((r, i) => (
+            <tr class:list={[i % 2 === 0 ? 'bg-transparent' : 'bg-bg-surface-hi/30', 'border-b border-border last:border-b-0']}>
+              <td class="px-4 py-3 align-top text-text-primary">{r.what}</td>
+              <td class="px-4 py-3 align-top"><code class="font-mono text-xs text-text-tertiary whitespace-nowrap">{r.where}</code></td>
+              <td class="px-4 py-3 align-top text-text-secondary leading-relaxed">{r.why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">ccgauge 写什么</h2>
+    <p class="lede mt-3 max-w-3xl">
+      所有写入都落在 <span class="font-mono">~/.ccgauge/</span>。一个字节都不出本机。
+    </p>
+    <div class="mt-6 card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left text-text-tertiary text-xs uppercase tracking-[0.06em]">
+            <th class="px-4 py-3 font-medium">写什么</th>
+            <th class="px-4 py-3 font-medium">写哪里</th>
+            <th class="px-4 py-3 font-medium">为什么</th>
+          </tr>
+        </thead>
+        <tbody>
+          {writes.map((w, i) => (
+            <tr class:list={[i % 2 === 0 ? 'bg-transparent' : 'bg-bg-surface-hi/30', 'border-b border-border last:border-b-0']}>
+              <td class="px-4 py-3 align-top text-text-primary">{w.what}</td>
+              <td class="px-4 py-3 align-top"><code class="font-mono text-xs text-text-tertiary whitespace-nowrap">{w.where}</code></td>
+              <td class="px-4 py-3 align-top text-text-secondary leading-relaxed">{w.why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">可验证</h2>
+    <p class="lede mt-3 max-w-3xl">
+      不用相信我们的话。ccgauge 走 MIT 协议，源码在 GitHub。如果你机器有严格出网策略，两种自检方式：
+    </p>
+    <ul class="mt-6 space-y-3 max-w-3xl">
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">断网跑。</strong>
+          把网线拔了 / 防火墙拒所有出站连接，再启 ccgauge。一切如常。
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">用 Little Snitch / pfSense / tcpdump 抓包。</strong>
+          ccgauge 进程整个生命周期里 <span class="font-mono">node</span> 的出站包数：精确的 0。
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">读源码。</strong>
+          打开 <code class="font-mono text-xs">lib/data-loader/scan.ts</code> 和
+          <code class="font-mono text-xs">lib/providers/*</code> 看 ccgauge 解析了什么；
+          搜 <code class="font-mono text-xs">fetch(</code> 只能找到仪表盘自己 SSR 内部调用。
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">我们不做什么</h2>
+    <ul class="mt-6 space-y-3 max-w-3xl">
+      <li class="flex items-baseline gap-3">
+        <span class="text-text-tertiary mt-0.5 flex-shrink-0" aria-hidden="true">×</span>
+        <span class="text-sm text-text-secondary leading-relaxed">把任何东西发给第三方服务器。</span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-text-tertiary mt-0.5 flex-shrink-0" aria-hidden="true">×</span>
+        <span class="text-sm text-text-secondary leading-relaxed">编辑或删除 CLI 的 JSONL 文件。</span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-text-tertiary mt-0.5 flex-shrink-0" aria-hidden="true">×</span>
+        <span class="text-sm text-text-secondary leading-relaxed">订阅 Anthropic / OpenAI 的 billing API —— 数字全部来自本地 JSONL × 内置单价表。</span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-text-tertiary mt-0.5 flex-shrink-0" aria-hidden="true">×</span>
+        <span class="text-sm text-text-secondary leading-relaxed">自动检查更新。你想升级时跑 <code class="font-mono text-xs">npm i -g ccgauge@latest</code> 就行。</span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14">
+    <div class="card card-pad flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+      <div>
+        <h2 class="text-xl font-semibold tracking-tight text-text-primary">GitHub 上有完整源码</h2>
+        <p class="text-sm text-text-secondary mt-1">MIT 开源。每一行碰到你数据的代码都看得见。</p>
+      </div>
+      <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" class="btn-brand">
+        {t('cta.viewOnGitHub')} →
+      </a>
+    </div>
+    <div class="mt-8">
+      <a href={localePath(locale, 'features')} class="btn">
+        ← 回到功能页
+      </a>
+    </div>
+  </section>
+</BaseLayout>

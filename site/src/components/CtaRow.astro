@@ -1,0 +1,23 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+
+<section class="mx-auto max-w-7xl px-4 sm:px-6 py-14 sm:py-20">
+  <div
+    class="card card-pad flex flex-col items-center text-center gap-4 relative overflow-hidden"
+    style="background: linear-gradient(180deg, rgb(var(--bg-surface)) 0%, rgb(var(--bg-base)) 100%);"
+  >
+    <div class="pointer-events-none absolute inset-0 hero-glow opacity-60" aria-hidden="true"></div>
+    <div class="relative max-w-2xl flex flex-col items-center gap-3">
+      <h2 class="heading-section">{title}</h2>
+      {description && <p class="lede">{description}</p>}
+      <div class="mt-4 flex flex-wrap justify-center gap-3">
+        <slot />
+      </div>
+    </div>
+  </div>
+</section>

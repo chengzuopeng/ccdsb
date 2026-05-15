@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-label="feature-privacy placeholder">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#818CF8" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#161616"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="#0A0A0A"/>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  
+      <g transform="translate(800, 500)">
+        <rect x="-220" y="-90" width="440" height="180" rx="14" fill="#161616" stroke="#2A2A2C" stroke-width="2"/>
+        <g transform="translate(-200, -70)">
+          <rect x="0" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="40" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="80" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="120" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="160" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="200" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="240" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="280" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="320" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="360" y="0" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="0" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="40" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="80" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="120" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="160" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="200" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="240" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="280" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="320" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="360" y="50" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="0" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="40" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="80" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="120" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="160" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="200" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="240" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="280" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="320" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/><rect x="360" y="100" width="32" height="36" rx="3" fill="#0A0A0A" stroke="#2A2A2C"/>
+        </g>
+        <g transform="translate(0, -40)">
+          <path
+            d="M0 -120 L 100 -90 L 100 0 Q 100 90 0 130 Q -100 90 -100 0 L -100 -90 Z"
+            fill="#6366F1"
+            fill-opacity="0.22"
+            stroke="#818CF8"
+            stroke-width="2.5"
+          />
+          <path d="M -38 5 L -10 35 L 42 -25" stroke="#818CF8" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </g>
+    
+  <g transform="translate(800, 940)" text-anchor="middle">
+    <text font-family="Geist, Inter, system-ui, sans-serif" font-size="14" letter-spacing="0.06em" fill="#787880" font-weight="600">
+      FEATURE-PRIVACY · PLACEHOLDER
+    </text>
+  </g>
+</svg>

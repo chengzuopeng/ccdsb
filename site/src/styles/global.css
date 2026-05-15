@@ -1,0 +1,187 @@
+/*
+ * ccgauge marketing site global styles.
+ *
+ * Design tokens mirror the main ccgauge dashboard (app/globals.css). When
+ * brand color or theme palette changes upstream, mirror the relevant
+ * variables here so the marketing site stays visually consistent.
+ *
+ * Theme classes (`theme-dark` / `theme-light`) are applied on <html> by the
+ * inline no-flash script in BaseLayout.astro before paint.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------- Dark theme (default + .theme-dark) ------- */
+:root,
+.theme-dark {
+  --bg-base: 10 10 10;
+  --bg-surface: 22 22 22;
+  --bg-surface-hi: 32 32 34;
+  --bg-elevated: 38 38 42;
+  --border: 38 38 42;
+  --border-hi: 64 64 70;
+  --text-primary: 250 250 250;
+  --text-secondary: 168 168 174;
+  --text-tertiary: 120 120 128;
+  --brand: 129 140 248;
+  --brand-hover: 165 180 252;
+  --brand-strong: 99 102 241;
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.02), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+  --shadow-popover: 0 4px 12px -2px rgb(0 0 0 / 0.4), 0 16px 48px -8px rgb(0 0 0 / 0.6);
+  --ring-focus: 129 140 248;
+  color-scheme: dark;
+}
+
+.theme-light {
+  --bg-base: 252 252 253;
+  --bg-surface: 255 255 255;
+  --bg-surface-hi: 247 247 249;
+  --bg-elevated: 250 250 252;
+  --border: 226 226 232;
+  --border-hi: 200 200 208;
+  --text-primary: 17 17 23;
+  --text-secondary: 82 82 91;
+  --text-tertiary: 145 145 156;
+  --brand: 79 70 229;
+  --brand-hover: 67 56 202;
+  --brand-strong: 79 70 229;
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.04);
+  --shadow-popover: 0 8px 24px -4px rgb(15 23 42 / 0.08), 0 16px 48px -8px rgb(15 23 42 / 0.08);
+  --ring-focus: 79 70 229;
+  color-scheme: light;
+}
+
+/* ------- Globals ------- */
+* {
+  border-color: rgb(var(--border));
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html,
+body {
+  background: rgb(var(--bg-base));
+  color: rgb(var(--text-primary));
+  font-family: '"Geist Variable"', 'Geist', 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgb(var(--brand) / 0.25);
+  color: rgb(var(--text-primary));
+}
+
+/* Smoother scrollbars matching the dashboard. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-hi) / 0.7);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--text-tertiary) / 0.7);
+  background-clip: padding-box;
+}
+
+/* Keyboard-only focus ring. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--ring-focus) / 0.6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------- Reusable component classes ------- */
+@layer components {
+  .card {
+    @apply rounded-card border border-border bg-bg-surface;
+    box-shadow: var(--shadow-card);
+  }
+  .card-pad {
+    @apply p-5 sm:p-6;
+  }
+  .card-interactive {
+    @apply card transition-all duration-150;
+  }
+  .card-interactive:hover {
+    border-color: rgb(var(--border-hi));
+    transform: translateY(-1px);
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-button text-sm font-medium border border-border bg-bg-surface text-text-primary transition-colors;
+  }
+  .btn:hover {
+    background: rgb(var(--bg-surface-hi));
+    border-color: rgb(var(--border-hi));
+  }
+  .btn-brand {
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-button text-sm font-semibold transition-colors;
+    background: rgb(var(--brand-strong));
+    color: white;
+  }
+  .btn-brand:hover {
+    background: rgb(var(--brand));
+  }
+  .pill {
+    @apply inline-flex items-center px-2 py-0.5 rounded-button text-xs font-medium leading-5 border border-border bg-bg-surface-hi text-text-secondary;
+  }
+  .pill-brand {
+    @apply inline-flex items-center px-2 py-0.5 rounded-button text-xs font-medium leading-5;
+    background: rgb(var(--brand) / 0.12);
+    border: 1px solid rgb(var(--brand) / 0.4);
+    color: rgb(var(--brand));
+  }
+  .label {
+    @apply text-[11px] uppercase tracking-[0.06em] text-text-tertiary font-semibold;
+  }
+  .heading-hero {
+    @apply text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-text-primary;
+  }
+  .heading-section {
+    @apply text-2xl sm:text-3xl font-semibold tracking-tight leading-tight text-text-primary;
+  }
+  .lede {
+    @apply text-base sm:text-lg text-text-secondary leading-relaxed;
+  }
+  .num-mono {
+    @apply font-mono tabular-nums;
+  }
+  /* Glow used behind hero illustrations. */
+  .hero-glow {
+    background: radial-gradient(
+      60% 60% at 50% 40%,
+      rgb(var(--brand) / 0.18) 0%,
+      rgb(var(--brand) / 0.04) 45%,
+      transparent 75%
+    );
+  }
+}

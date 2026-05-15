@@ -1,0 +1,39 @@
+---
+import { type Locale, LOCALES } from '../consts';
+import { switchLocaleUrl } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const here = Astro.url.pathname;
+
+const labels: Record<Locale, string> = {
+  en: 'EN',
+  zh: '中',
+};
+---
+
+<div
+  role="group"
+  aria-label="Language"
+  class="inline-flex items-center rounded-button border border-border bg-bg-surface p-0.5 text-xs"
+>
+  {LOCALES.map((l) => {
+    const active = l === locale;
+    return (
+      <a
+        href={switchLocaleUrl(here, l)}
+        class:list={[
+          'px-2 py-1 rounded transition-colors',
+          active
+            ? 'bg-brand-strong text-white font-semibold'
+            : 'text-text-tertiary hover:text-text-primary hover:bg-bg-surface-hi',
+        ]}
+        aria-current={active ? 'page' : undefined}
+      >
+        {labels[l]}
+      </a>
+    );
+  })}
+</div>

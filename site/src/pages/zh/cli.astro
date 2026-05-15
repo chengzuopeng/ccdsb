@@ -1,0 +1,136 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { localePath } from '../../i18n/utils';
+
+const locale = 'zh';
+
+const flags = [
+  { flag: '-r, --range <range>', default: '7d', purpose: '`today` / `1d` / `7d` / `30d` / `90d` / `all`' },
+  { flag: '-s, --source <provider>', default: 'all', purpose: '`claude` / `codex` / `all`' },
+  { flag: '-b, --by <dim>', default: 'model', purpose: '分组维度：`model` / `project` / `session`' },
+  { flag: '-g, --gran <granularity>', default: 'day', purpose: '趋势粒度：`hour` / `day` / `week` / `month`' },
+  { flag: '-n, --limit <n>', default: '10', purpose: '分组表行数' },
+  { flag: '--since <date>', default: '—', purpose: '自定义起始日期（ISO 或 `YYYY-MM-DD`）' },
+  { flag: '--until <date>', default: '—', purpose: '自定义截止日期' },
+  { flag: '-m, --model <pat>', default: '—', purpose: '按模型名子串过滤' },
+  { flag: '--project <pat>', default: '—', purpose: '按项目名 / cwd 子串过滤' },
+  { flag: '-j, --json', default: 'off', purpose: '输出 JSON 而不是格式化文本' },
+  { flag: '--no-color', default: '—', purpose: '关闭 ANSI 颜色（管道里自动关）' },
+  { flag: '--no-trend', default: '—', purpose: '不打趋势图' },
+  { flag: '--no-breakdown', default: '—', purpose: '不打分组表' },
+];
+
+const examples = [
+  { title: '默认：近 7 天，全部数据源，前 10 个模型', code: 'ccgauge report' },
+  { title: '30 天 + 按项目分组', code: 'ccgauge report -r 30d -b project' },
+  { title: '只看 Codex 的 gpt-5.5 系列', code: 'ccgauge report -s codex -m gpt-5.5' },
+  { title: 'JSON 输出给脚本用', code: 'ccgauge report --json | jq .totals' },
+  { title: '任意日期区间', code: 'ccgauge report --since 2026-05-01 --until 2026-05-08' },
+  { title: '极简：只看总数', code: 'ccgauge report --no-trend --no-breakdown' },
+];
+
+function renderInline(s: string): string {
+  return s.replace(
+    /`([^`]+)`/g,
+    '<code class="font-mono text-xs px-1.5 py-0.5 rounded bg-bg-surface-hi border border-border text-text-primary">$1</code>',
+  );
+}
+---
+
+<BaseLayout
+  locale={locale}
+  title="命令行"
+  description="ccgauge report 的完整文档 —— 一次性、无 server 的终端用量报告。参数、示例、退出语义全包。"
+  ogImage="og-cli.svg"
+>
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8">
+    <div class="pill-brand mb-3">命令行</div>
+    <h1 class="heading-hero">
+      <span class="font-mono">ccgauge report</span>
+    </h1>
+    <p class="lede mt-5 max-w-3xl">
+      格式化的、无 server 的终端用量报告。读的就是仪表盘读的那份 JSONL，0.2 秒内打出彩色对齐的总结。
+      本地随手查昨天花了多少，或者 <span class="font-mono">--json</span> 走管道接你的脚本。
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10">
+    <h2 class="heading-section">常用示例</h2>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {examples.map((ex) => (
+        <div>
+          <div class="label mb-2">{ex.title}</div>
+          <CodeBlock code={ex.code} lang="bash" copyLabel="复制" copiedLabel="已复制！" />
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">参数清单</h2>
+    <div class="mt-6 card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left text-text-tertiary text-xs uppercase tracking-[0.06em]">
+            <th class="px-4 py-3 font-medium">参数</th>
+            <th class="px-4 py-3 font-medium">默认</th>
+            <th class="px-4 py-3 font-medium">作用</th>
+          </tr>
+        </thead>
+        <tbody>
+          {flags.map((f, i) => (
+            <tr class:list={[i % 2 === 0 ? 'bg-transparent' : 'bg-bg-surface-hi/30', 'border-b border-border last:border-b-0']}>
+              <td class="px-4 py-3 align-top">
+                <code class="font-mono text-xs text-text-primary whitespace-nowrap">{f.flag}</code>
+              </td>
+              <td class="px-4 py-3 align-top text-text-tertiary num-mono">{f.default}</td>
+              <td class="px-4 py-3 align-top text-text-secondary leading-relaxed">
+                <span set:html={renderInline(f.purpose)}></span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10">
+    <h2 class="heading-section">小贴士</h2>
+    <ul class="mt-6 space-y-3 max-w-3xl">
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">仅日期形式的 <code class="font-mono text-xs">--since/--until</code></strong>
+          走本地日历日边界。<code class="font-mono text-xs">--until 2026-05-08</code> 包含整个 5 月 8 号。
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">不会启动 server。</strong>
+          直接读磁盘 JSONL，stdout 一冲完进程就退出。CI 里调用也安全。
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">颜色自动关</strong> —— stdout 不是 TTY 时无需手动 <code class="font-mono text-xs">--no-color</code>。
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">JSON 输出</strong> 含 <code class="font-mono text-xs">totals</code>、
+          <code class="font-mono text-xs">trend</code>、<code class="font-mono text-xs">breakdown</code> 三个数组。结构稳定，脚本放心消费。
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14">
+    <a href={localePath(locale, 'features')} class="btn">
+      ← 回到功能页
+    </a>
+  </section>
+</BaseLayout>

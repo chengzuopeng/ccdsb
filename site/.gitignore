@@ -1,0 +1,23 @@
+# build output
+dist/
+
+# Astro cache + types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# environment variables
+.env
+.env.production
+
+# editor
+.DS_Store
+.vscode/
+.idea/

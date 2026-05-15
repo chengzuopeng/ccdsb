@@ -1,0 +1,154 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { localePath } from '../../i18n/utils';
+
+const locale = 'zh';
+
+const claudeDesktopConfig = `{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "npx",
+      "args": ["-y", "ccgauge", "mcp"]
+    }
+  }
+}`;
+
+const cursorConfig = `{
+  "mcp": {
+    "servers": {
+      "ccgauge": {
+        "command": "npx",
+        "args": ["-y", "ccgauge", "mcp"]
+      }
+    }
+  }
+}`;
+
+const tools = [
+  { name: 'usage_summary', purpose: '一段区间内的总数（tokens / cost / 缓存节省 / 请求数）。可按 source / 模型 / 项目过滤。' },
+  { name: 'usage_by_time', purpose: '按时间桶（hour / day / week / month）的 tokens + 花费时间序列。' },
+  { name: 'usage_by_model', purpose: '按模型聚合的 tokens + cost，附带占总数比例。' },
+  { name: 'usage_by_project', purpose: '按 cwd 聚合的 tokens + cost。worktree 感知的项目名。' },
+  { name: 'usage_by_session', purpose: '按 session 拆分：标题、模型组合、耗时、花费。' },
+  { name: 'daily_summary', purpose: '某一天的总数 + 模型 Top + 项目 Top。每天复盘很顺手。' },
+  { name: 'weekly_summary', purpose: '某一周的总数 + 每日拆分。' },
+  { name: 'recent_activity', purpose: '最近 N 次 assistant 调用：时间戳 / 模型 / prompt 片段 / 花费。' },
+];
+
+const promptExamples = [
+  { ask: '"我这周 Opus 花了多少钱，按项目拆一下？"', uses: 'usage_by_project + 模型过滤' },
+  { ask: '"把我 2026 年 5 月的 Codex 用量按天画出来。"', uses: 'usage_by_time，source=codex, gran=day' },
+  { ask: '"今天哪些 session 用了最多 reasoning token？"', uses: 'usage_by_session 按 reasoning_tokens 排序' },
+  { ask: '"上周三晚上 9 点到午夜我在干啥？"', uses: 'recent_activity 限定窗口' },
+  { ask: '"我的 prompt caching 节省，月环比有提升吗？"', uses: 'daily_summary → weekly_summary 取 delta' },
+  { ask: '"把我这个月的 AI 编程预算总结一段，我要放进文档。"', uses: 'usage_summary，range=本月' },
+];
+---
+
+<BaseLayout
+  locale={locale}
+  title="MCP 接入"
+  description="把 ccgauge 接进 Claude Desktop / Cursor / 任何懂 MCP 的客户端。8 个 tool、一段配置、零粘贴。"
+>
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8">
+    <div class="pill-brand mb-3">MCP</div>
+    <h1 class="heading-hero">让 LLM 自己查它自己的账单。</h1>
+    <p class="lede mt-5 max-w-3xl">
+      ccgauge 自带 Model Context Protocol 服务：<span class="font-mono">ccgauge mcp</span>。
+      接进 Claude Desktop、Cursor、Cline —— 任何懂 MCP 的客户端，然后问模型：
+      <em>"我这周 Opus 花了多少钱？"</em> 不用截图、不用 SQL、不用粘贴。
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10">
+    <h2 class="heading-section">1. 接进客户端</h2>
+    <p class="lede mt-3 max-w-3xl">
+      下面两段配置覆盖 ~95% 的 MCP 客户端。传输走 stdio JSON-RPC，不开端口、不放 socket 文件。
+      任何懂 MCP 的客户端都能读懂。
+    </p>
+
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <div class="label mb-2">Claude Desktop · <code class="font-mono text-xs">~/Library/Application Support/Claude/claude_desktop_config.json</code></div>
+        <CodeBlock code={claudeDesktopConfig} lang="json" copyLabel="复制" copiedLabel="已复制！" />
+      </div>
+      <div>
+        <div class="label mb-2">Cursor · <code class="font-mono text-xs">~/.cursor/mcp.json</code></div>
+        <CodeBlock code={cursorConfig} lang="json" copyLabel="复制" copiedLabel="已复制！" />
+      </div>
+    </div>
+
+    <p class="mt-6 text-sm text-text-tertiary max-w-3xl">
+      重启客户端，<span class="font-mono">ccgauge</span> 会出现在 MCP tool 选择器里，附带 8 个 tool。
+      服务在收到第一次请求时启动，并把 JSONL 索引写到独立的缓存文件
+      （<span class="font-mono">~/.ccgauge/cache/index-mcp-v2.json</span>），所以不会和仪表盘抢同一份磁盘索引。
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">2. 8 个 tool</h2>
+    <p class="lede mt-3 max-w-3xl">
+      每个 tool 都返回结构化 JSON。模型会根据你的问题自动选 tool，你不需要记名字。
+    </p>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {tools.map((t) => (
+        <div class="card card-pad">
+          <code class="font-mono text-sm text-brand">{t.name}</code>
+          <p class="mt-2 text-sm text-text-secondary leading-relaxed">{t.purpose}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">3. 可以这样问</h2>
+    <p class="lede mt-3 max-w-3xl">
+      措辞比你想得宽松 —— 模型会把人话翻成 MCP tool 调用。下面是一些起手式：
+    </p>
+    <ul class="mt-6 space-y-3 max-w-4xl">
+      {promptExamples.map((p) => (
+        <li class="card card-pad">
+          <p class="text-text-primary font-medium">{p.ask}</p>
+          <p class="mt-1.5 text-xs text-text-tertiary">用到：<span class="font-mono">{p.uses}</span></p>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">注意</h2>
+    <ul class="mt-6 space-y-3 max-w-3xl">
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">依然 100% 本地。</strong>
+          MCP 服务读的是和仪表盘同一份 JSONL。LLM 客户端通过 stdio 向子进程发请求，
+          只有 LLM 本身给你回答时走它自己的 provider —— ccgauge 这一侧没有任何对外请求。
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">僵尸进程会污染缓存。</strong>
+          如果你看到"仪表盘数据不更新"，跑一下 <code class="font-mono text-xs">ps -ef | grep ccgauge</code>
+          把孤儿 MCP 进程杀掉。每个客户端理论上退出时会关掉它的子进程，但客户端崩溃时孤儿就留下了，
+          并且会继续往缓存里写。
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Reasoning token</strong> 对会发的模型会单独展示
+          （OpenAI o-系列和较新的 GPT 模型）。在 <span class="font-mono">usage_summary</span> 里以独立字段呈现。
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14">
+    <a href={localePath(locale, 'features')} class="btn">
+      ← 回到功能页
+    </a>
+  </section>
+</BaseLayout>

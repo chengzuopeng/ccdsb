@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-label="feature-mcp placeholder">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#818CF8" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#161616"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="#0A0A0A"/>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  
+      <g transform="translate(800, 500)">
+        <line x1="-380" y1="0" x2="0" y2="0" stroke="#818CF8" stroke-opacity="0.4" stroke-width="2"/>
+        <line x1="0" y1="0" x2="380" y2="0" stroke="#818CF8" stroke-opacity="0.4" stroke-width="2"/>
+        <line x1="-380" y1="0" x2="380" y2="0" stroke="#818CF8" stroke-opacity="0.15" stroke-width="2" stroke-dasharray="4 8"/>
+        <circle r="50" fill="#6366F1" fill-opacity="0.18" stroke="#818CF8" stroke-width="2"/>
+        <circle r="32" fill="#6366F1"/>
+        <circle r="60" fill="none" stroke="#818CF8" stroke-opacity="0.25" stroke-width="1"/>
+        <g transform="translate(-380, 0)">
+          <circle r="40" fill="#6366F1" fill-opacity="0.1" stroke="#818CF8" stroke-width="1.5"/>
+          <circle r="22" fill="#818CF8" fill-opacity="0.8"/>
+        </g>
+        <g transform="translate(380, 0)">
+          <circle r="40" fill="#6366F1" fill-opacity="0.1" stroke="#818CF8" stroke-width="1.5"/>
+          <circle r="22" fill="#818CF8" fill-opacity="0.8"/>
+        </g>
+      </g>
+    
+  <g transform="translate(800, 940)" text-anchor="middle">
+    <text font-family="Geist, Inter, system-ui, sans-serif" font-size="14" letter-spacing="0.06em" fill="#787880" font-weight="600">
+      FEATURE-MCP · PLACEHOLDER
+    </text>
+  </g>
+</svg>

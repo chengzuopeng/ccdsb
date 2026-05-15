@@ -1,0 +1,106 @@
+---
+import { THEME_STORAGE_KEY, type Locale } from '../consts';
+import { useTranslations } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<!--
+  Three-state theme cycler (dark → light → system → dark). On click we
+  read the current persisted value, advance it one step, write it back,
+  and re-apply the matching <html> class. The same logic that the
+  no-flash inline script in BaseLayout runs is duplicated here in JS so
+  the toggle stays a one-file component.
+-->
+<button
+  type="button"
+  id="theme-toggle"
+  data-theme-storage-key={THEME_STORAGE_KEY}
+  class="inline-flex h-8 w-8 items-center justify-center rounded-button border border-border bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-bg-surface-hi transition-colors"
+  aria-label={t('theme.label')}
+  title={t('theme.label')}
+>
+  <!-- Icons swap based on resolved theme via the inline script below. -->
+  <svg class="theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+  </svg>
+  <svg class="theme-icon-light hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+  <svg class="theme-icon-system hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="12" rx="2" />
+    <path d="M8 20h8M12 16v4" />
+  </svg>
+</button>
+
+<script>
+  (() => {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    const key = btn.dataset.themeStorageKey || 'ccgauge.site.theme';
+    const order = ['dark', 'light', 'system'] as const;
+    type Theme = (typeof order)[number];
+
+    function readStored(): Theme {
+      try {
+        const v = localStorage.getItem(key);
+        if (v === 'dark' || v === 'light' || v === 'system') return v;
+      } catch {
+        /* ignore */
+      }
+      return 'dark';
+    }
+
+    function resolve(theme: Theme): 'light' | 'dark' {
+      if (theme === 'system') {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+          ? 'light'
+          : 'dark';
+      }
+      return theme;
+    }
+
+    function apply(theme: Theme) {
+      const resolved = resolve(theme);
+      const root = document.documentElement;
+      root.classList.remove('theme-light', 'theme-dark');
+      root.classList.add(resolved === 'light' ? 'theme-light' : 'theme-dark');
+      root.setAttribute('data-theme', resolved);
+      // Reveal the matching icon (next-state icon, so user sees what
+      // clicking will do — Linear / Vercel pattern).
+      const next = order[(order.indexOf(theme) + 1) % order.length];
+      btn!.querySelectorAll('svg').forEach((el) => el.classList.add('hidden'));
+      const target = btn!.querySelector(`.theme-icon-${next}`);
+      target?.classList.remove('hidden');
+    }
+
+    function cycle() {
+      const cur = readStored();
+      const next = order[(order.indexOf(cur) + 1) % order.length];
+      try {
+        localStorage.setItem(key, next);
+      } catch {
+        /* ignore */
+      }
+      apply(next);
+    }
+
+    btn.addEventListener('click', cycle);
+
+    // Initial icon state — match what no-flash already applied.
+    apply(readStored());
+
+    // React to system changes when in "system" mode.
+    if (window.matchMedia) {
+      const mq = window.matchMedia('(prefers-color-scheme: light)');
+      mq.addEventListener?.('change', () => {
+        if (readStored() === 'system') apply('system');
+      });
+    }
+  })();
+</script>

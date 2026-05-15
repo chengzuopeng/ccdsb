@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-label="feature-cli placeholder">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#818CF8" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#161616"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="#0A0A0A"/>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  
+      <g transform="translate(280, 200)">
+        <rect width="1040" height="620" rx="14" fill="url(#cardGrad)" stroke="#2A2A2C" stroke-width="1.5"/>
+        <rect width="1040" height="42" rx="14" fill="#161616" stroke="#2A2A2C"/>
+        <circle cx="22" cy="21" r="6" fill="#F87171" fill-opacity="0.7"/>
+        <circle cx="44" cy="21" r="6" fill="#FBBF24" fill-opacity="0.7"/>
+        <circle cx="66" cy="21" r="6" fill="#4ADE80" fill-opacity="0.7"/>
+        <text x="100" y="26" font-family="Geist Mono, monospace" font-size="13" fill="#787880">ccgauge report</text>
+        <g transform="translate(40, 80)" font-family="Geist Mono, monospace" font-size="16">
+          <text fill="#818CF8" font-weight="700">▸ Tokens</text>
+          <g transform="translate(0, 38)">
+            <text fill="#787880">Input</text>
+            <text x="120" fill="#FAFAFA">351</text>
+            <text x="280" fill="#787880">Output</text>
+            <text x="400" fill="#FAFAFA">91.0K</text>
+          </g>
+          <g transform="translate(0, 70)">
+            <text fill="#787880">Cache R</text>
+            <text x="120" fill="#34D399">36.3M</text>
+            <text x="280" fill="#787880">Cache W</text>
+            <text x="400" fill="#FAFAFA">2.64M</text>
+          </g>
+          <g transform="translate(0, 120)">
+            <text fill="#818CF8" font-weight="700">▸ Trend</text>
+          </g>
+          <g transform="translate(0, 160)">
+              <text fill="#787880" font-size="13">05/7</text>
+              <text x="80" fill="#FAFAFA" font-size="13">$15.00</text>
+              <rect x="180" y="-10" width="80" height="14" rx="2" fill="#818CF8" fill-opacity="0.85"/>
+            </g><g transform="translate(0, 196)">
+              <text fill="#787880" font-size="13">05/8</text>
+              <text x="80" fill="#FAFAFA" font-size="13">$24.00</text>
+              <rect x="180" y="-10" width="170" height="14" rx="2" fill="#818CF8" fill-opacity="0.85"/>
+            </g><g transform="translate(0, 232)">
+              <text fill="#787880" font-size="13">05/9</text>
+              <text x="80" fill="#FAFAFA" font-size="13">$33.00</text>
+              <rect x="180" y="-10" width="260" height="14" rx="2" fill="#818CF8" fill-opacity="0.85"/>
+            </g><g transform="translate(0, 268)">
+              <text fill="#787880" font-size="13">05/10</text>
+              <text x="80" fill="#FAFAFA" font-size="13">$42.00</text>
+              <rect x="180" y="-10" width="350" height="14" rx="2" fill="#818CF8" fill-opacity="0.85"/>
+            </g><g transform="translate(0, 304)">
+              <text fill="#787880" font-size="13">05/11</text>
+              <text x="80" fill="#FAFAFA" font-size="13">$51.00</text>
+              <rect x="180" y="-10" width="440" height="14" rx="2" fill="#818CF8" fill-opacity="0.85"/>
+            </g><g transform="translate(0, 340)">
+              <text fill="#787880" font-size="13">05/12</text>
+              <text x="80" fill="#FAFAFA" font-size="13">$20.00</text>
+              <rect x="180" y="-10" width="530" height="14" rx="2" fill="#818CF8" fill-opacity="0.85"/>
+            </g><g transform="translate(0, 376)">
+              <text fill="#787880" font-size="13">05/13</text>
+              <text x="80" fill="#FAFAFA" font-size="13">$29.00</text>
+              <rect x="180" y="-10" width="620" height="14" rx="2" fill="#818CF8" fill-opacity="0.85"/>
+            </g>
+        </g>
+      </g>
+    
+  <g transform="translate(800, 940)" text-anchor="middle">
+    <text font-family="Geist, Inter, system-ui, sans-serif" font-size="14" letter-spacing="0.06em" fill="#787880" font-weight="600">
+      FEATURE-CLI · PLACEHOLDER
+    </text>
+  </g>
+</svg>

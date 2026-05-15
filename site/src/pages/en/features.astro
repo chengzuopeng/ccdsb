@@ -1,0 +1,216 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { localePath } from '../../i18n/utils';
+
+const locale = 'en';
+
+interface Section {
+  id: string;
+  title: string;
+  lead: string;
+  bullets: string[];
+}
+
+const sections: Section[] = [
+  {
+    id: 'dashboard',
+    title: 'Multi-source web dashboard',
+    lead: 'A single Next.js dashboard that understands both Claude Code (Anthropic) and OpenAI Codex CLI. Switch sources at the top of every page; URL and cookie remember your choice across reloads and tabs.',
+    bullets: [
+      'Overview — KPI cards (today\'s tokens, this month, today\'s top, top model) + token-by-source trend chart',
+      'Usage — per-turn / per-call table with prompt preview, tool list, duration, cost, search and filters',
+      'Sessions — drill into a single conversation, see model usage and message timeline',
+      'Projects — per-cwd spend, worktree-aware (e.g. `repo (playwright)`)',
+      'Models — side-by-side comparison with sparkline trends',
+      'Settings — detected data sources, indexer health, scan stats',
+    ],
+  },
+  {
+    id: 'kpi-block',
+    title: 'KPI cards + live 5h block tracker',
+    lead: 'Headline numbers update silently in the background — no spinners, no scroll resets. The 5-hour block card tracks the wall-clock progress of your active conversation window with elapsed %, burn rate per minute, and projected total spend.',
+    bullets: [
+      'Day-over-day delta on every KPI card',
+      'Live "active 5h block" detection from the JSONL timestamps',
+      'Disclaimer baked in so it\'s never confused with Anthropic\'s plan-quota counter',
+      'Auto-refresh every 15s on the usage page, with cursor / search / sort state preserved',
+    ],
+  },
+  {
+    id: 'heatmap',
+    title: 'Activity heatmap + drill-downs',
+    lead: 'Day-of-week × hour-of-day grid that shows where your assistant time actually goes. Hover a cell to see message count, total tokens, share-of-total, and share-of-peak. Token-count and message-count are separate heatmaps; share calculations use both.',
+    bullets: [
+      'Tooltip flips below the cell when the row is near the viewport top',
+      'Compact "active days / streak / peak hour" tiles on the side',
+      'Token-comparison footnote — e.g. "you\'ve used ~12× more tokens than War and Peace"',
+      'Layout adapts to wide and narrow viewports without scrollbar quirks',
+    ],
+  },
+  {
+    id: 'usage-table',
+    title: 'Usage table + CSV export',
+    lead: 'Every assistant API call is grouped into its real conversation turn (the parent chain is walked through the JSONL). Expand a turn to see each call\'s tool list, prompt fragment, and cost. Export to CSV with one click.',
+    bullets: [
+      'Skills and `<system-reminder>` blocks do NOT split a single conversation into multiple turns',
+      'Duration column shows wall-clock elapsed per turn (sortable)',
+      'CSV: UTF-8 BOM (Excel-safe), formula-injection guard, `?level=call|turn` toggle',
+      'Worktree-aware project labels: `ai-self-web (playwright)` instead of just `playwright`',
+    ],
+  },
+  {
+    id: 'cli',
+    title: 'CLI report',
+    lead: 'Run `ccgauge report` for a one-shot, no-server terminal summary. Aligned tables, colored bar-chart trend, top-N breakdown. Pipe `--json` into your scripts; pipe colorless output into your CI logs.',
+    bullets: [
+      '`-r today|1d|7d|30d|90d|all` range presets, or `--since/--until` for arbitrary windows',
+      '`-b model|project|session` breakdown dimension',
+      '`-g hour|day|week|month` trend granularity',
+      '`-m`/`--project` substring filters; `--no-trend`/`--no-breakdown` for slim output',
+    ],
+  },
+  {
+    id: 'mcp',
+    title: 'MCP server (for LLMs)',
+    lead: 'Eight MCP tools let Claude Desktop, Cursor, Cline and other MCP clients query your local usage directly. No screenshots, no copy-paste — you ask, the model answers from structured data.',
+    bullets: [
+      'Tools: usage_summary, usage_by_time, usage_by_model, usage_by_project, usage_by_session, daily_summary, weekly_summary, recent_activity',
+      'Reasoning-token breakdown surfaced for models that emit it',
+      'Stdio JSON-RPC — drop into any MCP client config',
+      'Separate named cache (`index-mcp-v2.json`) keeps MCP runs from contending with the dashboard',
+    ],
+  },
+  {
+    id: 'privacy',
+    title: 'Privacy & polished local UI',
+    lead: '100% local. Reads the JSONL session files your CLI already writes. Zero outbound network calls at runtime. Bound to 127.0.0.1 by default. MIT licensed.',
+    bullets: [
+      'Light / dark / system theme with no flash on first paint',
+      'English + 简体中文 throughout the dashboard, CLI, and MCP responses',
+      'No analytics, no telemetry, no API keys required',
+      'Source on GitHub — see exactly what gets read and what doesn\'t',
+    ],
+  },
+  {
+    id: 'background',
+    title: 'Background service + multi-profile',
+    lead: 'Treat ccgauge as a daemon when you want it. Full lifecycle: `start --background`, `stop`, `restart`, `status`, `open`, `logs`. State persists under `~/.ccgauge/` so reboots don\'t lose your config.',
+    bullets: [
+      '`restart` inherits the previous run\'s `port / host / dir / log`',
+      'Cross-platform: macOS, Linux, Windows (windowsHide on detached spawn)',
+      '`CCGAUGE_STATE_DIR` env override for isolated test / workspace profiles',
+      '`ccgauge status --json` for monitoring scripts',
+    ],
+  },
+];
+
+const installSnippet = 'npx ccgauge';
+---
+
+<BaseLayout
+  locale={locale}
+  title="Features"
+  description="A complete tour of ccgauge — the local dashboard, CLI, and MCP server for Claude Code and Codex CLI usage tracking."
+>
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8">
+    <div class="pill-brand mb-3">Features</div>
+    <h1 class="heading-hero">Every feature ccgauge ships, in one page.</h1>
+    <p class="lede mt-5 max-w-3xl">
+      Eight feature areas, all built around the same two ideas: keep your data on your machine,
+      and answer the "where is my AI spend going" question in seconds.
+    </p>
+  </section>
+
+  <!-- TOC -->
+  <nav class="mx-auto max-w-7xl px-4 sm:px-6 mb-8 sm:mb-12" aria-label="Table of contents">
+    <div class="card card-pad">
+      <div class="label mb-3">On this page</div>
+      <ol class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+        {sections.map((s, i) => (
+          <li>
+            <a href={`#${s.id}`} class="text-text-secondary hover:text-text-primary inline-flex items-baseline gap-2">
+              <span class="text-text-tertiary tabular-nums num-mono">{String(i + 1).padStart(2, '0')}</span>
+              <span>{s.title}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </nav>
+
+  {sections.map((s) => (
+    <section id={s.id} class="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 scroll-mt-24">
+      <h2 class="heading-section">{s.title}</h2>
+      <p class="lede mt-3 max-w-3xl">{s.lead}</p>
+      <ul class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 max-w-4xl">
+        {s.bullets.map((b) => (
+          <li class="flex items-baseline gap-2 text-sm text-text-secondary leading-relaxed">
+            <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+            <span set:html={b.replace(/`([^`]+)`/g, '<code class="font-mono text-xs px-1.5 py-0.5 rounded bg-bg-surface-hi border border-border text-text-primary">$1</code>')}></span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+
+  <!-- Methodology anchor block -->
+  <section id="methodology" class="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16 scroll-mt-24 border-t border-border">
+    <div class="pill-brand mb-3">Methodology</div>
+    <h2 class="heading-section">How ccgauge counts tokens and cost.</h2>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
+      <div class="card card-pad">
+        <h3 class="font-semibold text-text-primary mb-2">Source of truth: your CLI's JSONL</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          ccgauge never re-runs an API call. It reads the JSONL session files that Claude Code
+          (<span class="font-mono text-xs">~/.claude/projects/</span>) and Codex CLI
+          (<span class="font-mono text-xs">~/.codex/sessions/</span>) already write to disk, and
+          dedupes <span class="font-mono text-xs">(messageId, requestId)</span> across sub-agent
+          forks and worktree mirrors.
+        </p>
+      </div>
+      <div class="card card-pad">
+        <h3 class="font-semibold text-text-primary mb-2">Pricing: snapshot, not lookup</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          Per-million-token rates ship inside ccgauge. Unknown variants fall back to family-latest
+          (e.g. <span class="font-mono text-xs">gpt-5.5-foo</span> → <span class="font-mono text-xs">gpt-5.5</span>).
+          When Anthropic or OpenAI publish new prices, you bump <span class="font-mono text-xs">ccgauge</span> and
+          get fresh numbers — no API calls, no rate-limit dependence.
+        </p>
+      </div>
+      <div class="card card-pad">
+        <h3 class="font-semibold text-text-primary mb-2">Codex cost model</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          Codex CLI emits cumulative usage per <span class="font-mono text-xs">token_count</span>
+          event. ccgauge computes forward-only deltas and skips duplicate refresh events. The
+          displayed cost is the "what the OpenAI API would have charged" equivalent for users on
+          subscription / managed plans.
+        </p>
+      </div>
+      <div class="card card-pad">
+        <h3 class="font-semibold text-text-primary mb-2">Cache savings</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          We compute what every cache-read would have cost at full input rate, then show the delta
+          as "Saved by cache". Cache-creation tokens are billed at their actual rate; the savings
+          headline is upper-bounded by what a cold prompt would have cost.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14 sm:py-20">
+    <div class="card card-pad flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div>
+        <h2 class="text-xl font-semibold tracking-tight text-text-primary">Ready to try it?</h2>
+        <p class="text-sm text-text-secondary mt-1">One command — opens a dashboard at localhost:3737.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <code class="font-mono text-sm px-3 py-2 rounded-button bg-bg-surface-hi border border-border text-text-primary">
+          {installSnippet}
+        </code>
+        <a href={localePath(locale, 'cli')} class="btn-brand">
+          See the CLI reference →
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

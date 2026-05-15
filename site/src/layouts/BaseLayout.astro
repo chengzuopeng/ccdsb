@@ -1,0 +1,119 @@
+---
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
+import '../styles/global.css';
+
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE, SITE_URL, THEME_STORAGE_KEY, type Locale } from '../consts';
+
+interface Props {
+  /** Page title shown in <title> and og:title; the site name is appended automatically. */
+  title: string;
+  /** Short description used for the meta description tag and og:description. */
+  description: string;
+  /** Locale of the current page — drives <html lang>, hreflang, and i18n nav links. */
+  locale: Locale;
+  /**
+   * Path of the OG image, relative to `/images/`. Defaults to
+   * `og-default.svg` (the placeholder). Replace this default with a real
+   * PNG / JPG when you ship — social-media crawlers don't render SVG OG
+   * images.
+   */
+  ogImage?: string;
+}
+
+const { title, description, locale, ogImage = 'og-default.svg' } = Astro.props;
+const fullTitle = title === SITE_TITLE ? title : `${title} · ${SITE_TITLE}`;
+const canonical = new URL(Astro.url.pathname, SITE_URL).toString();
+const ogImageUrl = new URL(`/images/${ogImage}`, SITE_URL).toString();
+const htmlLang = locale === 'zh' ? 'zh-CN' : 'en';
+---
+
+<!doctype html>
+<html lang={htmlLang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:locale" content={htmlLang.replace('-', '_')} />
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <!-- hreflang for the matching alternate locale -->
+    <link
+      rel="alternate"
+      hreflang="en"
+      href={new URL(Astro.url.pathname.replace(/^\/zh\//, '/en/'), SITE_URL).toString()}
+    />
+    <link
+      rel="alternate"
+      hreflang="zh"
+      href={new URL(Astro.url.pathname.replace(/^\/en\//, '/zh/'), SITE_URL).toString()}
+    />
+
+    <!--
+      No-flash theme script. Runs synchronously before any paint so users
+      who picked light/dark previously don't see a flash. Mirrors the
+      strategy used in the main dashboard's `components/no-flash-script.tsx`.
+
+      Default = dark. Returning users keep their explicit choice. The
+      `data-theme` attribute is convenient for CSS / dev tooling.
+    -->
+    <script is:inline define:vars={{ key: THEME_STORAGE_KEY }}>
+      (function () {
+        try {
+          var t = null;
+          try {
+            t = localStorage.getItem(key);
+          } catch (_) {
+            /* localStorage may be disabled */
+          }
+          if (t !== 'light' && t !== 'dark' && t !== 'system') t = 'dark';
+          var resolved = t;
+          if (t === 'system') {
+            resolved =
+              window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark';
+          }
+          var root = document.documentElement;
+          root.classList.remove('theme-light', 'theme-dark');
+          root.classList.add(resolved === 'light' ? 'theme-light' : 'theme-dark');
+          root.setAttribute('data-theme', resolved);
+        } catch (e) {
+          /* ignore */
+        }
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen bg-bg text-text-primary antialiased">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:px-3 focus:py-1.5 focus:rounded-button focus:bg-bg-surface focus:border focus:border-border-hi focus:text-text-primary"
+    >
+      Skip to content
+    </a>
+    <Nav locale={locale} />
+    <main id="main" class="relative">
+      <slot />
+    </main>
+    <Footer locale={locale} />
+  </body>
+</html>

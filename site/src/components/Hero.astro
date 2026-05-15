@@ -1,0 +1,68 @@
+---
+interface Props {
+  eyebrow?: string;
+  title: string;
+  /** Highlighted segment of `title` rendered in brand color. Optional. */
+  titleAccent?: string;
+  lede: string;
+  /** Image src (relative to /images/). Optional — when omitted the right
+   *  slot collapses and the text spans full width. */
+  imageSrc?: string;
+  imageAlt?: string;
+}
+
+const { eyebrow, title, titleAccent, lede, imageSrc, imageAlt } = Astro.props;
+---
+
+<section class="relative overflow-hidden">
+  <!-- Soft brand glow behind the hero -->
+  <div class="pointer-events-none absolute inset-x-0 top-[-120px] h-[400px] hero-glow" aria-hidden="true"></div>
+
+  <div class="relative mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-12 sm:pb-16">
+    <div class:list={['grid items-center gap-10 lg:gap-12', imageSrc ? 'lg:grid-cols-2' : '']}>
+      <div class:list={['min-w-0', !imageSrc && 'max-w-3xl mx-auto text-center']}>
+        {eyebrow && (
+          <div class="pill-brand mb-5">{eyebrow}</div>
+        )}
+        <h1 class="heading-hero">
+          {titleAccent ? (
+            <>
+              {title}{' '}
+              <span class="text-brand">{titleAccent}</span>
+            </>
+          ) : (
+            title
+          )}
+        </h1>
+        <p class="lede mt-5 sm:mt-6 max-w-2xl">
+          {lede}
+        </p>
+        <div class:list={['mt-7 sm:mt-8 flex flex-wrap gap-3', !imageSrc && 'justify-center']}>
+          <slot name="cta" />
+        </div>
+        <slot name="below-cta" />
+      </div>
+
+      {imageSrc && (
+        <div class="relative">
+          <div class="rounded-card border border-border-hi bg-bg-surface shadow-card overflow-hidden aspect-[16/10]">
+            <img
+              src={`/images/${imageSrc}`}
+              alt={imageAlt ?? ''}
+              loading="eager"
+              decoding="async"
+              class="w-full h-full object-cover"
+            />
+          </div>
+          <!-- Decorative caret in brand color, mirrors dashboard accent -->
+          <div
+            class="pointer-events-none absolute -bottom-3 -right-3 h-16 w-16 rounded-card border border-border-hi bg-bg-surface-hi flex items-center justify-center"
+            aria-hidden="true"
+          >
+            <span class="text-brand text-xl">▸</span>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

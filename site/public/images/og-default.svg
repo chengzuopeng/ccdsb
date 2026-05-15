@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="og-default placeholder">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#818CF8" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#161616"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#0A0A0A"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  
+      <g transform="translate(80, 240)">
+        <rect width="64" height="64" rx="14" fill="#4F46E5"/>
+        <g transform="translate(32, 32)" stroke="white" stroke-width="3" stroke-linecap="round" fill="none">
+          <path d="M-12 0 A 12 12 0 1 0 12 0"/>
+          <path d="M0 0 V -12"/>
+          <path d="M0 0 L 8 -8"/>
+        </g>
+      </g>
+      <text x="170" y="320" font-family="Geist, sans-serif" font-size="96" font-weight="700" fill="#FAFAFA" letter-spacing="-0.02em">ccgauge</text>
+      <text x="170" y="372" font-family="Geist, sans-serif" font-size="22" fill="#787880" letter-spacing="0.02em">
+        Local usage dashboard for Claude Code &amp; Codex CLI
+      </text>
+      <g transform="translate(820, 350)">
+        <rect x="0" y="-40" width="32" height="40" rx="3" fill="#818CF8" fill-opacity="0.4"/><rect x="50" y="-63" width="32" height="63" rx="3" fill="#818CF8" fill-opacity="0.5"/><rect x="100" y="-86" width="32" height="86" rx="3" fill="#818CF8" fill-opacity="0.6000000000000001"/><rect x="150" y="-109" width="32" height="109" rx="3" fill="#818CF8" fill-opacity="0.7000000000000001"/><rect x="200" y="-132" width="32" height="132" rx="3" fill="#818CF8" fill-opacity="0.8"/><rect x="250" y="-155" width="32" height="155" rx="3" fill="#818CF8" fill-opacity="0.9"/>
+      </g>
+    
+  <g transform="translate(600, 570)" text-anchor="middle">
+    <text font-family="Geist, Inter, system-ui, sans-serif" font-size="14" letter-spacing="0.06em" fill="#787880" font-weight="600">
+      OG-DEFAULT · PLACEHOLDER
+    </text>
+  </g>
+</svg>

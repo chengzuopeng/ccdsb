@@ -1,0 +1,7 @@
+---
+// Root entry — redirects to the default locale. Astro's i18n
+// `redirectToDefaultLocale: true` would do this automatically when there's
+// no matching page, but spelling it out as a real 302 makes link previews
+// behave and avoids any ambiguity at the CDN edge.
+return Astro.redirect('/en/', 302);
+---

@@ -1,0 +1,84 @@
+---
+import { useTranslations, localePath } from '../i18n/utils';
+import { GITHUB_URL, NPM_URL, SITE_TITLE, type Locale } from '../consts';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const year = new Date().getFullYear();
+
+const columns: Array<{
+  title: string;
+  items: Array<{ label: string; href: string; external?: boolean }>;
+}> = [
+  {
+    title: locale === 'zh' ? '产品' : 'Product',
+    items: [
+      { label: t('nav.features'), href: localePath(locale, 'features') },
+      { label: t('nav.cli'), href: localePath(locale, 'cli') },
+      { label: t('nav.mcp'), href: localePath(locale, 'mcp') },
+      { label: t('nav.privacy'), href: localePath(locale, 'privacy') },
+    ],
+  },
+  {
+    title: locale === 'zh' ? '资源' : 'Resources',
+    items: [
+      { label: 'GitHub', href: GITHUB_URL, external: true },
+      { label: 'npm', href: NPM_URL, external: true },
+      {
+        label: locale === 'zh' ? '提交问题' : 'Report an issue',
+        href: GITHUB_URL + '/issues',
+        external: true,
+      },
+    ],
+  },
+];
+---
+
+<footer class="border-t border-border mt-16 sm:mt-24">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-8">
+      <div class="col-span-2">
+        <div class="flex items-center gap-2 mb-3">
+          <span
+            class="inline-flex h-7 w-7 items-center justify-center rounded-button"
+            style="background: rgb(var(--brand-strong));"
+            aria-hidden="true"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 18 0" />
+              <path d="M12 12V3" />
+              <path d="M12 12l5 -5" />
+            </svg>
+          </span>
+          <span class="font-semibold text-text-primary text-[15px] tracking-tight">{SITE_TITLE}</span>
+        </div>
+        <p class="text-sm text-text-secondary max-w-sm leading-relaxed">{t('footer.tagline')}</p>
+        <p class="text-xs text-text-tertiary mt-4">
+          © {year} ccgauge contributors. {t('footer.license')}
+        </p>
+      </div>
+
+      {columns.map((col) => (
+        <div>
+          <h3 class="label mb-3">{col.title}</h3>
+          <ul class="space-y-2">
+            {col.items.map((it) => (
+              <li>
+                <a
+                  href={it.href}
+                  class="text-sm text-text-secondary hover:text-text-primary transition-colors"
+                  {...(it.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
+                  {it.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </div>
+</footer>

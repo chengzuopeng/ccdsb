@@ -1,0 +1,75 @@
+---
+/**
+ * Lightweight code-block component with a copy-to-clipboard button.
+ *
+ * Astro auto-applies syntax highlighting to fenced blocks inside .md/.mdx,
+ * but inline `<pre><code>` doesn't get the treatment for free. To keep
+ * things simple we render plain monospace text with brand styling — good
+ * enough for the short install snippets / config blocks the marketing
+ * site needs.
+ */
+
+interface Props {
+  code: string;
+  /** Language label shown top-right; purely decorative. */
+  lang?: string;
+  /** Label used by aria-label on the copy button. */
+  copyLabel?: string;
+  /** Label shown after a successful copy. */
+  copiedLabel?: string;
+}
+
+const { code, lang, copyLabel = 'Copy', copiedLabel = 'Copied!' } = Astro.props;
+---
+
+<div
+  class="group relative rounded-card border border-border bg-bg-surface overflow-hidden"
+  data-codeblock
+>
+  {lang && (
+    <span
+      class="absolute top-2.5 left-3 text-[10px] uppercase tracking-[0.08em] font-semibold text-text-tertiary"
+    >
+      {lang}
+    </span>
+  )}
+  <button
+    type="button"
+    data-copy-btn
+    data-copy-payload={code}
+    data-copy-label={copyLabel}
+    data-copied-label={copiedLabel}
+    class="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-button text-[11px] font-medium text-text-tertiary hover:text-text-primary hover:bg-bg-surface-hi border border-transparent hover:border-border transition-colors"
+    aria-label={copyLabel}
+  >
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+    <span data-copy-text>{copyLabel}</span>
+  </button>
+  <pre class:list={['p-4 pt-9 text-sm leading-relaxed font-mono overflow-x-auto', lang && 'pt-9']}><code>{code}</code></pre>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-copy-btn]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const payload = btn.dataset.copyPayload ?? '';
+      const label = btn.dataset.copyLabel ?? 'Copy';
+      const copied = btn.dataset.copiedLabel ?? 'Copied!';
+      const textEl = btn.querySelector('[data-copy-text]');
+      try {
+        await navigator.clipboard.writeText(payload);
+        if (textEl) textEl.textContent = copied;
+        btn.classList.add('text-brand');
+        setTimeout(() => {
+          if (textEl) textEl.textContent = label;
+          btn.classList.remove('text-brand');
+        }, 1500);
+      } catch {
+        // Permission denied or insecure context. Fail silently — user can
+        // select the text manually.
+      }
+    });
+  });
+</script>

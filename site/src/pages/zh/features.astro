@@ -1,0 +1,206 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { localePath } from '../../i18n/utils';
+
+const locale = 'zh';
+
+interface Section {
+  id: string;
+  title: string;
+  lead: string;
+  bullets: string[];
+}
+
+const sections: Section[] = [
+  {
+    id: 'dashboard',
+    title: '双数据源 Web 仪表盘',
+    lead: '一个 Next.js 仪表盘同时认识 Claude Code（Anthropic）和 OpenAI Codex CLI。每个页面顶部都能一键切换数据源，URL 与 cookie 记忆你的选择。',
+    bullets: [
+      'Overview — KPI（今日 token / 本月 / 今日 Top / 头牌模型）+ 按数据源分层的趋势图',
+      'Usage — 按轮次 / 按调用展开的表，含 prompt 预览、工具列表、耗时、花费、搜索、过滤',
+      'Sessions — 钻取单次对话，按模型和时间轴展开',
+      'Projects — 按 cwd 分布的花费，worktree 感知（例如 `repo (playwright)`）',
+      'Models — 各模型并列对比 + 趋势条',
+      'Settings — 检测到的数据源、indexer 健康度、扫描统计',
+    ],
+  },
+  {
+    id: 'kpi-block',
+    title: 'KPI + 5 小时 block 实时跟踪',
+    lead: '顶部 KPI 静默后台刷新 —— 没有 spinner，不会重置滚动位置。5h block 卡片实时显示当前会话窗口的钟表进度、每分钟燃烧速率、预计总花费。',
+    bullets: [
+      '每个 KPI 都带日环比',
+      '从 JSONL 时间戳实时检测"活跃 5h block"',
+      '卡片内置免责声明，避免和 Anthropic 套餐配额混淆',
+      'Usage 页 15 秒静默自动刷新，光标 / 搜索 / 排序状态全保留',
+    ],
+  },
+  {
+    id: 'heatmap',
+    title: '活跃度热力图 + 钻取页',
+    lead: '7 天 × 24 小时网格，告诉你 AI 时间实际花在哪个时段。Hover 看消息数、token 总量、占总数比例、占峰值比例。消息数和 token 量是两份独立的热力图。',
+    bullets: [
+      '靠近视口顶部时，tooltip 自动翻到 cell 下方',
+      '侧边 "活跃天数 / 连续 / 高峰" 紧凑 tile',
+      '底部俏皮的 token 对比："你已经用掉 ~12 倍《战争与和平》的 token"',
+      '宽窄屏自适应，无滚动条 artifact',
+    ],
+  },
+  {
+    id: 'usage-table',
+    title: '用量表 + CSV 导出',
+    lead: '每一次 API 调用都会按真实的对话轮次聚合（在 JSONL 里走 parent 链）。点开一轮看每次调用的工具列表、prompt 片段、花费。一键 CSV 导出。',
+    bullets: [
+      'Skill 注入和 `<system-reminder>` 不会把一段对话拆成多个 turn',
+      '耗时列显示每轮的钟表耗时（可排序）',
+      'CSV：UTF-8 BOM（Excel 友好）、防公式注入、`?level=call|turn` 切换',
+      'worktree 感知的项目名：`ai-self-web (playwright)` 而不是裸 `playwright`',
+    ],
+  },
+  {
+    id: 'cli',
+    title: '命令行报告',
+    lead: '`ccgauge report` 一次性终端报告，无 server。对齐的表、彩色柱状趋势、Top-N 排行。`--json` 输出走管道接你的脚本，`--no-color` 走管道接 CI 日志。',
+    bullets: [
+      '`-r today|1d|7d|30d|90d|all` 预设范围，或 `--since/--until` 任意区间',
+      '`-b model|project|session` 分组维度',
+      '`-g hour|day|week|month` 趋势粒度',
+      '`-m`/`--project` 子串过滤；`--no-trend`/`--no-breakdown` 精简输出',
+    ],
+  },
+  {
+    id: 'mcp',
+    title: 'MCP 服务（给 LLM 用）',
+    lead: '8 个 MCP tool 让 Claude Desktop / Cursor / Cline 等 MCP 客户端直接查你本地用量。不用截图、不用粘贴 —— 你问问题，模型从结构化数据答你。',
+    bullets: [
+      'Tools：usage_summary, usage_by_time, usage_by_model, usage_by_project, usage_by_session, daily_summary, weekly_summary, recent_activity',
+      '支持模型有 reasoning token 时单独折算',
+      '走 stdio JSON-RPC，直接塞进任意 MCP 客户端配置',
+      '独立命名缓存（`index-mcp-v2.json`），MCP 进程不会和仪表盘抢缓存',
+    ],
+  },
+  {
+    id: 'privacy',
+    title: '隐私 & 本地化打磨',
+    lead: '100% 本地。只读取 CLI 自己写的 JSONL。运行时零外网调用。默认绑 127.0.0.1。MIT 开源。',
+    bullets: [
+      '深 / 浅 / 跟随系统三档主题，首屏零闪烁',
+      '中文 / 英文界面 + CLI + MCP 响应全语贯通',
+      '无任何 analytics、telemetry，不需要 API key',
+      '源码在 GitHub —— 看清楚它读了什么、不读什么',
+    ],
+  },
+  {
+    id: 'background',
+    title: '后台服务 + 多 profile',
+    lead: '想常驻就把 ccgauge 当 daemon 用。完整生命周期命令：`start --background`、`stop`、`restart`、`status`、`open`、`logs`。状态持久化到 `~/.ccgauge/`，重启不丢配置。',
+    bullets: [
+      '`restart` 自动继承上一次的 `port / host / dir / log`',
+      '跨平台：macOS、Linux、Windows（detached spawn 自带 windowsHide）',
+      '`CCGAUGE_STATE_DIR` 环境变量切隔离 profile',
+      '`ccgauge status --json` 供监控脚本调用',
+    ],
+  },
+];
+
+const installSnippet = 'npx ccgauge';
+---
+
+<BaseLayout
+  locale={locale}
+  title="功能"
+  description="一页过完 ccgauge 的所有功能 —— Claude Code 与 Codex CLI 的本地仪表盘、命令行工具、MCP 服务。"
+>
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8">
+    <div class="pill-brand mb-3">功能</div>
+    <h1 class="heading-hero">ccgauge 的每个功能，一页讲完。</h1>
+    <p class="lede mt-5 max-w-3xl">
+      八大功能块，全都围绕同样的两条原则：你的数据不出本机，"我的 AI 花费到底去哪了"秒级有答案。
+    </p>
+  </section>
+
+  <nav class="mx-auto max-w-7xl px-4 sm:px-6 mb-8 sm:mb-12" aria-label="目录">
+    <div class="card card-pad">
+      <div class="label mb-3">本页索引</div>
+      <ol class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+        {sections.map((s, i) => (
+          <li>
+            <a href={`#${s.id}`} class="text-text-secondary hover:text-text-primary inline-flex items-baseline gap-2">
+              <span class="text-text-tertiary tabular-nums num-mono">{String(i + 1).padStart(2, '0')}</span>
+              <span>{s.title}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </nav>
+
+  {sections.map((s) => (
+    <section id={s.id} class="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 scroll-mt-24">
+      <h2 class="heading-section">{s.title}</h2>
+      <p class="lede mt-3 max-w-3xl">{s.lead}</p>
+      <ul class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 max-w-4xl">
+        {s.bullets.map((b) => (
+          <li class="flex items-baseline gap-2 text-sm text-text-secondary leading-relaxed">
+            <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+            <span set:html={b.replace(/`([^`]+)`/g, '<code class="font-mono text-xs px-1.5 py-0.5 rounded bg-bg-surface-hi border border-border text-text-primary">$1</code>')}></span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+
+  <section id="methodology" class="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16 scroll-mt-24 border-t border-border">
+    <div class="pill-brand mb-3">方法论</div>
+    <h2 class="heading-section">ccgauge 是怎么数 token、算花费的。</h2>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
+      <div class="card card-pad">
+        <h3 class="font-semibold text-text-primary mb-2">数据来源：CLI 的 JSONL</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          ccgauge 永远不会再发一次 API 请求。它只读取 Claude Code（<span class="font-mono text-xs">~/.claude/projects/</span>）
+          和 Codex CLI（<span class="font-mono text-xs">~/.codex/sessions/</span>）已经写到磁盘上的 JSONL 文件，
+          并对子 agent fork、worktree mirror 出来的 <span class="font-mono text-xs">(messageId, requestId)</span> 去重。
+        </p>
+      </div>
+      <div class="card card-pad">
+        <h3 class="font-semibold text-text-primary mb-2">价格表：内置快照</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          每百万 token 单价直接打包在 ccgauge 里。未知变体 fallback 到家族最新版（如 <span class="font-mono text-xs">gpt-5.5-foo</span> →
+          <span class="font-mono text-xs">gpt-5.5</span>）。Anthropic / OpenAI 调价时，升级 <span class="font-mono text-xs">ccgauge</span> 就拿到新单价 —— 不依赖任何在线 API。
+        </p>
+      </div>
+      <div class="card card-pad">
+        <h3 class="font-semibold text-text-primary mb-2">Codex 花费模型</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          Codex CLI 每个 <span class="font-mono text-xs">token_count</span> 事件都是累计值。ccgauge 计算正向 delta，
+          跳过重复刷新事件。显示的花费是"如果走 OpenAI API 单价会被收多少钱"的等价估值 —— 给走订阅 / managed 套餐的用户做参考。
+        </p>
+      </div>
+      <div class="card card-pad">
+        <h3 class="font-semibold text-text-primary mb-2">缓存节省</h3>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          把每一次缓存读取假设成按全量输入单价计费，差额就是"Saved by cache"。缓存创建按实际单价计费；
+          省钱头条数字的上界就是"如果完全没缓存会花多少钱"。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14 sm:py-20">
+    <div class="card card-pad flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div>
+        <h2 class="text-xl font-semibold tracking-tight text-text-primary">准备试试？</h2>
+        <p class="text-sm text-text-secondary mt-1">一行命令，浏览器自动打开 localhost:3737。</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <code class="font-mono text-sm px-3 py-2 rounded-button bg-bg-surface-hi border border-border text-text-primary">
+          {installSnippet}
+        </code>
+        <a href={localePath(locale, 'cli')} class="btn-brand">
+          看 CLI 文档 →
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

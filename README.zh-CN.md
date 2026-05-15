@@ -492,6 +492,17 @@ pnpm publish --access public  # 会自动先跑 pnpm build（prepublishOnly）
 `prompt caching 节省` · `5 小时窗口监控` · `rate limit 倒计时` · `ccusage 替代品` ·
 `ccusage web 版` · `token 用量分析` · `本地 AI 用量监控` · `自部署 AI 看板`
 
+## 产品官网
+
+产品官网（Astro + Tailwind 自建、中英双语、暗 / 亮主题、独立部署）放在
+[`site/`](./site/) 目录。它跟着主仓库一起在 git 里，但**不会**进 npm 包。
+
+```bash
+cd site && pnpm install && pnpm dev   # http://localhost:4321
+```
+
+构建 / 部署细节见 [`site/README.md`](./site/README.md)。
+
 ## 许可证
 
 MIT —— 详见 [LICENSE](https://github.com/chengzuopeng/ccgauge/blob/main/LICENSE)。

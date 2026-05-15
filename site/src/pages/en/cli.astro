@@ -1,0 +1,139 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { localePath } from '../../i18n/utils';
+
+const locale = 'en';
+
+const flags = [
+  { flag: '-r, --range <range>', default: '7d', purpose: '`today` / `1d` / `7d` / `30d` / `90d` / `all`' },
+  { flag: '-s, --source <provider>', default: 'all', purpose: '`claude` / `codex` / `all`' },
+  { flag: '-b, --by <dim>', default: 'model', purpose: 'Breakdown dimension: `model` / `project` / `session`' },
+  { flag: '-g, --gran <granularity>', default: 'day', purpose: 'Trend bucket: `hour` / `day` / `week` / `month`' },
+  { flag: '-n, --limit <n>', default: '10', purpose: 'Rows in the breakdown table' },
+  { flag: '--since <date>', default: '—', purpose: 'Override range start (ISO date or `YYYY-MM-DD`)' },
+  { flag: '--until <date>', default: '—', purpose: 'Override range end' },
+  { flag: '-m, --model <pat>', default: '—', purpose: 'Filter records whose model contains `<pat>`' },
+  { flag: '--project <pat>', default: '—', purpose: 'Filter by project basename / cwd substring' },
+  { flag: '-j, --json', default: 'off', purpose: 'Machine-readable JSON instead of formatted text' },
+  { flag: '--no-color', default: '—', purpose: 'Disable ANSI colors (auto-disabled when piped)' },
+  { flag: '--no-trend', default: '—', purpose: 'Skip the trend chart' },
+  { flag: '--no-breakdown', default: '—', purpose: 'Skip the breakdown table' },
+];
+
+const examples = [
+  { title: 'Default — last 7 days, all sources, top 10 models', code: 'ccgauge report' },
+  { title: '30 days, broken down by project', code: 'ccgauge report -r 30d -b project' },
+  { title: 'Codex only, gpt-5.5 family', code: 'ccgauge report -s codex -m gpt-5.5' },
+  { title: 'JSON output for piping into scripts', code: 'ccgauge report --json | jq .totals' },
+  { title: 'Arbitrary date range', code: 'ccgauge report --since 2026-05-01 --until 2026-05-08' },
+  { title: 'Minimal — just totals, no chart or breakdown', code: 'ccgauge report --no-trend --no-breakdown' },
+];
+
+function renderInline(s: string): string {
+  return s.replace(
+    /`([^`]+)`/g,
+    '<code class="font-mono text-xs px-1.5 py-0.5 rounded bg-bg-surface-hi border border-border text-text-primary">$1</code>',
+  );
+}
+---
+
+<BaseLayout
+  locale={locale}
+  title="CLI reference"
+  description="Full reference for `ccgauge report` — the one-shot, no-server terminal usage summary. Flags, examples, and exit semantics."
+  ogImage="og-cli.svg"
+>
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8">
+    <div class="pill-brand mb-3">CLI</div>
+    <h1 class="heading-hero">
+      <span class="font-mono">ccgauge report</span>
+    </h1>
+    <p class="lede mt-5 max-w-3xl">
+      A formatted, no-server terminal usage report. Reads the same JSONL the dashboard reads,
+      then prints a colored aligned summary in ~0.2 s. Use it locally to spot-check yesterday's
+      spend, or pipe <span class="font-mono">--json</span> into your own scripts.
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10">
+    <h2 class="heading-section">Quick examples</h2>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {examples.map((ex) => (
+        <div>
+          <div class="label mb-2">{ex.title}</div>
+          <CodeBlock code={ex.code} lang="bash" />
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">Flag reference</h2>
+    <div class="mt-6 card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left text-text-tertiary text-xs uppercase tracking-[0.06em]">
+            <th class="px-4 py-3 font-medium">Flag</th>
+            <th class="px-4 py-3 font-medium">Default</th>
+            <th class="px-4 py-3 font-medium">Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          {flags.map((f, i) => (
+            <tr class:list={[i % 2 === 0 ? 'bg-transparent' : 'bg-bg-surface-hi/30', 'border-b border-border last:border-b-0']}>
+              <td class="px-4 py-3 align-top">
+                <code class="font-mono text-xs text-text-primary whitespace-nowrap">{f.flag}</code>
+              </td>
+              <td class="px-4 py-3 align-top text-text-tertiary num-mono">{f.default}</td>
+              <td class="px-4 py-3 align-top text-text-secondary leading-relaxed">
+                <span set:html={renderInline(f.purpose)}></span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10">
+    <h2 class="heading-section">Tips</h2>
+    <ul class="mt-6 space-y-3 max-w-3xl">
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Date-only <code class="font-mono text-xs">--since/--until</code></strong> use
+          local calendar-day boundaries. <code class="font-mono text-xs">--until 2026-05-08</code> includes all of May 8.
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">No server is started.</strong> The report runs against the on-disk
+          JSONL files directly, then exits as soon as stdout is drained. Safe to call from CI.
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Colors auto-disable</strong> when stdout isn't a TTY.
+          You don't need to pass <code class="font-mono text-xs">--no-color</code> for piped output.
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">JSON output</strong> includes <code class="font-mono text-xs">totals</code>,
+          <code class="font-mono text-xs">trend</code>, and <code class="font-mono text-xs">breakdown</code> arrays.
+          Stable shape; safe to consume from scripts.
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14">
+    <a href={localePath(locale, 'features')} class="btn">
+      ← Back to features
+    </a>
+  </section>
+</BaseLayout>

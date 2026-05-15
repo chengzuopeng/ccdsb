@@ -1,0 +1,159 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { localePath } from '../../i18n/utils';
+
+const locale = 'en';
+
+const claudeDesktopConfig = `{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "npx",
+      "args": ["-y", "ccgauge", "mcp"]
+    }
+  }
+}`;
+
+const cursorConfig = `{
+  "mcp": {
+    "servers": {
+      "ccgauge": {
+        "command": "npx",
+        "args": ["-y", "ccgauge", "mcp"]
+      }
+    }
+  }
+}`;
+
+const tools = [
+  { name: 'usage_summary', purpose: 'Totals (tokens, cost, cache savings, requests) over a range. Filter by source / models / projects.' },
+  { name: 'usage_by_time', purpose: 'Time-bucketed series (hour / day / week / month) of tokens and cost.' },
+  { name: 'usage_by_model', purpose: 'Per-model token + cost rollup with share-of-total.' },
+  { name: 'usage_by_project', purpose: 'Per-cwd token + cost rollup. Worktree-aware project names.' },
+  { name: 'usage_by_session', purpose: 'Per-session breakdown with title, model mix, duration, and cost.' },
+  { name: 'daily_summary', purpose: 'A specific day\'s totals + top models + top projects. Useful for end-of-day reflection.' },
+  { name: 'weekly_summary', purpose: 'A specific week\'s totals + day-by-day breakdown.' },
+  { name: 'recent_activity', purpose: 'The last N assistant calls with timestamp / model / prompt preview / cost.' },
+];
+
+const promptExamples = [
+  { ask: '"How much did I spend on Opus this week, broken down by project?"', uses: 'usage_by_project + filter by model' },
+  { ask: '"Show me my Codex CLI usage for May 2026 as a daily chart."', uses: 'usage_by_time with source=codex, gran=day' },
+  { ask: '"Which sessions today used the most reasoning tokens?"', uses: 'usage_by_session ordered by reasoning_tokens' },
+  { ask: '"What did I work on between 9pm and midnight last Wednesday?"', uses: 'recent_activity in a tight window' },
+  { ask: '"Has my prompt-caching savings improved month over month?"', uses: 'daily_summary then weekly_summary deltas' },
+  { ask: '"Summarize my AI coding budget this month so I can put it in a doc."', uses: 'usage_summary with range=current month' },
+];
+---
+
+<BaseLayout
+  locale={locale}
+  title="MCP integration"
+  description="Wire ccgauge into Claude Desktop, Cursor, or any MCP-aware client. Eight tools, one config block, zero copy-paste."
+>
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8">
+    <div class="pill-brand mb-3">MCP</div>
+    <h1 class="heading-hero">Let your LLM read its own usage.</h1>
+    <p class="lede mt-5 max-w-3xl">
+      ccgauge ships a Model Context Protocol server: <span class="font-mono">ccgauge mcp</span>.
+      Wire it into Claude Desktop, Cursor, Cline — or any MCP-compatible client — and ask the
+      model: <em>"how much did Opus cost me this week?"</em> No screenshots, no SQL, no copy-paste.
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10">
+    <h2 class="heading-section">1. Add it to your MCP client</h2>
+    <p class="lede mt-3 max-w-3xl">
+      Two config blocks below cover ~95 % of MCP-aware tools. The transport is stdio JSON-RPC —
+      no port, no socket file. Any client that knows MCP knows how to read this.
+    </p>
+
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <div class="label mb-2">Claude Desktop · <code class="font-mono text-xs">~/Library/Application Support/Claude/claude_desktop_config.json</code></div>
+        <CodeBlock code={claudeDesktopConfig} lang="json" />
+      </div>
+      <div>
+        <div class="label mb-2">Cursor · <code class="font-mono text-xs">~/.cursor/mcp.json</code></div>
+        <CodeBlock code={cursorConfig} lang="json" />
+      </div>
+    </div>
+
+    <p class="mt-6 text-sm text-text-tertiary max-w-3xl">
+      Restart the client. <span class="font-mono">ccgauge</span> should show up in the MCP tool
+      picker with eight tools available. The server starts on first request and indexes your
+      JSONL into a separate cache file (<span class="font-mono">~/.ccgauge/cache/index-mcp-v2.json</span>)
+      so it never contends with the dashboard for the same on-disk index.
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">2. The eight tools</h2>
+    <p class="lede mt-3 max-w-3xl">
+      Each tool returns structured JSON. The LLM picks the right one based on your question;
+      you don't need to remember names.
+    </p>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {tools.map((t) => (
+        <div class="card card-pad">
+          <code class="font-mono text-sm text-brand">{t.name}</code>
+          <p class="mt-2 text-sm text-text-secondary leading-relaxed">{t.purpose}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">3. What to ask</h2>
+    <p class="lede mt-3 max-w-3xl">
+      Phrasing matters less than you'd think — the model translates plain English questions
+      into MCP tool calls. A few starting points:
+    </p>
+    <ul class="mt-6 space-y-3 max-w-4xl">
+      {promptExamples.map((p) => (
+        <li class="card card-pad">
+          <p class="text-text-primary font-medium">{p.ask}</p>
+          <p class="mt-1.5 text-xs text-text-tertiary">Uses: <span class="font-mono">{p.uses}</span></p>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">Notes</h2>
+    <ul class="mt-6 space-y-3 max-w-3xl">
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Still 100 % local.</strong> The MCP server reads the
+          same JSONL the dashboard reads. The LLM client sends queries over stdio to a child
+          process; nothing leaves your machine until the LLM itself answers you over its own
+          provider connection.
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Zombie processes can pollute cache.</strong> If you
+          ever see "dashboard data looks stale", run <code class="font-mono text-xs">ps -ef | grep ccgauge</code>
+          and kill any orphaned MCP processes. Each client is supposed to shut its server down on
+          exit, but if a client crashes the child can linger and keep writing to the cache.
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Reasoning tokens are surfaced</strong> for the
+          models that emit them (most OpenAI o-series and recent GPT models). They appear as a
+          separate field in <span class="font-mono">usage_summary</span> output.
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14">
+    <a href={localePath(locale, 'features')} class="btn">
+      ← Back to features
+    </a>
+  </section>
+</BaseLayout>

@@ -1,0 +1,222 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { localePath, useTranslations } from '../../i18n/utils';
+import { GITHUB_URL } from '../../consts';
+
+const locale = 'en';
+const t = useTranslations(locale);
+
+const reads: Array<{ what: string; where: string; why: string }> = [
+  {
+    what: 'Claude Code JSONL session files',
+    where: '~/.claude/projects/',
+    why: 'Source of truth for assistant tokens, model, cwd, tool calls, timestamps.',
+  },
+  {
+    what: 'OpenAI Codex CLI JSONL session files',
+    where: '~/.codex/sessions/',
+    why: 'Same role for Codex, plus the cumulative `token_count` events we delta-fy.',
+  },
+  {
+    what: 'Optional config-dir override',
+    where: '$CCGAUGE_CONFIG_DIR',
+    why: 'Lets you point at an alternate root (e.g. a snapshot from another machine).',
+  },
+];
+
+const writes: Array<{ what: string; where: string; why: string }> = [
+  {
+    what: 'On-disk parser cache',
+    where: '~/.ccgauge/cache/index-v2.json',
+    why: 'Memoizes parsed JSONL so the dashboard starts fast. Invalidated on parserVersion bump.',
+  },
+  {
+    what: 'MCP-specific cache',
+    where: '~/.ccgauge/cache/index-mcp-v2.json',
+    why: 'Separate file used only when running `ccgauge mcp`, so MCP doesn\'t contend with the dashboard.',
+  },
+  {
+    what: 'Background-service state',
+    where: '~/.ccgauge/state.json',
+    why: 'Stores PID / port / log path so `ccgauge stop|restart|status` can find a running instance.',
+  },
+  {
+    what: 'Background-service log',
+    where: '~/.ccgauge/ccgauge.log',
+    why: 'Captures stdout/stderr from the detached server. Tail with `ccgauge logs -f`.',
+  },
+];
+---
+
+<BaseLayout
+  locale={locale}
+  title="Privacy"
+  description="Why ccgauge is safe to run on a corporate or personal laptop: 100 % local, no telemetry, no network calls at runtime, MIT-licensed source."
+>
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8">
+    <div class="pill-brand mb-3">Privacy</div>
+    <h1 class="heading-hero">Everything stays on your machine.</h1>
+    <p class="lede mt-5 max-w-3xl">
+      ccgauge is built for a simple promise: your conversation transcripts and your AI spend are
+      none of our business. The dashboard, the CLI, and the MCP server all run locally and never
+      make outbound network calls at runtime.
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="card card-pad">
+        <div class="label mb-2">No outbound calls</div>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          At runtime, ccgauge does not talk to any third-party server. Not to Anthropic. Not to
+          OpenAI. Not to "ccgauge.dev". Bind defaults to <span class="font-mono">127.0.0.1</span>.
+        </p>
+      </div>
+      <div class="card card-pad">
+        <div class="label mb-2">No telemetry</div>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          No analytics, no error-reporting service, no anonymized "usage stats". The dashboard
+          ships without a tracking pixel and the CLI doesn't phone home.
+        </p>
+      </div>
+      <div class="card card-pad">
+        <div class="label mb-2">No accounts, no API keys</div>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          You don't sign in. ccgauge doesn't need your API key — it reads token counts from the
+          JSONL your CLI already writes.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">What ccgauge reads</h2>
+    <p class="lede mt-3 max-w-3xl">
+      Read-only access to existing files your CLI already created. ccgauge never edits or deletes
+      these — it only parses.
+    </p>
+    <div class="mt-6 card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left text-text-tertiary text-xs uppercase tracking-[0.06em]">
+            <th class="px-4 py-3 font-medium">What</th>
+            <th class="px-4 py-3 font-medium">Where</th>
+            <th class="px-4 py-3 font-medium">Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reads.map((r, i) => (
+            <tr class:list={[i % 2 === 0 ? 'bg-transparent' : 'bg-bg-surface-hi/30', 'border-b border-border last:border-b-0']}>
+              <td class="px-4 py-3 align-top text-text-primary">{r.what}</td>
+              <td class="px-4 py-3 align-top"><code class="font-mono text-xs text-text-tertiary whitespace-nowrap">{r.where}</code></td>
+              <td class="px-4 py-3 align-top text-text-secondary leading-relaxed">{r.why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">What ccgauge writes</h2>
+    <p class="lede mt-3 max-w-3xl">
+      All writes are to your home directory under <span class="font-mono">~/.ccgauge/</span>. Nothing leaves
+      the box.
+    </p>
+    <div class="mt-6 card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left text-text-tertiary text-xs uppercase tracking-[0.06em]">
+            <th class="px-4 py-3 font-medium">What</th>
+            <th class="px-4 py-3 font-medium">Where</th>
+            <th class="px-4 py-3 font-medium">Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          {writes.map((w, i) => (
+            <tr class:list={[i % 2 === 0 ? 'bg-transparent' : 'bg-bg-surface-hi/30', 'border-b border-border last:border-b-0']}>
+              <td class="px-4 py-3 align-top text-text-primary">{w.what}</td>
+              <td class="px-4 py-3 align-top"><code class="font-mono text-xs text-text-tertiary whitespace-nowrap">{w.where}</code></td>
+              <td class="px-4 py-3 align-top text-text-secondary leading-relaxed">{w.why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">Verifiable</h2>
+    <p class="lede mt-3 max-w-3xl">
+      Don't take our word for it. ccgauge is MIT-licensed and the source is on GitHub. If you're on
+      a corporate machine with strict outbound rules, two ways to sanity-check:
+    </p>
+    <ul class="mt-6 space-y-3 max-w-3xl">
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Run with the network blocked.</strong> Start ccgauge
+          while your machine is offline (or with a firewall denying outbound). Everything works
+          exactly the same.
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Watch the network with Little Snitch / pfSense / tcpdump.</strong>
+          You'll see precisely zero outbound packets from <span class="font-mono">node</span>
+          for the lifetime of the ccgauge process.
+        </span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-brand mt-0.5 flex-shrink-0" aria-hidden="true">▸</span>
+        <span class="text-sm text-text-secondary leading-relaxed">
+          <strong class="text-text-primary">Read the source.</strong> Open
+          <code class="font-mono text-xs">lib/data-loader/scan.ts</code> and
+          <code class="font-mono text-xs">lib/providers/*</code> to see exactly what gets parsed.
+          Search for <code class="font-mono text-xs">fetch(</code> and you'll find nothing but the
+          dashboard's own SSR-internal calls.
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+    <h2 class="heading-section">What we don't do</h2>
+    <ul class="mt-6 space-y-3 max-w-3xl">
+      <li class="flex items-baseline gap-3">
+        <span class="text-text-tertiary mt-0.5 flex-shrink-0" aria-hidden="true">×</span>
+        <span class="text-sm text-text-secondary leading-relaxed">Send anything to a third-party server.</span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-text-tertiary mt-0.5 flex-shrink-0" aria-hidden="true">×</span>
+        <span class="text-sm text-text-secondary leading-relaxed">Edit or delete your CLI's JSONL session files.</span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-text-tertiary mt-0.5 flex-shrink-0" aria-hidden="true">×</span>
+        <span class="text-sm text-text-secondary leading-relaxed">Subscribe to Anthropic / OpenAI billing APIs — the dashboard's numbers are derived from local files × built-in price tables.</span>
+      </li>
+      <li class="flex items-baseline gap-3">
+        <span class="text-text-tertiary mt-0.5 flex-shrink-0" aria-hidden="true">×</span>
+        <span class="text-sm text-text-secondary leading-relaxed">Phone home for updates. You upgrade ccgauge by running <code class="font-mono text-xs">npm i -g ccgauge@latest</code> when you want to.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14">
+    <div class="card card-pad flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+      <div>
+        <h2 class="text-xl font-semibold tracking-tight text-text-primary">Source on GitHub</h2>
+        <p class="text-sm text-text-secondary mt-1">MIT licensed. Read every line that touches your data.</p>
+      </div>
+      <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" class="btn-brand">
+        {t('cta.viewOnGitHub')} →
+      </a>
+    </div>
+    <div class="mt-8">
+      <a href={localePath(locale, 'features')} class="btn">
+        ← Back to features
+      </a>
+    </div>
+  </section>
+</BaseLayout>

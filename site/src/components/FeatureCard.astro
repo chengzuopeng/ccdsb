@@ -1,0 +1,50 @@
+---
+interface Props {
+  /** Optional icon emoji or single character; falls back to a brand dot. */
+  icon?: string;
+  title: string;
+  /** Short 1-2 sentence description. */
+  body: string;
+  /** Image src (relative to /images/). */
+  imageSrc?: string;
+  imageAlt?: string;
+  /** Optional CTA: { label, href } */
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
+const { icon, title, body, imageSrc, imageAlt, ctaLabel, ctaHref } = Astro.props;
+---
+
+<article class="card card-interactive flex flex-col overflow-hidden">
+  {imageSrc && (
+    <div class="aspect-[16/10] bg-bg-surface-hi border-b border-border overflow-hidden">
+      <img
+        src={`/images/${imageSrc}`}
+        alt={imageAlt ?? ''}
+        loading="lazy"
+        decoding="async"
+        class="w-full h-full object-cover"
+      />
+    </div>
+  )}
+  <div class="card-pad flex flex-col gap-2 flex-1">
+    <div class="flex items-center gap-2">
+      {icon ? (
+        <span class="text-lg" aria-hidden="true">{icon}</span>
+      ) : (
+        <span class="inline-block h-2 w-2 rounded-full bg-brand" aria-hidden="true"></span>
+      )}
+      <h3 class="font-semibold text-text-primary text-base tracking-tight">{title}</h3>
+    </div>
+    <p class="text-sm text-text-secondary leading-relaxed flex-1">{body}</p>
+    {ctaLabel && ctaHref && (
+      <a
+        href={ctaHref}
+        class="mt-2 text-sm font-medium text-brand hover:text-brand-hover inline-flex items-center gap-1"
+      >
+        {ctaLabel} <span aria-hidden="true">→</span>
+      </a>
+    )}
+  </div>
+</article>

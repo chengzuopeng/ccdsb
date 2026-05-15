@@ -25,3 +25,8 @@ npm-debug.log*
 # Optional design / planning notes
 PLAN.md
 docs/
+
+# Marketing website lives in this repo but ships independently to its own
+# host (Cloudflare Pages / Vercel / Netlify). Belt-and-suspenders only —
+# package.json#files already excludes it implicitly.
+site/

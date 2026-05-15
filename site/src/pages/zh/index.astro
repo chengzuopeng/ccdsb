@@ -1,0 +1,207 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Hero from '../../components/Hero.astro';
+import FeatureGrid from '../../components/FeatureGrid.astro';
+import FeatureCard from '../../components/FeatureCard.astro';
+import ScreenshotFrame from '../../components/ScreenshotFrame.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import CtaRow from '../../components/CtaRow.astro';
+import { localePath } from '../../i18n/utils';
+import { GITHUB_URL } from '../../consts';
+
+const locale = 'zh';
+const installSnippet = 'npx ccgauge';
+const mcpSnippet = `{
+  "mcpServers": {
+    "ccgauge": {
+      "command": "npx",
+      "args": ["-y", "ccgauge", "mcp"]
+    }
+  }
+}`;
+---
+
+<BaseLayout
+  locale={locale}
+  title="ccgauge"
+  description="本地版 Claude Code 与 OpenAI Codex CLI 用量看板、命令行工具与 MCP 服务，一切在你的电脑里跑，绝不联网回传。"
+>
+  <Hero
+    eyebrow="v1.0.0 · 稳定版"
+    title="看清楚 Claude Code 到底"
+    titleAccent="花了你多少钱。"
+    lede="ccgauge 是 Claude Code 与 OpenAI Codex CLI 的本地用量看板。按项目、模型、会话维度追踪 token、花费、缓存节省、5 小时 block 进度 —— 全程不出本机。"
+    imageSrc="hero-dashboard.svg"
+    imageAlt="ccgauge 仪表盘的风格化插画，悬浮在深色空间中，带 Indigo 色调图表和 7×24 热力图。"
+  >
+    <a slot="cta" href={GITHUB_URL} class="btn-brand" target="_blank" rel="noopener noreferrer">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.1.79-.25.79-.55v-2.1c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.23-1.28-5.23-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.45.11-3.03 0 0 .96-.31 3.15 1.18a10.94 10.94 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.63 1.58.24 2.74.12 3.03.73.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.68.41.36.78 1.06.78 2.14v3.18c0 .31.21.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+      </svg>
+      在 GitHub 上点 Star
+    </a>
+    <a slot="cta" href={localePath(locale, 'features')} class="btn">
+      看看有什么功能
+      <span aria-hidden="true">→</span>
+    </a>
+    <div slot="below-cta" class="mt-8 max-w-md">
+      <CodeBlock code={installSnippet} lang="bash" copyLabel="复制" copiedLabel="已复制！" />
+      <p class="mt-3 text-xs text-text-tertiary">
+        一行命令。自动在浏览器打开 <span class="font-mono">localhost:3737</span>。无注册、无遥测、无 API key。
+      </p>
+    </div>
+  </Hero>
+
+  <section class="border-y border-border bg-bg-surface">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-text-tertiary uppercase tracking-[0.08em]">
+      <span class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-brand"></span> Claude Code</span>
+      <span class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-orange-400"></span> OpenAI Codex CLI</span>
+      <span>100% 本地</span>
+      <span>MIT 开源</span>
+      <span>macOS · Linux · Windows</span>
+      <span>中文 / English</span>
+    </div>
+  </section>
+
+  <FeatureGrid
+    eyebrow="为什么用 ccgauge"
+    title="六个让 ccgauge 值得 10 秒装上的理由。"
+    description="所有功能都围绕两个点：你的数据不出本机，你的问题秒级有答案 —— 不用再去手搓 Excel。"
+  >
+    <FeatureCard
+      icon="◇"
+      title="双数据源统一看板"
+      body="Claude Code 与 OpenAI Codex CLI 共用一份看板，顶部一键切换；URL 与 cookie 记忆你的选择。"
+      imageSrc="feature-dashboard.svg"
+      imageAlt="ccgauge 仪表盘风格化截图，展示 overview KPI 与趋势图。"
+    />
+    <FeatureCard
+      icon="▣"
+      title="命令行报告"
+      body={'无 server 无浏览器，一条 `ccgauge report` 直接在终端打出彩色对齐的报告 —— 趋势、Top-N、JSON 输出皆可，管道友好。'}
+      imageSrc="feature-cli.svg"
+      imageAlt="终端窗口展示 ccgauge report 输出，带 ASCII 柱状图。"
+      ctaLabel="查看 CLI 文档"
+      ctaHref={localePath(locale, 'cli')}
+    />
+    <FeatureCard
+      icon="◈"
+      title="MCP 服务"
+      body="让 Claude Desktop / Cursor / Cline 直接查你的用量。8 个 MCP tool 覆盖总数、时间序列、按模型 / 项目 / 会话钻取。"
+      imageSrc="feature-mcp.svg"
+      imageAlt="MCP 集成抽象网络图。"
+      ctaLabel="MCP 接入指南"
+      ctaHref={localePath(locale, 'mcp')}
+    />
+    <FeatureCard
+      icon="⌬"
+      title="活跃度热力图"
+      body="7 天 × 24 小时网格，hover 看消息数、token、占总数和占峰值比例。你的高产时段一目了然。"
+    />
+    <FeatureCard
+      icon="🔒"
+      title="100% 本地、零遥测"
+      body="ccgauge 只读取你 CLI 自己写的 JSONL 文件，零网络调用。默认绑 127.0.0.1。MIT 开源。"
+      imageSrc="feature-privacy.svg"
+      imageAlt="半透明 Indigo 盾牌叠在风格化硬盘剪影上。"
+      ctaLabel="隐私设计理念"
+      ctaHref={localePath(locale, 'privacy')}
+    />
+    <FeatureCard
+      icon="🌐"
+      title="双语 + 主题"
+      body="中文 / 英文界面 + CLI 全语贯通；深 / 浅 / 跟随系统三档主题，首次加载零闪烁。npm 跨平台安装。"
+      imageSrc="feature-i18n.svg"
+      imageAlt="两个堆叠的浏览器框，分别展示拉丁字符与 CJK 字符块，由 Indigo 弧线相连。"
+    />
+  </FeatureGrid>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14 sm:py-20">
+    <div class="max-w-2xl mb-10">
+      <div class="pill-brand mb-3">你将看到</div>
+      <h2 class="heading-section">是真·本地仪表盘，不是 CLI 的二次封装。</h2>
+      <p class="lede mt-3">
+        这就是 ccgauge 跑起来后浏览器里实拍的画面。从月度花费一路钻到吃掉你预算的那一次 API 调用，全在浏览器里完成。
+      </p>
+    </div>
+    <ScreenshotFrame
+      src="/images/screenshots/overview-zh-light.png"
+      alt="ccgauge overview 页面，浅色主题、中文界面，展示 KPI、趋势、活跃度热力图与 5h block 跟踪。"
+      caption="Overview · 浅色 · 中文"
+    />
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14 sm:py-20">
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8 lg:gap-12 items-start">
+      <div>
+        <div class="pill-brand mb-3">数字怎么算的</div>
+        <h2 class="heading-section">不黑箱，全公开。</h2>
+        <p class="lede mt-3 max-w-md">
+          Token 数直接读 CLI 已经写的 JSONL，花费走 ccgauge 内置的官方单价表。
+        </p>
+        <a
+          href={localePath(locale, 'features') + '#methodology'}
+          class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand hover:text-brand-hover"
+        >
+          完整方法论 <span aria-hidden="true">→</span>
+        </a>
+      </div>
+      <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <li class="card card-pad">
+          <div class="label mb-2">Token 统计</div>
+          <p class="text-sm text-text-secondary leading-relaxed">
+            直接读取 CLI JSONL 文件里的 assistant record；对子 agent fork 出来的同 <span class="font-mono text-xs">(messageId, requestId)</span> 会去重。
+          </p>
+        </li>
+        <li class="card card-pad">
+          <div class="label mb-2">花费计算</div>
+          <p class="text-sm text-text-secondary leading-relaxed">
+            按模型查每百万 token 单价。未知变体 fallback 到家族最新版（如 <span class="font-mono text-xs">gpt-5.5-foo</span> → <span class="font-mono text-xs">gpt-5.5</span>）。
+          </p>
+        </li>
+        <li class="card card-pad">
+          <div class="label mb-2">缓存节省</div>
+          <p class="text-sm text-text-secondary leading-relaxed">
+            把每次缓存命中假设成"全量按输入单价计费"，差额即"Saved by cache"。这就是 prompt caching 帮你省了多少。
+          </p>
+        </li>
+        <li class="card card-pad">
+          <div class="label mb-2">5h block 跟踪</div>
+          <p class="text-sm text-text-secondary leading-relaxed">
+            纯粹的 5 小时窗口钟表进度。<em>不是</em> Anthropic 的套餐配额计数器 —— 那个在服务端，客户端拿不到。
+          </p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14 sm:py-20">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <div class="pill-brand mb-3">支持 MCP</div>
+        <h2 class="heading-section">让 LLM 自己查它自己的账单。</h2>
+        <p class="lede mt-3">
+          往 Claude Desktop 配置里加三行，然后问模型：<em>"我这周 Opus 花了多少钱，按项目拆一下？"</em> 这种问题和它的十几种变体，8 个 MCP tool 都能答。
+        </p>
+        <a href={localePath(locale, 'mcp')} class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand hover:text-brand-hover">
+          看完整 8 个 MCP tool <span aria-hidden="true">→</span>
+        </a>
+      </div>
+      <div>
+        <CodeBlock code={mcpSnippet} lang="json" copyLabel="复制" copiedLabel="已复制！" />
+      </div>
+    </div>
+  </section>
+
+  <CtaRow
+    title="10 秒装上。"
+    description="一行命令，本地起一个仪表盘，无需注册。别再猜 Claude Code 到底花了你多少。"
+  >
+    <a href={GITHUB_URL} class="btn-brand" target="_blank" rel="noopener noreferrer">
+      在 GitHub 点 Star
+    </a>
+    <a href={localePath(locale, 'features')} class="btn">
+      逛逛功能 <span aria-hidden="true">→</span>
+    </a>
+  </CtaRow>
+</BaseLayout>
