@@ -5,6 +5,49 @@ All notable changes to **ccgauge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-05-13
+
+### Fixed
+
+- **Usage table no longer splits a single conversation when a sub-agent is
+  invoked.** Claude Code stores each sub-agent invocation in its own
+  `<parent-session-uuid>/subagents/agent-*.jsonl` file. The synthesised
+  first user record in that file had `parentUuid: null`, breaking the
+  chain back to the parent session — so the originating human prompt and
+  the sub-agent's work appeared as two separate rows in the usage table,
+  with token cost split across both.
+
+  The Claude parser now marks every record with `isSidechain: true` and
+  flags the sub-agent's first user as `isSynthetic`. The indexer runs a
+  cross-file post-link pass on every snapshot rebuild that re-attaches
+  the sub-agent's first user to the parent session's most-recent prior
+  assistant. `buildTurnIndex` then walks past the synthetic user and
+  groups the sub-agent's assistants under the originating human turn.
+
+  Result: one user prompt = one row in the usage table, regardless of
+  how many sub-agents it spawned. Click-to-expand shows all sub-agent
+  tool calls inline as children. Cost attribution now correctly bills
+  the originating prompt for the full work it triggered.
+
+### Changed
+
+- Claude parser version bumped to `claude-v4-sidechain-merge`. Existing
+  persisted index entries with the previous parser version are
+  automatically re-parsed on next startup; no manual cache cleanup
+  required.
+
+### Internal
+
+- New `lib/data-loader/link-sidechain.ts` — pure function exposing
+  `linkSidechainParents()` for testability; called by the indexer's
+  `rebuildSnapshotNow`. Idempotent; safe to re-run on every snapshot.
+- `AssistantRecord` / `UserRecord` now carry an optional `isSidechain`
+  flag (sourced from raw JSONL); useful for future UI markers ("📎
+  sub-agent" badge) and for the post-link pass.
+- Marketing site scaffold landed under `site/` (Astro + Tailwind,
+  bilingual, deploys independently to a static host). Excluded from
+  the npm tarball via `.npmignore`.
+
 ## [1.0.0] — 2026-05-12
 
 A polish release. Everything from 0.x — Claude + Codex parsers, the web
@@ -340,6 +383,8 @@ of HTML to the browser.
 - Initial public release as `ccgauge`: local Next.js dashboard for
   Claude Code token usage, cost, and 5-hour block tracking.
 
+[1.0.1]: https://github.com/chengzuopeng/ccgauge/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/chengzuopeng/ccgauge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.2.0...v0.3.0

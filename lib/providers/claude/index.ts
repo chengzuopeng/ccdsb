@@ -67,7 +67,11 @@ export const claudeAdapter: ProviderAdapter = {
   // still be displayed as the per-call "prompt" on child rows, but are
   // skipped as turn-boundary anchors so they don't wrongly split a single
   // conversation into multiple turns.
-  parserVersion: 'claude-v3-synthetic-flag',
+  // v4: extend `isSynthetic` to sub-agent first-user records (every record
+  // in a `subagents/agent-*.jsonl` file has `isSidechain: true`); also
+  // propagate `isSidechain` to all records so the indexer's post-link pass
+  // can stitch sub-agent files into the parent session's turn graph.
+  parserVersion: 'claude-v4-sidechain-merge',
   capabilities: {
     hasCacheCreation: true,
     hasReasoningTokens: false,

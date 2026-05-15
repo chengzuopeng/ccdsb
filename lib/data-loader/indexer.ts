@@ -17,6 +17,7 @@ import {
   savePersistedIndex,
   type PersistedFileEntry,
 } from './index-persist';
+import { linkSidechainParents } from './link-sidechain';
 
 interface FileEntry {
   source: ProviderId;
@@ -402,6 +403,16 @@ class FileIndexer {
     const dedupedUsers = dedupUserRecords(user).sort((a, b) =>
       a.timestamp.localeCompare(b.timestamp),
     );
+
+    // Cross-file post-link: stitch Claude sub-agent files into their
+    // parent session so the usage table groups them under the originating
+    // user turn instead of showing the synthesised sub-agent prompt as a
+    // separate row. Mutates `parentMap` in place; safe to re-run.
+    linkSidechainParents({
+      assistantRecords: dedupedAssistants,
+      userRecords: dedupedUsers,
+      parentMap,
+    });
 
     for (const rec of dedupedAssistants) bySource[rec.source].assistantRecords += 1;
 

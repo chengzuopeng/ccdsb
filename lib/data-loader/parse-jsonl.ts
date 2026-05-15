@@ -92,6 +92,7 @@ function parseAssistant(raw: RawRecord, file: string): AssistantRecord | null {
     hasThinking,
     textPreview,
     filePath: file,
+    isSidechain: raw.isSidechain === true ? true : undefined,
   };
 }
 
@@ -114,13 +115,19 @@ function parseUser(raw: RawRecord, file: string): UserRecord | null {
   }
 
   // Synthetic / system-injected user messages — Claude Code occasionally
-  // writes text-bearing user records that didn't come from the human (skill
-  // metadata loaded mid-turn, <system-reminder> blocks, etc.). We keep their
-  // textPreview around so the child rows in the usage table can show
-  // "Skill: mf-commit ..." as a per-call prompt, but flag them as synthetic
-  // so the turn-grouping logic doesn't treat them as turn roots (which would
-  // wrongly split one conversation into several "turns").
-  const isSynthetic = !!textPreview && isSyntheticUserText(textPreview);
+  // writes text-bearing user records that didn't come from the human:
+  //   1. skill metadata loaded mid-turn / <system-reminder> blocks (text-based
+  //      detection via `isSyntheticUserText`);
+  //   2. sub-agent invocation prompts — every record in a `subagents/agent-*.jsonl`
+  //      file has `isSidechain: true`, and the first user record there is the
+  //      programmatic prompt the parent agent gave the sub-agent. Treating it
+  //      as a turn root wrongly splits one human prompt into two table rows.
+  // We keep their textPreview so child rows in the usage table can still show
+  // "Skill: mf-commit ..." / "Working dir: ..." as a per-call prompt, but
+  // flag them so the turn-grouping logic walks past them when looking for
+  // a real turn root.
+  const isSidechain = raw.isSidechain === true;
+  const isSynthetic = isSidechain || (!!textPreview && isSyntheticUserText(textPreview));
 
   return {
     type: 'user',
@@ -132,6 +139,7 @@ function parseUser(raw: RawRecord, file: string): UserRecord | null {
     cwd: raw.cwd ?? '',
     textPreview,
     isSynthetic,
+    isSidechain: isSidechain ? true : undefined,
     filePath: file,
   };
 }

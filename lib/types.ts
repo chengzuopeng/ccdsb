@@ -120,6 +120,14 @@ export interface AssistantRecord {
    *   - Claude: undefined (no equivalent in the JSONL)
    */
   effort?: string;
+  /**
+   * True when this record belongs to a Claude Code sub-agent invocation
+   * (stored under `.../<parent-session-uuid>/subagents/agent-*.jsonl`).
+   * Used by the indexer's post-link pass to identify subagent files and
+   * by the UI for optional visual markers. Codex records leave this
+   * undefined.
+   */
+  isSidechain?: boolean;
 }
 
 export interface UserRecord {
@@ -133,10 +141,16 @@ export interface UserRecord {
   textPreview: string;
   /**
    * True when textPreview was injected by Claude Code itself rather than
-   * typed by the human (skill metadata, <system-reminder>, etc.). Used to
-   * skip these as turn roots, but they can still be displayed per-call.
+   * typed by the human (skill metadata, <system-reminder>, sub-agent
+   * synthesized prompts, etc.). Used to skip these as turn roots while
+   * still letting them be displayed per-call.
    */
   isSynthetic?: boolean;
+  /**
+   * True when this record belongs to a Claude Code sub-agent invocation.
+   * See {@link AssistantRecord.isSidechain}.
+   */
+  isSidechain?: boolean;
   filePath: string;
 }
 
