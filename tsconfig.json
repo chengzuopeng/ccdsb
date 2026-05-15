@@ -19,5 +19,15 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next", "bin/cli.mjs", "scripts/**"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    "bin/cli.mjs",
+    "scripts/**",
+    // The marketing site (`site/`) has its own Astro tsconfig and its own
+    // `pnpm check` step. Excluding it here keeps root `tsc --noEmit` fast
+    // and stops Astro / Vite type definitions from leaking into the main
+    // repo's compile graph.
+    "site/**"
+  ]
 }
