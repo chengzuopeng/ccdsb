@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   formatUSDPrecise,
   formatDateTime,
+  formatDuration,
   formatTokensCompact,
   shortHash,
   shortenModel,
@@ -20,6 +21,7 @@ import type { SortKey } from '@/lib/usage-query';
 
 type ColumnId =
   | 'time'
+  | 'duration'
   | 'prompt'
   | 'model'
   | 'project'
@@ -43,6 +45,7 @@ interface ColumnDef {
 
 const COLUMNS: ColumnDef[] = [
   { id: 'time', labelKey: 'usage.col.time', sortKey: 'timestamp', defaultVisible: true },
+  { id: 'duration', labelKey: 'usage.col.duration', align: 'right', sortKey: 'durationMs', defaultVisible: true },
   { id: 'prompt', labelKey: 'usage.col.userMessage', defaultVisible: true },
   { id: 'model', labelKey: 'usage.col.model', defaultVisible: true },
   { id: 'project', labelKey: 'usage.col.project', defaultVisible: true },
@@ -54,10 +57,12 @@ const COLUMNS: ColumnDef[] = [
   { id: 'cacheWrite', labelKey: 'usage.col.cacheWrite', align: 'right', sortKey: 'cacheCreationTokens', defaultVisible: false },
   { id: 'total', labelKey: 'usage.col.total', align: 'right', sortKey: 'totalTokens', defaultVisible: true },
   { id: 'cost', labelKey: 'usage.col.cost', align: 'right', sortKey: 'cost', defaultVisible: false },
-  { id: 'tools', labelKey: 'usage.col.tools', defaultVisible: false },
+  { id: 'tools', labelKey: 'usage.col.tools', defaultVisible: true },
 ];
 
-const STORAGE_KEY = 'ccgauge.usage.cols.v2';
+// Bumped when defaults change so existing localStorage entries don't pin
+// users to the old visibility set.
+const STORAGE_KEY = 'ccgauge.usage.cols.v3';
 
 function defaultVisible(): Record<ColumnId, boolean> {
   return COLUMNS.reduce(
@@ -406,7 +411,7 @@ function RowsForTurn({
                 key={c.id}
                 className={cn('px-3 py-1.5', c.align === 'right' ? 'text-right' : 'text-left')}
               >
-                {renderChildCell(c.id, r, locale, t)}
+                {renderChildCell(c.id, r, turn.userText, locale, t)}
               </td>
             ))}
           </tr>
@@ -426,9 +431,28 @@ function renderTurnCell(
 ): React.ReactNode {
   switch (id) {
     case 'time':
+      // Show the turn's START time — the moment the user actually sent the
+      // prompt — not its end. Easier to find a conversation you remember by
+      // when you kicked it off. (The end time is still available on hover
+      // via the title attribute below.)
       return (
-        <span className="num-mono text-text-secondary whitespace-nowrap text-xs">
-          {formatDateTime(turn.endTimestamp)}
+        <span
+          className="num-mono text-text-secondary whitespace-nowrap text-xs"
+          title={`started ${formatDateTime(turn.timestamp)}\nended   ${formatDateTime(turn.endTimestamp)}`}
+        >
+          {formatDateTime(turn.timestamp)}
+        </span>
+      );
+    case 'duration':
+      // Wall-clock elapsed from the first to the last API call in this turn.
+      // 0 for single-call turns is rendered as `0s` rather than blank so the
+      // column reads as "duration", not "is this missing".
+      return (
+        <span
+          className="num-mono text-text-secondary whitespace-nowrap text-xs"
+          title={`${formatDateTime(turn.timestamp)} → ${formatDateTime(turn.endTimestamp)}`}
+        >
+          {formatDuration(turn.durationMs)}
         </span>
       );
     case 'prompt':
@@ -445,8 +469,8 @@ function renderTurnCell(
       return <span className="text-text-primary whitespace-nowrap">{modelLabel}</span>;
     case 'project':
       return (
-        <span className="block text-text-secondary truncate max-w-[160px]" title={turn.cwd}>
-          {projectNameFromCwd(turn.cwd)}
+        <span className="block text-text-secondary truncate max-w-[180px]" title={turn.cwd}>
+          {turn.projectLabel || projectNameFromCwd(turn.cwd)}
         </span>
       );
     case 'session':
@@ -510,7 +534,13 @@ function renderTurnCell(
   }
 }
 
-function renderChildCell(id: ColumnId, r: UsageTableRow, locale: Locale, t: Translator): React.ReactNode {
+function renderChildCell(
+  id: ColumnId,
+  r: UsageTableRow,
+  turnPrompt: string,
+  locale: Locale,
+  t: Translator,
+): React.ReactNode {
   switch (id) {
     case 'time':
       return (
@@ -518,18 +548,36 @@ function renderChildCell(id: ColumnId, r: UsageTableRow, locale: Locale, t: Tran
           {formatDateTime(r.timestamp)}
         </span>
       );
+    case 'duration':
+      // Per-call duration isn't in the JSONL; the duration column is a
+      // turn-level metric only.
+      return <span className="text-xs text-text-tertiary">—</span>;
     case 'prompt': {
-      // Child rows reuse the prompt column to surface which tool(s) this
-      // single API call invoked — saves the user from also turning on the
-      // 'tools' column just to see that.
+      // Prefer the call's own direct prompt (skill metadata, system reminder,
+      // etc.) when it differs from the turn-level human prompt — that's the
+      // context for THIS specific API call. Fall back to tool names when
+      // there's nothing distinct to show.
+      const direct = (r.directPrompt ?? '').trim();
+      const showDirect = direct && direct !== turnPrompt.trim();
+      if (showDirect) {
+        return (
+          <span
+            className="block text-xs text-text-secondary truncate max-w-[320px]"
+            title={direct}
+          >
+            {direct}
+          </span>
+        );
+      }
       if (!r.toolNames.length) {
         return <span className="text-xs text-text-tertiary">—</span>;
       }
-      const all = r.toolNames.join(', ');
-      const display = r.toolNames.slice(0, 3).join(', ') + (r.toolNames.length > 3 ? '…' : '');
+      const allTools = r.toolNames.join(', ');
+      const toolDisplay =
+        r.toolNames.slice(0, 3).join(', ') + (r.toolNames.length > 3 ? '…' : '');
       return (
-        <span className="block text-xs text-text-secondary truncate max-w-[280px]" title={all}>
-          {display}
+        <span className="block text-xs text-text-secondary truncate max-w-[280px]" title={allTools}>
+          {toolDisplay}
         </span>
       );
     }
@@ -542,8 +590,8 @@ function renderChildCell(id: ColumnId, r: UsageTableRow, locale: Locale, t: Tran
       );
     case 'project':
       return (
-        <span className="block truncate max-w-[160px]" title={r.cwd}>
-          {projectNameFromCwd(r.cwd)}
+        <span className="block truncate max-w-[180px]" title={r.cwd}>
+          {r.projectLabel || projectNameFromCwd(r.cwd)}
         </span>
       );
     case 'session':

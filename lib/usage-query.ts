@@ -9,6 +9,7 @@ export const SORT_KEYS = [
   'cacheCreationTokens',
   'totalTokens',
   'callCount',
+  'durationMs',
 ] as const;
 
 export type SortKey = (typeof SORT_KEYS)[number];

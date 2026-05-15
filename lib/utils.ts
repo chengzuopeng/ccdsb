@@ -101,7 +101,11 @@ export function formatDateTime(ts: string | number | Date): string {
 
 export function projectNameFromCwd(cwd: string): string {
   if (!cwd) return '(unknown)';
-  const parts = cwd.replace(/\/+$/, '').split('/');
+  // Trim trailing separators (both posix and windows) before taking the
+  // leaf segment; a Windows cwd like `C:\Users\me\proj` would otherwise
+  // come back as the whole string when split('/') gives a single part.
+  const trimmed = cwd.replace(/[/\\]+$/, '');
+  const parts = trimmed.split(/[/\\]+/);
   return parts[parts.length - 1] || cwd;
 }
 

@@ -2,6 +2,7 @@ import type { BlockProgressInfo } from './blocks/compute';
 import type { AssistantRecord, UserRecord } from './types';
 import { costOfRecord } from './pricing/calculate';
 import { buildTurnIndex } from './turns';
+import { resolveProjectLabel } from './project-label';
 
 export interface SerializedProgress {
   hasBlock: boolean;
@@ -49,8 +50,14 @@ export function blockToSerialized(info: BlockProgressInfo | null): SerializedPro
 export interface UsageTableRow {
   uuid: string;
   timestamp: string;
+  source: 'claude' | 'codex';
   model: string;
   cwd: string;
+  /** Display label for the project. For a git worktree this is
+   *  `"<main-repo> (<worktree-name>)"`; otherwise it's the plain
+   *  basename of `cwd`. Precomputed server-side because the worktree
+   *  check is a filesystem read. */
+  projectLabel: string;
   sessionId: string;
   inputTokens: number;
   outputTokens: number;
@@ -67,6 +74,14 @@ export interface UsageTableRow {
   toolNames: string[];
   /** Provider-specific reasoning depth (Codex: low/medium/high/minimal). */
   effort?: string;
+  /**
+   * The nearest text-bearing user record above this call in the parent chain
+   * (synthetic or not). For child rows that descend from a `Base directory
+   * for this skill: ...` injection this lets the prompt cell show what the
+   * skill block was about — distinct from the turn's actual human prompt.
+   * Empty string when there is no preceding user text in the chain.
+   */
+  directPrompt?: string;
 }
 
 export function recordsToTableRows(records: AssistantRecord[]): UsageTableRow[] {
@@ -75,8 +90,10 @@ export function recordsToTableRows(records: AssistantRecord[]): UsageTableRow[] 
     return {
       uuid: r.uuid,
       timestamp: r.timestamp,
+      source: r.source,
       model: r.model,
       cwd: r.cwd,
+      projectLabel: resolveProjectLabel(r.cwd),
       sessionId: r.sessionId,
       inputTokens: r.usage.input_tokens,
       outputTokens: r.usage.output_tokens,
@@ -103,7 +120,12 @@ export interface UsageTurnRow {
   turnId: string;
   timestamp: string;
   endTimestamp: string;
+  /** Elapsed milliseconds between the first and last API call in the turn.
+   *  ≥ 0; equals 0 for single-call turns. */
+  durationMs: number;
   cwd: string;
+  /** Worktree-aware display label — see {@link UsageTableRow.projectLabel}. */
+  projectLabel: string;
   sessionId: string;
   models: string[];
   callCount: number;
@@ -135,16 +157,58 @@ export function recordsToTurnRows(
   const userMap = new Map<string, UserRecord>();
   for (const u of users) userMap.set(u.uuid, u);
 
+  // Per-assistant "direct prompt": walk up the parentUuid chain until we hit
+  // a user record with non-empty textPreview (synthetic or human). Memoized.
+  //
+  // - `path` records every node visited on the way up — once we know the
+  //   answer, we back-fill it for all of them so the next assistant rooted
+  //   anywhere in this chain is an O(1) lookup.
+  // - `seen` is a cycle guard for malformed parent links. Should never
+  //   trigger on well-formed JSONL, but the cost is one Set insertion per
+  //   step so it's cheap insurance.
+  const directPromptCache = new Map<string, string>();
+  function resolveDirectPrompt(startUuid: string): string {
+    const cached = directPromptCache.get(startUuid);
+    if (cached !== undefined) return cached;
+    const path: string[] = [];
+    let cur: string | null = startUuid;
+    let answer = '';
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur)) {
+      seen.add(cur);
+      const hit = directPromptCache.get(cur);
+      if (hit !== undefined) {
+        // Mid-walk cache hit: adopt the cached answer and back-fill the
+        // nodes we walked through before reaching this point.
+        answer = hit;
+        break;
+      }
+      path.push(cur);
+      const u = userMap.get(cur);
+      // Any text-bearing user record counts — including synthetic ones.
+      if (u && u.textPreview && u.textPreview.trim()) {
+        answer = u.textPreview;
+        break;
+      }
+      cur = parentMap[cur] ?? null;
+    }
+    for (const id of path) directPromptCache.set(id, answer);
+    return answer;
+  }
+
   const groups = new Map<string, UsageTableRow[]>();
   const order = new Map<string, AssistantRecord>();
   for (const r of assistants) {
     const turnId = turnIndex.get(r.uuid) ?? r.uuid;
     const c = costOfRecord(r);
+    const direct = resolveDirectPrompt(r.uuid);
     const child: UsageTableRow = {
       uuid: r.uuid,
       timestamp: r.timestamp,
+      source: r.source,
       model: r.model,
       cwd: r.cwd,
+      projectLabel: resolveProjectLabel(r.cwd),
       sessionId: r.sessionId,
       inputTokens: r.usage.input_tokens,
       outputTokens: r.usage.output_tokens,
@@ -163,6 +227,7 @@ export function recordsToTurnRows(
       costCacheWrite: c.cacheCreation5m + c.cacheCreation1h,
       toolNames: r.toolNames,
       effort: r.effort,
+      directPrompt: direct || undefined,
     };
     const list = groups.get(turnId);
     if (list) list.push(child);
@@ -204,11 +269,17 @@ export function recordsToTurnRows(
       costCacheWrite += c.costCacheWrite;
     }
     const userRec = userMap.get(turnId);
+    const startMs = new Date(first.timestamp).getTime();
+    const endMs = new Date(last.timestamp).getTime();
+    const durationMs =
+      Number.isFinite(startMs) && Number.isFinite(endMs) ? Math.max(0, endMs - startMs) : 0;
     turns.push({
       turnId,
       timestamp: first.timestamp,
       endTimestamp: last.timestamp,
+      durationMs,
       cwd: first.cwd,
+      projectLabel: resolveProjectLabel(first.cwd),
       sessionId: first.sessionId,
       models: Array.from(modelSet),
       callCount: children.length,
@@ -229,6 +300,8 @@ export function recordsToTurnRows(
       children,
     });
   }
-  turns.sort((a, b) => (a.endTimestamp < b.endTimestamp ? 1 : -1));
+  // Default order: newest-started turn first. Matches the table's
+  // "time" column display and its click-to-sort behaviour.
+  turns.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
   return turns;
 }
