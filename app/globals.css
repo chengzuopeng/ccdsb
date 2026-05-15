@@ -241,3 +241,12 @@ body {
 .divider-soft {
   border-top: 1px solid rgb(var(--border));
 }
+
+/* Usage page: hide the KPI + trend block when the user collapsed the overview.
+   The data attribute is set by the no-flash script (synchronously, before
+   paint, from localStorage) and toggled at runtime by <OverviewToggle />.
+   Attribute name + value mirror lib/storage-keys.ts — CSS can't import a
+   constant, so keep these in sync if you ever rename them. */
+html[data-usage-overview='hidden'] .usage-overview-block {
+  display: none;
+}

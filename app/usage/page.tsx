@@ -17,6 +17,7 @@ import { getServerLocale } from '@/lib/i18n/server';
 import { resolveSource, filterBySource } from '@/lib/source';
 import { getProvider } from '@/lib/providers';
 import { AutoRefresh } from '@/components/auto-refresh';
+import { OverviewToggle } from '@/components/overview-toggle';
 import {
   USAGE_PAGE_SIZE,
   isSortKey,
@@ -43,8 +44,10 @@ function filterTurnsByQuery(turns: UsageTurnRow[], q: string): UsageTurnRow[] {
 function sortTurns(turns: UsageTurnRow[], key: SortKey, dir: 'asc' | 'desc'): UsageTurnRow[] {
   const arr = turns.slice();
   arr.sort((a, b) => {
-    const av = key === 'timestamp' ? a.endTimestamp : (a[key] as number);
-    const bv = key === 'timestamp' ? b.endTimestamp : (b[key] as number);
+    // "Time" sort uses the turn's start timestamp — that's what the column
+    // displays, so click-to-sort should be consistent with the visible value.
+    const av = key === 'timestamp' ? a.timestamp : (a[key] as number);
+    const bv = key === 'timestamp' ? b.timestamp : (b[key] as number);
     if (av === bv) return 0;
     return (dir === 'asc' ? 1 : -1) * (av < bv ? -1 : 1);
   });
@@ -135,37 +138,40 @@ export default async function UsagePage({
     <PageShell
       title={t('usage.title')}
       desc={t('usage.subtitle', { count: totalCount.toLocaleString() })}
-      right={<RangePicker defaultValue="7d" />}
+      right={
+        <div className="flex items-center gap-3 flex-wrap">
+          <OverviewToggle />
+          <ModelFilter all={allModels} selected={models} />
+          <ProjectFilter all={allProjects} selected={projects} />
+          <RangePicker defaultValue="7d" />
+        </div>
+      }
     >
       <AutoRefresh intervalMs={15_000} />
       {allSourceRecords.length === 0 ? (
         <EmptyState title={t('common.empty.title')} desc={t('common.empty.desc')} />
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KpiCard label={t('usage.kpi.totalTokens')} value={formatTokensCompact(totals.totalTokens, locale)} />
-            <KpiCard
-              label={t('usage.kpi.totalCost')}
-              value={formatUSD(totals.cost)}
-              hint={costFootnote || undefined}
-            />
-            <KpiCard label={t('usage.kpi.cacheSaved')} value={formatUSD(totals.saved)} accent="success" />
-            <KpiCard label={t('usage.kpi.cacheHit')} value={formatPct(cacheHit, 0)} accent="success" />
-          </div>
+          <div className="usage-overview-block contents">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              <KpiCard label={t('usage.kpi.totalTokens')} value={formatTokensCompact(totals.totalTokens, locale)} />
+              <KpiCard
+                label={t('usage.kpi.totalCost')}
+                value={formatUSD(totals.cost)}
+                hint={costFootnote || undefined}
+              />
+              <KpiCard label={t('usage.kpi.cacheSaved')} value={formatUSD(totals.saved)} accent="success" />
+              <KpiCard label={t('usage.kpi.cacheHit')} value={formatPct(cacheHit, 0)} accent="success" />
+            </div>
 
-          <Section
-            title={t('usage.trend')}
-            desc={t('usage.trend.gran', { gran: tFn(locale, `gran.${gran}`) })}
-            right={
-              <div className="flex items-center gap-2 flex-wrap">
-                <ModelFilter all={allModels} selected={models} />
-                <ProjectFilter all={allProjects} selected={projects} />
-                <GranularityPicker defaultValue={gran} />
-              </div>
-            }
-          >
-            <TokenStackChart data={trend} />
-          </Section>
+            <Section
+              title={t('usage.trend')}
+              desc={t('usage.trend.gran', { gran: tFn(locale, `gran.${gran}`) })}
+              right={<GranularityPicker defaultValue={gran} />}
+            >
+              <TokenStackChart data={trend} />
+            </Section>
+          </div>
 
           <Section title={t('usage.requests.title')} desc={t('usage.requests.desc')}>
             <UsageTable
