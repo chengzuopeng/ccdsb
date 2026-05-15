@@ -32,6 +32,15 @@
   "engines": {
     "node": ">=20"
   },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
   "packageManager": "pnpm@10.30.3",
   "bin": {
     "ccgauge": "bin/cli.mjs"
@@ -40,6 +49,7 @@
     "bin/cli.mjs",
     ".next/standalone",
     "dist/mcp",
+    "dist/report",
     "README.md",
     "README.zh-CN.md",
     "CHANGELOG.md",
@@ -47,15 +57,16 @@
   ],
   "scripts": {
     "dev": "next dev -p 3738",
-    "build": "next build && node scripts/build-mcp.mjs && node scripts/postbuild.mjs",
+    "build": "next build && node scripts/build-mcp.mjs && node scripts/build-report.mjs && node scripts/postbuild.mjs",
     "build:mcp": "node scripts/build-mcp.mjs",
+    "build:report": "node scripts/build-report.mjs",
     "start": "node bin/cli.mjs",
     "start:next": "next start -p 3737",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --no-warnings scripts/test-codex-parser.mjs",
     "test:mcp": "node scripts/test-mcp-server.mjs",
-    "clean": "rm -rf .next node_modules tsconfig.tsbuildinfo",
+    "clean": "node -e \"for (const p of ['.next','node_modules','tsconfig.tsbuildinfo']) require('node:fs').rmSync(p,{recursive:true,force:true})\"",
     "screenshots": "node scripts/screenshots.mjs",
     "prepack": "pnpm build"
   },

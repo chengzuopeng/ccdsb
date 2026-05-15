@@ -4,7 +4,7 @@ import { closeSync, createReadStream, existsSync, openSync } from 'node:fs';
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -25,8 +25,15 @@ const DEFAULT_LOG_FILE = join(STATE_DIR, 'ccgauge.log');
 const STATE_VERSION = 1;
 const DEFAULT_PORT = '3737';
 const DEFAULT_HOST = '127.0.0.1';
-const COMMAND_NAMES = new Set(['start', 'stop', 'restart', 'status', 'open', 'logs', 'mcp']);
-const VALUE_OPTIONS = new Set(['-p', '--port', '-H', '--host', '--dir', '--log', '-n', '--lines']);
+const COMMAND_NAMES = new Set([
+  'start', 'stop', 'restart', 'status', 'open', 'logs', 'mcp',
+  'report',
+]);
+const VALUE_OPTIONS = new Set([
+  '-p', '--port', '-H', '--host', '--dir', '--log', '-n', '--lines',
+  '-r', '--range', '-s', '--source', '-b', '--by', '-g', '--gran',
+  '-m', '--model', '--project', '--since', '--until',
+]);
 
 function browserHost(host) {
   if (!host || host === '0.0.0.0' || host === '::' || host === '[::]') return '127.0.0.1';
@@ -139,6 +146,28 @@ program
     await startMcp();
   });
 
+function addReportOptions(cmd) {
+  return cmd
+    .option('-r, --range <range>', 'today | 1d | 7d | 30d | 90d | all', '7d')
+    .option('-s, --source <provider>', 'claude | codex | all', 'all')
+    .option('-b, --by <dim>', 'breakdown dimension: model | project | session', 'model')
+    .option('-g, --gran <granularity>', 'trend granularity: hour | day | week | month', 'day')
+    .option('-n, --limit <n>', 'rows in breakdown table', '10')
+    .option('--since <date>', 'override range start (ISO date or YYYY-MM-DD)')
+    .option('--until <date>', 'override range end (ISO date or YYYY-MM-DD)')
+    .option('-m, --model <pat>', 'filter by model substring')
+    .option('--project <pat>', 'filter by project (cwd basename match)')
+    .option('-j, --json', 'output JSON instead of formatted text')
+    .option('--no-color', 'disable ANSI colors')
+    .option('--no-trend', 'skip the trend chart')
+    .option('--no-breakdown', 'skip the breakdown table');
+}
+
+addReportOptions(program.command('report').description('print a formatted usage report to stdout'))
+  .action(async (opts) => {
+    await report(opts);
+  });
+
 await program.parseAsync(normalizeArgv(process.argv));
 
 function normalizeArgv(argv) {
@@ -228,6 +257,9 @@ async function startBackground(standaloneEntry, opts) {
     env,
     detached: true,
     stdio: ['ignore', out, err],
+    // Suppress the fleeting console window that Windows pops up for a
+    // detached background child. No-op on macOS/Linux.
+    windowsHide: true,
   });
   child.unref();
   // Once spawn() has dup'd these fds into the child, the parent can release them.
@@ -351,6 +383,61 @@ or run the dev server with
   process.exit(1);
 }
 
+async function report(opts) {
+  const bundle = join(packageRoot, 'dist', 'report', 'index.mjs');
+  if (!existsSync(bundle)) {
+    console.error(`
+[ccgauge] Report bundle not found:
+  ${bundle}
+
+If you installed ccgauge from npm: please reinstall — the published package
+should include the report bundle.
+
+If you are running from source: build it first with
+  $ pnpm build:report
+or run the full build with
+  $ pnpm build
+`);
+    process.exit(1);
+  }
+  const limit = parseInt(String(opts.limit ?? '10'), 10);
+  const reportOpts = {
+    range: String(opts.range ?? '7d'),
+    source: String(opts.source ?? 'all'),
+    by: String(opts.by ?? 'model'),
+    gran: String(opts.gran ?? 'day'),
+    limit: Number.isFinite(limit) && limit > 0 ? limit : 10,
+    since: opts.since ? String(opts.since) : undefined,
+    until: opts.until ? String(opts.until) : undefined,
+    json: Boolean(opts.json),
+    color: opts.color !== false && process.stdout.isTTY,
+    showTrend: opts.trend !== false,
+    showBreakdown: opts.breakdown !== false,
+    model: opts.model ? String(opts.model) : undefined,
+    project: opts.project ? String(opts.project) : undefined,
+  };
+  let payload;
+  try {
+    const mod = await import(pathToFileURL(bundle).href);
+    const out = await mod.runReport(reportOpts);
+    payload = out.endsWith('\n') ? out : out + '\n';
+  } catch (err) {
+    console.error(`[ccgauge] report failed: ${(err && err.message) || err}`);
+    process.exit(1);
+  }
+  // The indexer keeps fs watchers alive, which would block process exit.
+  // For a one-shot report we explicitly exit once stdout is drained.
+  // Use the write() return value rather than chaining a `drain` listener
+  // after the fact: if drain fires between the write and the listener
+  // attach, we'd hang forever waiting for an event that already happened.
+  const flushed = process.stdout.write(payload);
+  if (flushed) {
+    process.exit(0);
+  } else {
+    process.stdout.once('drain', () => process.exit(0));
+  }
+}
+
 async function startMcp() {
   const bundle = join(packageRoot, 'dist', 'mcp', 'server.mjs');
   if (!existsSync(bundle)) {
@@ -389,6 +476,11 @@ async function resolvePort(opts) {
   if (!Number.isInteger(preferred) || preferred <= 0 || preferred > 65535) {
     throw new Error(`invalid port: ${opts.port}`);
   }
+  // Try the preferred port first, then up to 19 ports above it (capped at
+  // 65535), then 0 (let the OS pick an ephemeral port). For unusually high
+  // preferred values (e.g. 65530) the +N candidates are clamped by the
+  // filter, leaving just the preferred + ephemeral fallback — that's still
+  // correct, just narrower.
   const candidates = opts.strictPort
     ? preferred
     : [preferred, ...Array.from({ length: 19 }, (_, i) => preferred + i + 1).filter((p) => p <= 65535), 0];
