@@ -13,8 +13,10 @@ export interface ActivityStats {
   favoriteModel: string | null;
   /** 7 rows (Sun..Sat) × 24 cols (0..23). Cell = message count. */
   heatmap: number[][];
-  /** Highest single cell — for normalizing the heatmap intensity. */
+  /** Highest single cell (message count) — for normalizing the heatmap intensity. */
   heatmapMax: number;
+  /** Same shape as heatmap, but cells are token sums (input+output+cR+cW). */
+  tokenHeatmap: number[][];
   /** Sum of input+output+cR+cW across all included records. */
   tokensSummed: number;
 }
@@ -44,6 +46,7 @@ export function computeActivityStats(
       favoriteModel: null,
       heatmap: emptyHeatmap(),
       heatmapMax: 0,
+      tokenHeatmap: emptyHeatmap(),
       tokensSummed: 0,
     };
   }
@@ -53,6 +56,7 @@ export function computeActivityStats(
   const hourCounts = new Array<number>(24).fill(0);
   const modelCounts = new Map<string, number>();
   const heatmap = emptyHeatmap();
+  const tokenHeatmap = emptyHeatmap();
   let totalTokens = 0;
   let messages = 0;
 
@@ -68,11 +72,13 @@ export function computeActivityStats(
     heatmap[dow][hour] += 1;
     modelCounts.set(r.model, (modelCounts.get(r.model) ?? 0) + 1);
     const u = r.usage;
-    totalTokens +=
+    const recTokens =
       u.input_tokens +
       u.output_tokens +
       u.cache_read_input_tokens +
       u.cache_creation_input_tokens;
+    tokenHeatmap[dow][hour] += recTokens;
+    totalTokens += recTokens;
     messages += 1;
   }
 
@@ -94,6 +100,7 @@ export function computeActivityStats(
     favoriteModel,
     heatmap,
     heatmapMax,
+    tokenHeatmap,
     tokensSummed: totalTokens,
   };
 }
