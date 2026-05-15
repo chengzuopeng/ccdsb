@@ -52,7 +52,7 @@ export function Nav({ availableProviders, initialSource, providerInfos }: Props)
           </span>
         </Link>
         <nav
-          className="flex-1 min-w-0 flex items-center gap-0.5 overflow-x-auto scrollbar-thin"
+          className="flex-1 min-w-0 flex items-center gap-0.5 overflow-x-auto nav-scroller"
           aria-label="Primary"
         >
           {ITEMS.map((it) => {

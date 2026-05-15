@@ -49,7 +49,7 @@ export function SegmentedPicker({ paramKey, defaultValue, options, ariaLabel }: 
       role="radiogroup"
       aria-label={ariaLabel}
       onKeyDown={onKey}
-      className="inline-flex rounded-button border border-border bg-bg-surface p-0.5"
+      className="inline-flex rounded-button border border-border bg-bg-surface p-0.5 gap-0.5"
     >
       {options.map((p) => {
         const active = current === p.value;
@@ -61,11 +61,11 @@ export function SegmentedPicker({ paramKey, defaultValue, options, ariaLabel }: 
             tabIndex={active ? 0 : -1}
             onClick={() => set(p.value)}
             className={cn(
-              'px-2.5 py-1 text-xs font-medium rounded transition-colors',
+              'px-2.5 py-1 text-xs rounded transition-all',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
               active
-                ? 'bg-bg-surface-hi text-text-primary'
-                : 'text-text-secondary hover:text-text-primary',
+                ? 'bg-brand-strong text-white font-semibold shadow-sm ring-1 ring-brand/40'
+                : 'text-text-tertiary font-medium hover:text-text-primary hover:bg-bg-surface-hi',
             )}
           >
             {t(p.tk)}

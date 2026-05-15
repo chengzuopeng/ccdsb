@@ -83,7 +83,7 @@ export function SourceSwitcher({ available, initial, providers }: Props) {
               disabled={pending}
               className={`px-2.5 h-6 text-xs inline-flex items-center gap-1.5 rounded transition-all ${
                 isActive
-                  ? 'bg-brand text-white font-semibold shadow-sm ring-1 ring-brand/40'
+                  ? 'bg-brand-strong text-white font-semibold shadow-sm ring-1 ring-brand/40'
                   : 'text-text-tertiary font-medium hover:text-text-primary hover:bg-bg-surface-hi'
               }`}
             >

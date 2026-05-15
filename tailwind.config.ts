@@ -27,6 +27,9 @@ const config: Config = {
         brand: {
           DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
           hover: 'rgb(var(--brand-hover) / <alpha-value>)',
+          // High-contrast fill for chips with white text. AA-compliant in
+          // both themes. Use as `bg-brand-strong text-white`.
+          strong: 'rgb(var(--brand-strong) / <alpha-value>)',
         },
         success: 'rgb(var(--success) / <alpha-value>)',
         warning: 'rgb(var(--warning) / <alpha-value>)',

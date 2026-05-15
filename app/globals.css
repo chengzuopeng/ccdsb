@@ -16,6 +16,11 @@
   --text-tertiary: 120 120 128;
   --brand: 129 140 248;
   --brand-hover: 165 180 252;
+  /* `brand-strong` is one step darker than `brand` (Indigo-500 vs -400)
+     so that filled chips with white text clear WCAG AA (4.5:1) in dark
+     mode. Don't use this for text-on-dark-bg — Indigo-500 there only
+     reaches ~4:1. Use plain `brand` for those. */
+  --brand-strong: 99 102 241;
   --success: 34 197 94;
   --warning: 250 204 21;
   --danger: 248 113 113;
@@ -43,6 +48,10 @@
   --text-tertiary: 145 145 156;
   --brand: 79 70 229;
   --brand-hover: 67 56 202;
+  /* In light mode `brand` (Indigo-600) is already strong enough for white
+     text (~8.6:1). Keep `brand-strong` identical so components don't have
+     to branch on theme. */
+  --brand-strong: 79 70 229;
   --success: 22 163 74;
   --warning: 217 119 6;
   --danger: 220 38 38;
@@ -124,6 +133,18 @@ body {
   background: rgb(var(--border-hi) / 0.5);
   border: 0;
   border-radius: 3px;
+}
+
+/* Nav scroller: keep `overflow-x: auto` for very narrow viewports but never
+   render the scrollbar track — on macOS the auto-hide thin bar can leave a
+   thin gray "rest state" that reads as a divider against the bg. */
+.nav-scroller {
+  scrollbar-width: none;
+}
+.nav-scroller::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Keyboard-only focus ring (mouse clicks won't trigger it). */
