@@ -5,6 +5,154 @@ All notable changes to **ccgauge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] — 2026-05-15
+
+This release brings the dashboard the long-requested **All view** (one
+nav tab to see Claude + Codex merged), real provider logos in place of
+the old colored-letter chips, and a switchable **Usage trend** that
+finally lets you look at *conversations per day* the same way you'd
+count rows in the usage table.
+
+### Highlights
+
+- **Tri-state source switcher** in the nav: `全部 · Claude · Codex`,
+  with the All button leading so the merged-scope option reads first.
+  Each button now shows the provider's real brand mark (Claude's
+  orange burst, Codex's blue cloud) instead of a `C`/`X` letter chip.
+  Persists via `?source=all` URL param + cookie; hides itself entirely
+  when only one provider is detected on disk.
+- **All-view dispatch pattern.** The aggregator contract is unchanged
+  (still requires a single `ProviderId`); the page layer runs it per
+  provider and merges via new `lib/source-merge.ts` helpers
+  (`combineTotals` / `combineTimeBuckets`). List aggregations concat
+  per source and re-sort. All seven pages and five API routes
+  dispatch this way; `ProjectSummary` / `SessionSummary` carry a
+  `source` field so mixed-source rows are unambiguous.
+- **Usage trend: Tokens / Conversations toggle** on the overview. The
+  trend section title changed to "Usage trend" with a segmented
+  control between the existing stacked-token view and a new
+  per-day **conversation count**. The conversation metric rolls API
+  calls up to their user-prompt root via `buildTurnIndex`, then
+  groups turns by the day of their earliest record — so the bar
+  values match the usage-table row count 1:1.
+- **Worktree-aware Projects.** All worktrees of the same repo now
+  collapse into a single project row. Detection is pure-path first
+  (matches both standard `/.git/worktrees/` and Claude Code's
+  `/.claude/worktrees/` layout, so even worktree directories that
+  have since been deleted from disk still merge correctly via their
+  historical `cwd`). The detail page filters records by canonical
+  match, so old bookmarks pointing at a worktree path still resolve;
+  the session count is reconciled via sessionId Set union so the
+  card matches the detail-page KPIs.
+
+### Added
+
+- `public/claude-logo.webp` and `public/codex-logo.png` — provider
+  brand marks shipped as static assets. `ProviderAdapter` gets a new
+  `logoSrc` field; settings page data-source list, Projects card
+  source badges (All view), and Models card source badges all
+  consume it.
+- `lib/source-merge.ts` — `combineTotals` and `combineTimeBuckets`
+  helpers that merge per-source aggregator output into a single
+  flat view for the All scope.
+- `lib/source.ts` — `EffectiveSource = ProviderId | 'all'` type;
+  `resolveSource()` now decodes `?source=all` / `cookie=all`;
+  `filterBySource()` short-circuits for `'all'`; `expandSources()`
+  hands back the dispatch list `['claude'] | ['codex'] |
+  ['claude','codex']`.
+- `components/overview-trend-card.tsx` — client wrapper that holds
+  the Tokens / Conversations toggle state and swaps between the
+  existing `TokenStackChart` and the new `ConversationsBarChart`.
+- `components/charts/conversations-bar-chart.tsx` — single-color
+  brand bar chart whose `dataKey` is `turns`. Tooltip highlights
+  the conversation count and surfaces the raw request count as a
+  footnote so users can cross-check the two metrics in place.
+- `components/block-progress-switcher.tsx` — client wrapper that
+  renders the 5h-block card with an in-header tab control for the
+  All view (switches between Claude's and Codex's blocks in place,
+  replacing the inactive "live" pill in the top-right slot).
+- `lib/project-label.ts` — `canonicalCwd` field on `LabelResult` and
+  exported `resolveCanonicalCwd(cwd)` helper. Path-pattern matching
+  (`<repo>/.git/worktrees/<name>` and `<repo>/.claude/worktrees/<name>`)
+  runs ahead of the `fs.readFileSync('.git')` lookup so deleted
+  worktrees still resolve to their main repo.
+
+### Changed
+
+- **Source switcher button order is now `All · Claude · Codex`**
+  (previously `Claude · Codex · All` or single-provider). Plain
+  letter chips are replaced with logo images everywhere — settings
+  page data-source list, Projects card source badges, Models card
+  source badges.
+- **Usage trend section retitled** "用量趋势" / "Usage trend"
+  (was "Token 用量趋势" / "Token usage trend"); description is
+  now metric-dependent ("stacked by token type" vs "conversations
+  per day").
+- **Overview 5h block panel** for the All view is now a single
+  card with an in-header tab switcher between providers. Defaults
+  to whichever side has the heavier current block by cost so the
+  user lands on the more interesting number. The original two-card
+  side-by-side layout was tried and rejected — 5h windows can't be
+  summed across providers (different rate-limit clocks), so a single
+  switchable card communicates the constraint better.
+- **Usage table default columns** trimmed to
+  `Time · Prompt · Model · Project · Total` (Duration and Tools
+  moved out of defaults). Storage key bumped `cols.v3 → cols.v4`
+  so existing visibility prefs are reset to the new defaults.
+- **Projects detail page** filter changed from exact `r.cwd === cwd`
+  to canonical match (`resolveCanonicalCwd(r.cwd) === canonicalCwd`),
+  so a single page now serves records from every worktree of the
+  same repo. Old bookmarks pointing at a worktree path still work
+  — they resolve to the same canonical and find the union of
+  records.
+- **Overview KPI tiles for All view** sum across providers via
+  `combineTotals`; the Cost footnote is hidden in the All view
+  (decided UX) because the merged number mixes Codex's "API
+  equivalent" with Claude's API-exact value, so any single
+  disclaimer would mislead one side.
+- **Marketing site** got a `features` page with a bilingual
+  screenshot gallery (`ScreenshotGallery.astro` + new screenshots
+  under `docs/screenshots/` and `site/public/images/screenshots/`).
+  Homepage feature cards now use the new feature thumbnails
+  (`feature-cli/heatmap/i18n/mcp/privacy`); Open Graph images
+  shipped as `og-default.png` and `og-cli.png`.
+
+### Fixed
+
+- **Usage table horizontal jitter on row expand.** Child rows in
+  the Time column carried a `pl-5` (left-padding) for visual indent,
+  which fed `table-layout: auto` and forced every column to
+  re-balance widths each time a row toggled open. Replaced with
+  `inline-block translate-x-5` — pure visual offset, doesn't enter
+  the layout-box measurement, so column widths stay pinned and the
+  table no longer jitters horizontally when you click a row.
+- **Worktree projects double-counted** — multiple worktree `cwd`s
+  for the same repo previously appeared as separate cards on the
+  Projects page with their tokens / cost split between them. They
+  now collapse to a single canonical card; the detail page unions
+  records across all worktree `cwd`s of the same repo. Session
+  count is reconciled via `sessionId` Set union so the card matches
+  the detail page's KPIs.
+
+### Internal
+
+- `TokenStackDatum` got an optional `turns?: number` field so the
+  same payload shape can drive both the stacked-token and
+  conversation charts; consumers that don't care (sessions /
+  models / projects detail pages) can leave it unset.
+- `OverviewTrendCard` is a client component, but `Section` stays
+  server-rendered — only the trend card's content + right-slot
+  cross the client boundary, so the page header and SEO surface
+  don't lose SSR.
+- `mergeWorktreeProjects` in `app/projects/page.tsx` recomputes
+  unique session counts by scanning the underlying records (Set of
+  `sessionId` per `(source, canonicalCwd)` key) instead of summing
+  pre-aggregated counts — the latter double-counts sessions that
+  span multiple worktree cwds.
+- Ad-hoc `*.png` files dropped at the repo root by playwright-mcp
+  verification runs and the `.playwright-mcp/` artefact directory
+  are now `.gitignore`d.
+
 ## [1.0.1] — 2026-05-13
 
 ### Fixed
@@ -383,6 +531,7 @@ of HTML to the browser.
 - Initial public release as `ccgauge`: local Next.js dashboard for
   Claude Code token usage, cost, and 5-hour block tracking.
 
+[1.0.2]: https://github.com/chengzuopeng/ccgauge/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/chengzuopeng/ccgauge/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.3.1...v0.4.0
