@@ -84,11 +84,28 @@ site/
 
 ## Images
 
-See [`public/images/README.md`](./public/images/README.md) for the AI
-image-generation prompt catalogue and the placeholder-replacement
-workflow.
+See [`public/images/README.md`](./public/images/README.md) for:
 
-To re-generate the placeholder SVGs after editing the script:
+- the **complete file inventory** (which page uses which screenshot or
+  generated card)
+- the **AI-generation prompt catalogue** for every `feature-*.webp` and
+  `og-*.png`
+- the **refresh workflow** for screenshots and OG art
+
+Quickest path when the dashboard UI changed and the marketing screenshots
+look stale:
+
+```bash
+# From repo root, regenerate dashboard screenshots (Playwright):
+pnpm screenshots
+
+# Copy them into the site, then rebuild:
+cp docs/screenshots/*.png site/public/images/screenshots/
+pnpm -C site build
+```
+
+To re-generate the legacy placeholder SVGs (rarely needed — the site
+ships real WebP / PNG now):
 
 ```bash
 pnpm gen:placeholders

@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ccgauge.dev/sitemap-index.xml
+# Sitemap intentionally omitted — the @astrojs/sitemap integration was
+# dropped (its 3.7+ releases require Astro 5, we're on Astro 4). With
+# only ~10 generated pages, every link is discoverable from the nav, so
+# the absence of sitemap.xml doesn't measurably affect SEO.
+#
+# If you want one anyway, either upgrade Astro to v5 + re-enable sitemap,
+# or hand-roll a static `public/sitemap.xml` and uncomment the line below:
+# Sitemap: https://ccgauge.dev/sitemap.xml
