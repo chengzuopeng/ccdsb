@@ -71,7 +71,7 @@ Everything runs locally as a Next.js app. Your conversation transcripts never le
 
 ### MCP server (for LLMs)
 - `ccgauge mcp` runs a stdio JSON-RPC server so **Claude Desktop / Cursor / Cline** can query your local usage directly
-- Eight MCP tools: `usage_summary`, `usage_by_time`, `usage_by_model`, `usage_by_project`, `usage_by_session`, `daily_summary`, `weekly_summary`, `recent_activity`
+- Nine MCP tools: `usage_summary`, `usage_by_time`, `usage_by_model`, `usage_by_project`, `usage_by_session`, `daily_summary`, `weekly_summary`, `recent_activity`, `cost_estimator`
 - Reasoning-token breakdown surfaced for the models that emit one
 - Separate named cache (`index-mcp-v2.json`) so MCP runs don't contend with the dashboard
 
@@ -229,6 +229,7 @@ English with real numbers from your machine.
 | `daily_summary` | "What did I do today / yesterday / Monday / on YYYY-MM-DD?" Sessions grouped by project + models + top tool calls. |
 | `weekly_summary` | 7-day roll-up: per-day cost trend, top sessions, top projects, models. `week_offset=-1` for last week. |
 | `recent_activity` | The N most recently active sessions across providers. |
+| `cost_estimator` | Compute the USD cost of a hypothetical request (`{ source, model, input_tokens, output_tokens, cache_* }`). Uses built-in per-1M-token pricing; does NOT consult usage history. |
 
 | Resource URI | Content |
 | --- | --- |
@@ -346,8 +347,8 @@ debug "why did it answer X".
   → `daily_summary({ date: "yesterday" })`
 - *"Generate a Monday stand-up bullet list of what I shipped last week."*
   → `weekly_summary({ week_offset: -1 })`
-- *"Which 3 projects have I touched most in the last 2 weeks?"*
-  → `usage_by_project({ range: "14d", limit: 3 })` (LLM may also pull `weekly_summary`)
+- *"Which 3 projects have I touched most in the last two weeks?"*
+  → `usage_by_project({ from: "2026-05-01", to: "2026-05-15", limit: 3 })` — pass explicit `from`/`to` for any window not covered by the named ranges (`7d` / `30d` / `90d` / `this_week` / `last_week` / …).
 - *"What was my last coding session about?"*
   → `recent_activity({ limit: 1 })`
 
@@ -363,7 +364,7 @@ debug "why did it answer X".
 - *"At my current burn rate, how much will I spend this month?"*
   → `usage_summary({ range: "this_month" })` + `usage_by_time({ range: "this_month", granularity: "day" })` — LLM extrapolates.
 - *"If I run another 200K input + 50K output on Opus 4.7 today, what does that add to my month-to-date cost?"*
-  → `usage_summary({ range: "this_month" })` + LLM does the arithmetic from the published per-1M-token rates.
+  → `cost_estimator({ source: "claude", model: "claude-opus-4-7", input_tokens: 200000, output_tokens: 50000 })` + `usage_summary({ range: "this_month" })` — the estimator returns the dollar cost for the hypothetical request without touching your usage history.
 
 #### Cross-source comparisons
 

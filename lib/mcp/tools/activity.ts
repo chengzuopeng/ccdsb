@@ -6,24 +6,28 @@ import {
   modelEntries,
   projectEntries,
   sessionEntries,
-  totalsForSource,
+  timeBuckets,
   totalsWithBySource,
+  type FlatTotals,
   type FlatSessionEntry,
   type FlatProjectEntry,
   type FlatModelEntry,
 } from '../formatters';
 import type { AssistantRecord, ProviderId } from '@/lib/types';
+import { asTextResult } from '../text-result';
+import { safeMcpHandler } from '../safe-handler';
 
-function asTextResult(payload: unknown) {
-  return {
-    content: [
-      {
-        type: 'text' as const,
-        text: JSON.stringify(payload, null, 2),
-      },
-    ],
-  };
-}
+const ZERO_TOTALS_PUBLIC: FlatTotals = {
+  input_tokens: 0,
+  output_tokens: 0,
+  cache_read_tokens: 0,
+  cache_creation_tokens: 0,
+  reasoning_tokens: 0,
+  total_tokens: 0,
+  cost_usd: 0,
+  saved_usd: 0,
+  requests: 0,
+};
 
 /** ISO week start (Monday) for the given offset. 0=current week, -1=last, etc. */
 function weekWindow(offset: number): { from: Date; to: Date; label: string } {
@@ -95,7 +99,7 @@ export function registerActivityTools(server: McpServer): void {
         ...sourceArgs,
       },
     },
-    async (args) => {
+    safeMcpHandler(async (args) => {
       const idx = await getMcpIndexerReady();
       const snap = idx.getSnapshot();
       const day = parseDayArg(args.date);
@@ -118,7 +122,7 @@ export function registerActivityTools(server: McpServer): void {
         models,
         top_tools: tools,
       });
-    },
+    }),
   );
 
   // ── weekly_summary ──
@@ -140,7 +144,7 @@ export function registerActivityTools(server: McpServer): void {
         top_session_limit: z.number().int().min(1).max(50).default(10),
       },
     },
-    async (args) => {
+    safeMcpHandler(async (args) => {
       const idx = await getMcpIndexerReady();
       const snap = idx.getSnapshot();
       const offset = args.week_offset ?? 0;
@@ -149,16 +153,40 @@ export function registerActivityTools(server: McpServer): void {
 
       const totals = totalsWithBySource(snap.records, source, week);
 
-      // Per-day cost trend (7 entries)
-      const days: Array<{ date: string; totals: ReturnType<typeof totalsForSource>; bySource: Record<ProviderId, ReturnType<typeof totalsForSource>> }> = [];
+      // Per-day cost trend (7 entries, including zero-fill days). One
+      // `timeBuckets` call returns at most 7 daily buckets keyed by
+      // YYYY-MM-DD — we then merge that into a fixed 7-slot skeleton so
+      // zero-activity days still show up. Replaces the old hot path that
+      // called `totalsWithBySource` once per day (8 total passes over
+      // the record set per weekly_summary call).
+      const dayBuckets = timeBuckets(snap.records, source, 'day', {
+        from: week.from,
+        to: week.to,
+      });
+      const byKey = new Map(dayBuckets.map((b) => [b.key, b]));
+      const days: Array<{
+        date: string;
+        totals: FlatTotals;
+        bySource: Record<ProviderId, FlatTotals>;
+      }> = [];
       for (let i = 0; i < 7; i++) {
-        const dayStart = new Date(week.from);
-        dayStart.setDate(dayStart.getDate() + i);
-        const dayEnd = new Date(dayStart);
-        dayEnd.setHours(23, 59, 59, 999);
-        const fmt = `${dayStart.getFullYear()}-${String(dayStart.getMonth() + 1).padStart(2, '0')}-${String(dayStart.getDate()).padStart(2, '0')}`;
-        const dayTotals = totalsWithBySource(snap.records, source, { from: dayStart, to: dayEnd });
-        days.push({ date: fmt, totals: dayTotals.totals, bySource: dayTotals.bySource });
+        const d = new Date(week.from);
+        d.setDate(d.getDate() + i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const hit = byKey.get(key);
+        if (hit) {
+          days.push({ date: key, totals: hit.totals, bySource: hit.bySource });
+        } else {
+          // Zero-fill so the LLM sees a consistent 7-entry array shape.
+          days.push({
+            date: key,
+            totals: { ...ZERO_TOTALS_PUBLIC },
+            bySource: {
+              claude: { ...ZERO_TOTALS_PUBLIC },
+              codex: { ...ZERO_TOTALS_PUBLIC },
+            },
+          });
+        }
       }
 
       const allSessions = sessionEntries(snap.records, snap.userRecords, source, week);
@@ -185,7 +213,7 @@ export function registerActivityTools(server: McpServer): void {
         models,
         top_tools: tools,
       });
-    },
+    }),
   );
 
   // ── recent_activity ──
@@ -194,7 +222,7 @@ export function registerActivityTools(server: McpServer): void {
     {
       title: 'Recent activity',
       description:
-        'The N most recently active sessions across providers. Quick way to answer "what did I just work on" without specifying a date.',
+        'The N most recently active sessions across providers. Quick way to answer "what did I just work on" without specifying a date. Defaults to the last 30 days so the response time stays bounded regardless of how long the user has been running ccgauge — pass `days` to widen.',
       inputSchema: {
         limit: z
           .number()
@@ -203,26 +231,51 @@ export function registerActivityTools(server: McpServer): void {
           .max(50)
           .default(10)
           .describe('Number of sessions to return. Default 10.'),
+        days: z
+          .number()
+          .int()
+          .min(1)
+          .max(365)
+          .default(30)
+          .describe('Look-back window in days. Default 30. Increase if the user has long-running idle sessions you still want surfaced.'),
         ...sourceArgs,
       },
     },
-    async (args) => {
+    safeMcpHandler(async (args) => {
       const idx = await getMcpIndexerReady();
       const snap = idx.getSnapshot();
       const source = (args.source ?? 'all') as SourceArg;
       const limit = args.limit ?? 10;
+      const days = args.days ?? 30;
 
-      const sessions = sessionEntries(snap.records, snap.userRecords, source, {})
+      // Day-aligned window: from start-of-(N days ago) through end-of-today.
+      // Aggregating sessions across the user's whole history just to return
+      // the top 10 by end_time grows linearly with their CLI lifetime, so
+      // we narrow the input set first.
+      const now = new Date();
+      const from = new Date(now);
+      from.setDate(from.getDate() - (days - 1));
+      from.setHours(0, 0, 0, 0);
+      const to = new Date(now);
+      to.setHours(23, 59, 59, 999);
+
+      const sessions = sessionEntries(snap.records, snap.userRecords, source, {
+        from,
+        to,
+      })
         .slice()
         .sort((a, b) => b.end_time.localeCompare(a.end_time))
         .slice(0, limit);
 
       return asTextResult({
         source,
+        window_days: days,
+        from: from.toISOString(),
+        to: to.toISOString(),
         returned_count: sessions.length,
         sessions,
       });
-    },
+    }),
   );
 }
 

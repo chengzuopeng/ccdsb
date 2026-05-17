@@ -14,17 +14,10 @@ import {
   timeBuckets,
   totalsWithBySource,
 } from '../formatters';
-
-function asTextResult(payload: unknown) {
-  return {
-    content: [
-      {
-        type: 'text' as const,
-        text: JSON.stringify(payload, null, 2),
-      },
-    ],
-  };
-}
+import { asTextResult } from '../text-result';
+import { safeMcpHandler } from '../safe-handler';
+import { getProvider } from '@/lib/providers';
+import { costFromUsage } from '@/lib/pricing/cost-from-usage';
 
 export function registerUsageTools(server: McpServer): void {
   // ── usage_summary ──
@@ -39,7 +32,7 @@ export function registerUsageTools(server: McpServer): void {
         ...sourceArgs,
       },
     },
-    async (args) => {
+    safeMcpHandler(async (args) => {
       const idx = await getMcpIndexerReady();
       const snap = idx.getSnapshot();
       const range = parseDateRange(args);
@@ -55,7 +48,7 @@ export function registerUsageTools(server: McpServer): void {
         source,
         ...result,
       });
-    },
+    }),
   );
 
   // ── usage_by_time ──
@@ -71,7 +64,7 @@ export function registerUsageTools(server: McpServer): void {
         granularity: granularitySchema.describe('hour | day | week | month (default: day)'),
       },
     },
-    async (args) => {
+    safeMcpHandler(async (args) => {
       const idx = await getMcpIndexerReady();
       const snap = idx.getSnapshot();
       const range = parseDateRange(args);
@@ -90,7 +83,7 @@ export function registerUsageTools(server: McpServer): void {
         bucket_count: buckets.length,
         buckets,
       });
-    },
+    }),
   );
 
   // ── usage_by_model ──
@@ -108,27 +101,28 @@ export function registerUsageTools(server: McpServer): void {
           .int()
           .min(1)
           .max(50)
-          .optional()
-          .describe('Cap to top N entries by cost. Default: no cap.'),
+          .default(20)
+          .describe('Cap to top N entries by cost. Default 20.'),
       },
     },
-    async (args) => {
+    safeMcpHandler(async (args) => {
       const idx = await getMcpIndexerReady();
       const snap = idx.getSnapshot();
       const range = parseDateRange(args);
       const source = (args.source ?? 'all') as SourceArg;
+      const limit = args.limit ?? 20;
       let entries = modelEntries(snap.records, source, {
         from: range.from,
         to: range.to,
       });
-      if (args.limit) entries = entries.slice(0, args.limit);
+      entries = entries.slice(0, limit);
       return asTextResult({
         range_label: range.label,
         source,
         count: entries.length,
         models: entries,
       });
-    },
+    }),
   );
 
   // ── usage_by_project ──
@@ -146,27 +140,28 @@ export function registerUsageTools(server: McpServer): void {
           .int()
           .min(1)
           .max(100)
-          .optional()
-          .describe('Cap to top N projects by cost.'),
+          .default(20)
+          .describe('Cap to top N projects by cost. Default 20.'),
       },
     },
-    async (args) => {
+    safeMcpHandler(async (args) => {
       const idx = await getMcpIndexerReady();
       const snap = idx.getSnapshot();
       const range = parseDateRange(args);
       const source = (args.source ?? 'all') as SourceArg;
+      const limit = args.limit ?? 20;
       let entries = projectEntries(snap.records, source, {
         from: range.from,
         to: range.to,
       });
-      if (args.limit) entries = entries.slice(0, args.limit);
+      entries = entries.slice(0, limit);
       return asTextResult({
         range_label: range.label,
         source,
         count: entries.length,
         projects: entries,
       });
-    },
+    }),
   );
 
   // ── usage_by_session ──
@@ -192,7 +187,7 @@ export function registerUsageTools(server: McpServer): void {
           .describe('Max sessions to return. Default 25.'),
       },
     },
-    async (args) => {
+    safeMcpHandler(async (args) => {
       const idx = await getMcpIndexerReady();
       const snap = idx.getSnapshot();
       const range = parseDateRange(args);
@@ -227,6 +222,79 @@ export function registerUsageTools(server: McpServer): void {
         returned_count: entries.length,
         sessions: entries,
       });
+    }),
+  );
+
+  // ── cost_estimator ──
+  // Pure pricing calculator — no record lookup, no indexer. Answers
+  // "if I send N input + M output tokens to <model> on <source>, what
+  // does it cost in USD?" using the provider's built-in pricing table.
+  // README promotes this for cap planning and pre-purchase what-ifs.
+  server.registerTool(
+    'cost_estimator',
+    {
+      title: 'Cost estimator',
+      description:
+        'Compute the dollar-equivalent cost of a hypothetical request given token counts. Uses the provider\'s built-in per-1M-token pricing table; does NOT consult the user\'s usage history. Useful for "how much would 5M output tokens of opus 4.7 cost" / pre-purchase what-ifs.',
+      inputSchema: {
+        source: z
+          .enum(['claude', 'codex'])
+          .describe('claude | codex — pick the pricing namespace.'),
+        model: z
+          .string()
+          .min(1)
+          .describe('Exact model id (e.g. "claude-opus-4-7-20251205", "gpt-5.2-codex"). Date suffixes are stripped automatically.'),
+        input_tokens: z.number().int().min(0).default(0),
+        output_tokens: z.number().int().min(0).default(0),
+        cache_read_tokens: z.number().int().min(0).default(0),
+        cache_creation_tokens: z
+          .number()
+          .int()
+          .min(0)
+          .default(0)
+          .describe('Sum of 5m + 1h cache writes (Anthropic) or 0 (OpenAI).'),
+      },
     },
+    safeMcpHandler(async (args) => {
+      const source = args.source;
+      const provider = getProvider(source);
+      const { pricing, matchType } = provider.resolvePricing(args.model);
+      // Build a synthetic AssistantRecord.usage so we hit the same code
+      // path that prices live records — cache-creation bucket disambiguation
+      // and per-1M-token math stay in one place.
+      const usage = {
+        input_tokens: args.input_tokens ?? 0,
+        output_tokens: args.output_tokens ?? 0,
+        cache_creation_input_tokens: args.cache_creation_tokens ?? 0,
+        cache_read_input_tokens: args.cache_read_tokens ?? 0,
+        cache_creation_5m: 0,
+        cache_creation_1h: 0,
+      };
+      const breakdown = costFromUsage(usage, pricing);
+      return asTextResult({
+        source,
+        model: args.model,
+        pricing_match: matchType,
+        pricing_resolved:
+          matchType === 'exact' ||
+          matchType === 'date-stripped' ||
+          matchType === 'prefix-stripped',
+        pricing,
+        usage,
+        cost_breakdown: {
+          input: breakdown.input,
+          output: breakdown.output,
+          cache_creation: breakdown.cacheCreation5m + breakdown.cacheCreation1h,
+          cache_read: breakdown.cacheRead,
+          total: breakdown.total,
+          saved_vs_full_input: breakdown.saved,
+        },
+        total_tokens:
+          usage.input_tokens +
+          usage.output_tokens +
+          usage.cache_read_input_tokens +
+          usage.cache_creation_input_tokens,
+      });
+    }),
   );
 }
