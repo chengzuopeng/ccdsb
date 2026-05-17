@@ -57,6 +57,15 @@ scripts/                   Build & test helpers (esbuild bundlers, postbuild,
 dist/                      esbuild output. Not source-controlled — generated
                            by `pnpm build`. Listed in package.json#files so it
                            ships in the npm tarball.
+
+site/                      Astro 4 marketing site (ccgauge.dev). Independent
+                           build, independent `pnpm-lock.yaml`, independent
+                           Tailwind config, NOT published to npm — excluded by
+                           the main `package.json#files` allowlist and a
+                           belt-and-suspenders `site/` line in `.npmignore`.
+                           Develop with `cd site && pnpm install && pnpm dev`
+                           (runs on :4321 so it doesn't clash with the
+                           dashboard on :3738).
 ```
 
 ## Commands you'll actually run
@@ -94,7 +103,7 @@ on 3737 by default.
      isn't enough.
    - **Stale MCP processes contend with the dashboard for the same on-disk
      cache.** If a user has zombie `ccgauge mcp` processes from old Claude
-     Code sessions, they keep writing v1-shape entries back into
+     Code sessions, they keep writing old-shape entries back into
      `index-v2.json` and silently undo your fix. When debugging "the change
      didn't take effect", `ps -ef | grep ccgauge` and kill stragglers first.
    - The MCP server uses a **separate** named cache (`index-mcp-v2.json`) for
@@ -109,6 +118,17 @@ on 3737 by default.
    and skipped as turn boundaries — but their text is preserved on the
    `UserRecord` so child rows can still surface it as a per-call prompt
    (the `directPrompt` field on `UsageTableRow`).
+
+2b. **Sub-agent files are stitched back into the parent session.**
+    Records inside `subagents/agent-*.jsonl` carry `isSidechain: true`,
+    and their first user record is *also* `isSynthetic: true`. The
+    indexer's post-link pass merges these into the parent session's
+    turn graph so a Skill that spawns a sub-agent shows up as ONE turn
+    in the usage table, not two unrelated siblings.
+    See `lib/providers/claude/index.ts#parserVersion` history:
+    `claude-v3-synthetic-flag` → `claude-v4-sidechain-merge`. Touch
+    this path? Bump `parserVersion` again — stale-cache entries are
+    invisible failures.
 
 3. **Records are deduped after parsing.**
    The same `(messageId, requestId)` can appear in multiple JSONL files
@@ -189,6 +209,14 @@ A short pre-flight checklist:
 - Editing or writing back to Claude Code / Codex JSONL files. We read only.
 - Real-time subscription to Anthropic/OpenAI billing APIs. The numbers are
   derived from local JSONL × ccgauge's built-in price tables only.
+- Folding `site/` into a pnpm workspace. It stays a standalone sub-project
+  with its own `pnpm-lock.yaml` so the marketing site's Astro / Vite tree
+  doesn't pollute the main repo's `node_modules` and so `tsc --noEmit`
+  stays fast.
+- Shipping `site/` (or anything from it) inside the npm tarball. The
+  `files` allowlist excludes it; if you ever rewrite `package.json` keep
+  this property and verify with `pnpm pack --dry-run | grep -c '^site/'`
+  (must be `0`).
 
 ## Where to look first when something feels wrong
 
@@ -215,3 +243,25 @@ A short pre-flight checklist:
   strips it. The runtime never needs it.
 
 If you change the build pipeline, verify `tar -tzf <pkg>.tgz | grep -E '\.(node|dylib|so|dll)$'` returns empty before publishing.
+
+Heads-up on the main `README.md`: its hero image uses an absolute
+`https://raw.githubusercontent.com/chengzuopeng/ccgauge/main/...` URL
+because the npm registry renders READMEs with no relative-path support.
+If you ever rename the repo, branch, or the screenshot file, grep
+`README*.md` and update both before pushing — broken `<img>` on npmjs.com
+hurts trust more than a stale word would.
+
+## Release checklist
+
+When cutting a new ccgauge version:
+
+1. Update `lib/providers/<name>/index.ts#parserVersion` if parsing
+   behaviour changed (mandatory — stale-cache failures are silent).
+2. Run `pnpm typecheck && pnpm lint && pnpm test`.
+3. Bump `package.json#version`.
+4. Add a `CHANGELOG.md` entry under the new version header.
+5. If features visibly changed: `pnpm screenshots` to refresh
+   `docs/screenshots/`, then `cp docs/screenshots/*.png site/public/images/screenshots/`
+   and `pnpm -C site build` to verify the marketing site still renders.
+6. `pnpm pack --dry-run | grep -c '^site/'` should be `0`.
+7. Commit, tag, `npm publish`.
