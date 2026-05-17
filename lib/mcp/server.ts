@@ -44,7 +44,16 @@ export async function runStdioServer(): Promise<void> {
   };
 
   // Eagerly init the indexer so the first tool call doesn't pay the
-  // cold-start cost. We don't await — let it warm up in the background.
+  // cold-start cost. We don't await here — let it warm up in the
+  // background.
+  //
+  // Safety: this is NOT fire-and-forget in the "hope the data is ready"
+  // sense. Every tool handler in `tools/{usage,activity}.ts` starts with
+  // `await getMcpIndexerReady()`, and `Indexer.init()` is memoized via a
+  // shared `initPromise` (see `data-loader/indexer.ts`). So even if the
+  // first tool call lands before this warm-up resolves, it awaits the
+  // SAME promise and gets fully-loaded data — never an empty snapshot.
+  // The warm-up just shaves cold-start latency off the first call.
   getMcpIndexerReady()
     .then((idx) => {
       const s = idx.getStatus();

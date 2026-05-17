@@ -587,9 +587,18 @@ async function readState() {
   try {
     const raw = await readFile(STATE_FILE, 'utf8');
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
     // Treat unknown / future versions as stale (auto-clean on next stop/start).
     if (parsed.version !== STATE_VERSION) return null;
+    // Type-guard the fields callers actually use — `stop`, `status`, and
+    // `restart` all assume these have the right shape. A hand-edited
+    // state.json with the right `version` but garbage in `pid` could
+    // otherwise crash `safeKill()` or `isProcessRunning()`.
+    if (typeof parsed.pid !== 'number' || !Number.isInteger(parsed.pid) || parsed.pid <= 0) {
+      return null;
+    }
+    if (typeof parsed.url !== 'string' || !parsed.url) return null;
+    if (typeof parsed.logFile !== 'string' || !parsed.logFile) return null;
     return parsed;
   } catch {
     return null;

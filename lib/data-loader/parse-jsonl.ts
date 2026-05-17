@@ -4,6 +4,16 @@ import type { AssistantRecord, RawRecord, UserRecord } from '../types';
 
 const TEXT_PREVIEW_MAX = 200;
 
+/** Anthropic's nested `usage.cache_creation` sub-object as it appears in
+ *  Claude Code's JSONL. Either field may be missing depending on which
+ *  cache buckets the prompt hit. When Anthropic adds further bucket
+ *  classes (e.g. a future `ephemeral_24h_input_tokens`), extend this
+ *  type and the parser logic that consumes it. */
+interface CacheCreationBlock {
+  ephemeral_5m_input_tokens?: number;
+  ephemeral_1h_input_tokens?: number;
+}
+
 export async function parseJsonlFile(file: string): Promise<{
   assistant: AssistantRecord[];
   user: UserRecord[];
@@ -49,9 +59,7 @@ function parseAssistant(raw: RawRecord, file: string): AssistantRecord | null {
   const messageId = (msg.id as string | undefined) ?? raw.uuid ?? '';
   if (!messageId && !raw.requestId) return null;
 
-  const cacheCreation = (usage.cache_creation as unknown) as
-    | { ephemeral_5m_input_tokens?: number; ephemeral_1h_input_tokens?: number }
-    | undefined;
+  const cacheCreation = usage.cache_creation as unknown as CacheCreationBlock | undefined;
 
   const content = Array.isArray(msg.content) ? (msg.content as Array<Record<string, unknown>>) : [];
   const toolNames: string[] = [];

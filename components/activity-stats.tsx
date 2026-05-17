@@ -295,15 +295,31 @@ function HeatmapTooltip({
             <span className="text-right">
               {hover.count.toLocaleString()}
               <span className="text-text-tertiary ml-1.5">
-                · {sharePct.toFixed(1)}% / {intensityPct.toFixed(0)}%
+                ·{' '}
+                <span title={t('activity.heatmap.shareLabel')}>{sharePct.toFixed(1)}%</span>
+                {' / '}
+                <span title={t('activity.heatmap.intensityLabel')}>
+                  {intensityPct.toFixed(0)}%
+                </span>
               </span>
             </span>
             <span className="text-text-tertiary">{t('activity.heatmap.tokens')}</span>
             <span className="text-right">
               {formatTokensCompact(hover.tokens, locale)}
               <span className="text-text-tertiary ml-1.5">
-                · {tokenSharePct.toFixed(1)}% / {tokenPeakPct.toFixed(0)}%
+                ·{' '}
+                <span title={t('activity.heatmap.shareLabel')}>
+                  {tokenSharePct.toFixed(1)}%
+                </span>
+                {' / '}
+                <span title={t('activity.heatmap.intensityLabel')}>
+                  {tokenPeakPct.toFixed(0)}%
+                </span>
               </span>
+            </span>
+            <span></span>
+            <span className="text-[10px] text-text-tertiary text-right pt-1 leading-none">
+              {t('activity.heatmap.shareLabel')} / {t('activity.heatmap.intensityLabel')}
             </span>
           </div>
         ) : (
