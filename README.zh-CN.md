@@ -38,8 +38,9 @@ npx ccgauge
 ## 亮点
 
 ### 多 CLI 数据源
-- 一份看板覆盖 **Claude Code** 与 **OpenAI Codex CLI**
-- 顶部一键切换，URL 用 `?source=` 持久化，cookie 记忆上次选择
+- 一份看板覆盖 **Claude Code** 与 **OpenAI Codex CLI**，并提供 **All 视图**把两者合并查看
+- 顶部三档切换（Claude · Codex · All），每个按钮都带真品牌 logo；URL 用 `?source=` 持久化，cookie 记忆上次选择
+- **Worktree 感知的 Projects 合并** —— 同一个 repo 的所有 worktree 自动并到同一个项目行
 - 内置 **Provider 适配层**（`lib/providers/`）—— 增加第三个 CLI（Gemini CLI / Cursor / Aider …）只需一个新文件加注册表一行
 
 ### KPI 一眼看完
@@ -51,7 +52,7 @@ npx ccgauge
 - **会话页** —— 每场对话单独成行（模型 / token / 花费 / 时长），点进去看消息级时间线
 - **项目页** —— 按 `cwd` 聚合成卡片网格，含趋势条与花费占比
 - **模型页** —— 各模型并排对比：成本占比、token 占比、缓存命中、官方单价
-- **用量页** —— 按对话轮次分组的明细表，可展开看每次工具调用，支持 CSV 导出
+- **用量页** —— 按对话轮次分组的明细表，可展开看每次工具调用，支持 CSV 导出。趋势图支持 **Token / 对话数** 切换，让条形图行数和用量表 1:1 对齐
 
 ### 成本透明
 - **缓存节省** 单独成卡 —— 量化 Anthropic prompt caching 实际帮你节省了多少美元
@@ -62,6 +63,17 @@ npx ccgauge
 - **亮色 / 暗色 / 跟随系统** 三档主题，首屏无闪烁
 - **English / 中文** 双语，cookie + localStorage 双向同步
 - 完整筛选：时间区间（今天 / 7 天 / 30 天 / 90 天 / 全部）、粒度（小时 / 天 / 周 / 月）、模型 / 项目 multi-select
+
+### 命令行报告（无 server）
+- `ccgauge report` 读取同一份 JSONL，在 ~0.2 秒内打出彩色对齐的终端报告
+- `--range / --source / --by / --since / --until / --model / --project` 滤波参数
+- `--json` 输出给脚本；`--no-color` 走管道时自动开启 —— 可以直接塞进 shell 和 CI
+
+### MCP 服务（给 LLM 用）
+- `ccgauge mcp` 起一个 stdio JSON-RPC 服务，让 **Claude Desktop / Cursor / Cline** 等 MCP 客户端直接查你本地的 ccgauge 历史
+- 8 个 MCP tool：`usage_summary`、`usage_by_time`、`usage_by_model`、`usage_by_project`、`usage_by_session`、`daily_summary`、`weekly_summary`、`recent_activity`
+- 支持模型有 reasoning token 时单独折算
+- 独立命名缓存（`index-mcp-v2.json`），MCP 进程不会和仪表盘抢同一份磁盘索引
 
 ### 隐私优先
 - 100 % 本地：只读访问已有 JSONL 文件，零外网调用

@@ -38,8 +38,9 @@ Everything runs locally as a Next.js app. Your conversation transcripts never le
 ## Highlights
 
 ### Cross-provider analytics
-- One dashboard for both **Claude Code** and **OpenAI Codex CLI**
-- Toggle data source from the nav bar; URL persists via `?source=`, last choice cached in cookie
+- One dashboard for both **Claude Code** and **OpenAI Codex CLI**, plus an **All view** that merges the two
+- Toggle data source from the nav bar (Claude · Codex · All), each button rendered with the real provider logo; URL persists via `?source=`, last choice cached in cookie
+- **Worktree-aware Projects** — all worktrees of the same repo collapse into a single project row
 - Built-in **provider adapter layer** (`lib/providers/`) — adding a third CLI (Gemini CLI, Cursor, Aider, …) is one new file plus a single registry line
 
 ### At-a-glance KPIs
@@ -51,7 +52,7 @@ Everything runs locally as a Next.js app. Your conversation transcripts never le
 - **Sessions** — per-conversation list with model / tokens / cost / duration, plus a message-level timeline
 - **Projects** — per-`cwd` aggregation cards with sparkline and spend share
 - **Models** — side-by-side comparison: cost share, tokens share, cache hit, USD pricing
-- **Usage** — turn-grouped table with expandable tool-call breakdown, CSV export
+- **Usage** — turn-grouped table with expandable tool-call breakdown, CSV export. **Tokens / Conversations** toggle on the trend chart so you can count rows the way the usage table counts them
 
 ### Cost transparency
 - **Cache savings** is its own KPI — quantifies how much Anthropic prompt caching saved you vs. paying full input price
@@ -62,6 +63,17 @@ Everything runs locally as a Next.js app. Your conversation transcripts never le
 - **Light / Dark / System** themes, no flash of incorrect theme
 - **English / 中文** (cookie + localStorage)
 - Filters: time range (today / 7d / 30d / 90d / all), granularity (hour / day / week / month), model and project multi-select
+
+### CLI report (no server)
+- `ccgauge report` prints a colored, aligned terminal usage report in ~0.2 s from the same JSONL the dashboard reads
+- `--range / --source / --by / --since / --until / --model / --project` filters
+- `--json` for machine-readable output; `--no-color` auto-applied when piped — drops cleanly into shell scripts and CI
+
+### MCP server (for LLMs)
+- `ccgauge mcp` runs a stdio JSON-RPC server so **Claude Desktop / Cursor / Cline** can query your local usage directly
+- Eight MCP tools: `usage_summary`, `usage_by_time`, `usage_by_model`, `usage_by_project`, `usage_by_session`, `daily_summary`, `weekly_summary`, `recent_activity`
+- Reasoning-token breakdown surfaced for the models that emit one
+- Separate named cache (`index-mcp-v2.json`) so MCP runs don't contend with the dashboard
 
 ### Privacy by design
 - 100 % local: read-only access to existing JSONL files, zero outbound network calls
