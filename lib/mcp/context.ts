@@ -1,6 +1,6 @@
 import { getIndexer } from '@/lib/data-loader/indexer';
 import type { ProviderId } from '@/lib/types';
-import { atEndOfDay, atStartOfDay, parseDateLike } from '@/lib/date-utils';
+import { atEndOfDay, atStartOfDay, parseDateLike, parseLocalDateOnly } from '@/lib/date-utils';
 
 /** Cache namespace for the MCP server's own indexer instance. Keeps it
  *  disjoint from the web dashboard's persisted file. */
@@ -84,10 +84,19 @@ export function parseDateRange(args: {
     case '7d':
     case '30d':
     case '90d': {
+      // Day-aligned window: `[start-of(N-1 days ago), end-of-today]`. Two
+      // reasons to snap rather than use a rolling [now - N*24h, now]:
+      // (a) `today` / `yesterday` / `this_week` already snap, so all
+      //     named ranges share the same convention; and
+      // (b) summing N daily_summary results equals one usage_summary
+      //     over the same N-day range, which an LLM will assume holds.
+      // The -(N-1) puts today inside the window — `7d` means "today
+      // plus six prior days", matching how the dashboard's range picker
+      // labels the same option.
       const n = parseInt(range, 10);
-      const start = new Date(now);
-      start.setDate(start.getDate() - n);
-      return { from: start, to: now, label: range };
+      const start = new Date(startOfToday);
+      start.setDate(start.getDate() - (n - 1));
+      return { from: start, to: endOfToday, label: range };
     }
     default:
       throw new Error(
@@ -105,6 +114,58 @@ function parseStrictDate(s: string, field: 'from' | 'to', isUpperBound: boolean)
     );
   }
   return dt;
+}
+
+/** Parse a "single day" argument used by `daily_summary` and any future
+ *  per-day report tool. Accepts the same vocabulary as the schema's
+ *  `daySchema` refinement:
+ *  - `today` / `yesterday`
+ *  - weekday names `monday` … `sunday` → most recent occurrence
+ *    (today included)
+ *  - explicit `YYYY-MM-DD` (validated for calendar overflow via
+ *    `parseLocalDateOnly`)
+ *
+ *  Returns the `[from, to]` window covering that single calendar day in
+ *  the server's local timezone, plus a stable `label`. Throws on input
+ *  the schema layer should have already rejected. */
+export function parseDayArg(input: string | undefined): {
+  from: Date;
+  to: Date;
+  label: string;
+} {
+  const now = new Date();
+  const today = atStartOfDay(now);
+  const lower = (input ?? 'today').toLowerCase();
+  const dayOf = (d: Date) => ({ start: atStartOfDay(d), end: atEndOfDay(d) });
+
+  if (lower === 'today') {
+    const { start, end } = dayOf(today);
+    return { from: start, to: end, label: 'today' };
+  }
+  if (lower === 'yesterday') {
+    const y = new Date(today);
+    y.setDate(y.getDate() - 1);
+    const { start, end } = dayOf(y);
+    return { from: start, to: end, label: 'yesterday' };
+  }
+  const weekday = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const idx = weekday.indexOf(lower);
+  if (idx >= 0) {
+    const target = new Date(today);
+    let diff = target.getDay() - idx;
+    if (diff < 0) diff += 7;
+    target.setDate(target.getDate() - diff);
+    const { start, end } = dayOf(target);
+    return { from: start, to: end, label: lower };
+  }
+  const explicit = parseLocalDateOnly(input ?? '');
+  if (explicit) {
+    const { start, end } = dayOf(explicit);
+    return { from: start, to: end, label: input ?? '' };
+  }
+  throw new Error(
+    `invalid 'date' argument: ${JSON.stringify(input)}. Expected today | yesterday | monday..sunday | YYYY-MM-DD.`,
+  );
 }
 
 function startOfWeek(d: Date): Date {

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { daySchema, sourceArgs, type SourceArg } from '../schema';
-import { getMcpIndexerReady } from '../context';
+import { getMcpIndexerReady, parseDayArg } from '../context';
 import {
   modelEntries,
   projectEntries,
@@ -13,7 +13,6 @@ import {
   type FlatModelEntry,
 } from '../formatters';
 import type { AssistantRecord, ProviderId } from '@/lib/types';
-import { parseLocalDateOnly } from '@/lib/date-utils';
 
 function asTextResult(payload: unknown) {
   return {
@@ -24,60 +23,6 @@ function asTextResult(payload: unknown) {
       },
     ],
   };
-}
-
-/** Parse a "date" argument that accepts:
- *  - YYYY-MM-DD
- *  - 'today' / 'yesterday'
- *  - weekday name 'monday'..'sunday' → most recent occurrence (today included)
- *  Returns the [from, to] window covering that single calendar day. */
-function parseDayArg(input: string | undefined): {
-  from: Date;
-  to: Date;
-  label: string;
-} {
-  const now = new Date();
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const dayOf = (d: Date) => {
-    const start = new Date(d);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(d);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
-  };
-  if (!input || input.toLowerCase() === 'today') {
-    const { start, end } = dayOf(today);
-    return { from: start, to: end, label: 'today' };
-  }
-  const lower = input.toLowerCase();
-  if (lower === 'yesterday') {
-    const y = new Date(today);
-    y.setDate(y.getDate() - 1);
-    const { start, end } = dayOf(y);
-    return { from: start, to: end, label: 'yesterday' };
-  }
-  const weekday = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const idx = weekday.indexOf(lower);
-  if (idx >= 0) {
-    const target = new Date(today);
-    let diff = target.getDay() - idx;
-    if (diff < 0) diff += 7;
-    target.setDate(target.getDate() - diff);
-    const { start, end } = dayOf(target);
-    return { from: start, to: end, label: lower };
-  }
-  const explicitDate = parseLocalDateOnly(input);
-  if (explicitDate) {
-    const { start, end } = dayOf(explicitDate);
-    return { from: start, to: end, label: input };
-  }
-  // Schema-rejected inputs should never reach here. If they do (e.g. a
-  // client bypassed validation), fail loudly rather than silently
-  // returning all-time data.
-  throw new Error(
-    `invalid 'date' argument: ${JSON.stringify(input)}. Expected today | yesterday | monday..sunday | YYYY-MM-DD.`,
-  );
 }
 
 /** ISO week start (Monday) for the given offset. 0=current week, -1=last, etc. */
