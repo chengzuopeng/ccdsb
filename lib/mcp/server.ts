@@ -6,7 +6,13 @@ import { registerProvidersResource } from './resources/providers';
 import { getMcpIndexerReady } from './context';
 
 const SERVER_NAME = 'ccgauge';
-const SERVER_VERSION = '0.4.0';
+// Injected at bundle time by `scripts/build-mcp.mjs` via esbuild's `define`,
+// sourced from package.json#version so the server identifies itself
+// consistently with the npm release that ships it. Falls back to the
+// literal "dev" only when imported outside the bundle (e.g. dev / tests).
+declare const __SERVER_VERSION__: string;
+const SERVER_VERSION =
+  typeof __SERVER_VERSION__ !== 'undefined' ? __SERVER_VERSION__ : 'dev';
 
 export function createServer(): McpServer {
   const server = new McpServer(

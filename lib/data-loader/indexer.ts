@@ -241,6 +241,21 @@ class FileIndexer {
 
   private setupPolling(): void {
     if (this.pollTimer) clearInterval(this.pollTimer);
+    // Belt-and-suspenders on top of fs.watch — useful on a network share /
+    // FUSE mount / older Linux where `fs.watch(recursive)` is unreliable,
+    // but on modern macOS + Linux 5.x + Windows the watcher catches
+    // everything and the poll just keeps the laptop warm.
+    //
+    // Web dashboard: keep polling ON by default (user explicitly opened
+    // the page, expects new provider installs to be auto-detected).
+    // MCP server: default to OFF so we don't keep the host warm in a
+    // background daemon spawned by an LLM client — the next tool call
+    // already triggers `init()` which re-detects dirs as a side effect.
+    // Either default can be flipped via `CCGAUGE_POLL_FALLBACK={0,1}`.
+    const isMcp = this.cacheName === 'mcp';
+    const envOpt = process.env.CCGAUGE_POLL_FALLBACK;
+    const enable = envOpt === '1' ? true : envOpt === '0' ? false : !isMcp;
+    if (!enable) return;
     this.pollTimer = setInterval(() => {
       this.pollOnce().catch((err) => this.recordError(`poll: ${(err as Error).message}`));
     }, POLL_INTERVAL_MS);

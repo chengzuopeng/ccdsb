@@ -142,8 +142,9 @@ program
 program
   .command('mcp')
   .description('start the MCP server (stdio) so LLMs can query usage data')
-  .action(async () => {
-    await startMcp();
+  .option('--check', 'verify the bundle + indexer; print one line per provider and exit')
+  .action(async (opts) => {
+    await startMcp(opts);
   });
 
 function addReportOptions(cmd) {
@@ -438,7 +439,7 @@ or run the full build with
   }
 }
 
-async function startMcp() {
+async function startMcp(opts = {}) {
   const bundle = join(packageRoot, 'dist', 'mcp', 'server.mjs');
   if (!existsSync(bundle)) {
     console.error(`
@@ -455,20 +456,39 @@ or run the full build with
 `);
     process.exit(1);
   }
-  // Hand control to the bundled MCP server. It owns the stdio JSON-RPC
-  // session for the lifetime of the parent (the LLM client) process.
-  const child = spawn(process.execPath, [bundle], {
-    stdio: 'inherit',
-    env: process.env,
-  });
-  const forward = (sig) => () => {
-    if (!child.killed) child.kill(sig);
-  };
-  process.on('SIGINT', forward('SIGINT'));
-  process.on('SIGTERM', forward('SIGTERM'));
-  child.on('exit', (code, sig) => {
-    process.exit(typeof code === 'number' ? code : sig ? 128 : 0);
-  });
+
+  // --check: don't actually run the JSON-RPC server — load the bundle,
+  // boot the indexer, print one line per provider, and exit. Lets users
+  // verify their install without wiring up an MCP client.
+  if (opts.check) {
+    const mod = await import(pathToFileURL(bundle).href);
+    if (typeof mod.printCheck !== 'function') {
+      console.error('[ccgauge-mcp] this bundle was built without --check support');
+      process.exit(1);
+    }
+    const code = await mod.printCheck();
+    process.exit(typeof code === 'number' ? code : 0);
+  }
+
+  // Run the bundled MCP server **in this process** — the bundle exposes a
+  // top-level `runStdioServer()` so we just import + invoke it. Spawning a
+  // second Node process here is wasted memory/latency (LLM clients already
+  // spawn `ccgauge mcp` per conversation), and forwarding signals across
+  // processes is brittle (e.g. SIGHUP isn't covered by the old shim).
+  try {
+    const mod = await import(pathToFileURL(bundle).href);
+    if (typeof mod.runStdioServer !== 'function') {
+      console.error('[ccgauge-mcp] bundle missing runStdioServer export');
+      process.exit(1);
+    }
+    await mod.runStdioServer();
+    // runStdioServer keeps the loop alive via the stdio transport; if it
+    // ever returns it means the transport closed cleanly.
+    process.exit(0);
+  } catch (err) {
+    console.error('[ccgauge-mcp] failed to start:', err?.message ?? err);
+    process.exit(1);
+  }
 }
 
 async function resolvePort(opts) {
