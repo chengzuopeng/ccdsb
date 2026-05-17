@@ -54,12 +54,34 @@ export interface AggregateOpts {
   projects?: string[];
 }
 
-function withinRange(rec: AssistantRecord, opts: AggregateOpts): boolean {
-  if (rec.source !== opts.source) return false;
-  if (opts.from && rec.timestamp < opts.from.toISOString()) return false;
-  if (opts.to && rec.timestamp > opts.to.toISOString()) return false;
-  if (opts.models && opts.models.length && !opts.models.includes(rec.model)) return false;
-  if (opts.projects && opts.projects.length && !opts.projects.includes(rec.cwd)) return false;
+/** Precomputed loop bounds. `Date.toISOString()` and array `.includes()`
+ *  are individually cheap, but on the weekly_summary path we used to call
+ *  them N × M times (N records, M filters). Hoist them once per entry
+ *  point instead. */
+interface PreparedOpts {
+  source: ProviderId;
+  fromIso?: string;
+  toIso?: string;
+  models?: ReadonlySet<string>;
+  projects?: ReadonlySet<string>;
+}
+
+function prepareOpts(opts: AggregateOpts): PreparedOpts {
+  return {
+    source: opts.source,
+    fromIso: opts.from?.toISOString(),
+    toIso: opts.to?.toISOString(),
+    models: opts.models && opts.models.length ? new Set(opts.models) : undefined,
+    projects: opts.projects && opts.projects.length ? new Set(opts.projects) : undefined,
+  };
+}
+
+function withinRangePrepared(rec: AssistantRecord, p: PreparedOpts): boolean {
+  if (rec.source !== p.source) return false;
+  if (p.fromIso && rec.timestamp < p.fromIso) return false;
+  if (p.toIso && rec.timestamp > p.toIso) return false;
+  if (p.models && !p.models.has(rec.model)) return false;
+  if (p.projects && !p.projects.has(rec.cwd)) return false;
   return true;
 }
 
@@ -69,8 +91,9 @@ export function aggregateByTime(
   opts: AggregateOpts,
 ): AggregateBucket[] {
   const buckets = new Map<string, AggregateBucket>();
+  const prepared = prepareOpts(opts);
   for (const rec of records) {
-    if (!withinRange(rec, opts)) continue;
+    if (!withinRangePrepared(rec, prepared)) continue;
     const { key, label } = bucketKey(rec.timestamp, gran);
     let b = buckets.get(key);
     if (!b) {
@@ -121,8 +144,9 @@ export function aggregateByModel(
   opts: AggregateOpts,
 ): ModelSummary[] {
   const map = new Map<string, ModelSummary>();
+  const prepared = prepareOpts(opts);
   for (const rec of records) {
-    if (!withinRange(rec, opts)) continue;
+    if (!withinRangePrepared(rec, prepared)) continue;
     let s = map.get(rec.model);
     if (!s) {
       const { pricing, matchType } = getProvider(rec.source).resolvePricing(rec.model);
@@ -162,8 +186,9 @@ export function aggregateByProject(
 ): ProjectSummary[] {
   const map = new Map<string, ProjectSummary>();
   const sessionsByProject = new Map<string, Set<string>>();
+  const prepared = prepareOpts(opts);
   for (const rec of records) {
-    if (!withinRange(rec, opts)) continue;
+    if (!withinRangePrepared(rec, prepared)) continue;
     const cwd = rec.cwd || '(unknown)';
     let s = map.get(cwd);
     if (!s) {
@@ -215,8 +240,9 @@ export function aggregateBySession(
   opts: AggregateOpts,
 ): SessionSummary[] {
   const map = new Map<string, SessionSummary>();
+  const prepared = prepareOpts(opts);
   for (const rec of records) {
-    if (!withinRange(rec, opts)) continue;
+    if (!withinRangePrepared(rec, prepared)) continue;
     const sid = rec.sessionId || rec.uuid;
     let s = map.get(sid);
     if (!s) {
@@ -305,8 +331,9 @@ export function aggregateTotals(
   let cost = 0;
   let saved = 0;
   let requests = 0;
+  const prepared = prepareOpts(opts);
   for (const rec of records) {
-    if (!withinRange(rec, opts)) continue;
+    if (!withinRangePrepared(rec, prepared)) continue;
     const c = costOfRecord(rec);
     inputTokens += rec.usage.input_tokens;
     outputTokens += rec.usage.output_tokens;

@@ -18,6 +18,7 @@ import {
   type PersistedFileEntry,
 } from './index-persist';
 import { linkSidechainParents } from './link-sidechain';
+import { sanitizeForUser } from '../sanitize';
 
 interface FileEntry {
   source: ProviderId;
@@ -559,13 +560,6 @@ class FileIndexer {
 /** Replace the user's home directory in any string with `~` so absolute
  *  paths (which may contain the OS username) don't leak through API
  *  responses like /api/scan or the Settings UI. */
-function sanitizeForUser(s: string): string {
-  const home = os.homedir();
-  if (!home) return s;
-  // Escape regex special chars in the home path.
-  const escaped = home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return s.replace(new RegExp(escaped, 'g'), '~');
-}
 
 async function dirExists(p: string): Promise<boolean> {
   try {
