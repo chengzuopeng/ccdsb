@@ -5,6 +5,153 @@ All notable changes to **ccgauge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] — 2026-05-15
+
+A focused **MCP server** correctness + performance + ergonomics pass,
+plus a docs catch-up for the marketing site and the bundled READMEs.
+Dashboard runtime is unchanged from 1.0.2. The MCP server adds a 9th
+tool (`cost_estimator`), gets ~4× faster on weekly summaries, halves
+its bundle size, and ships a `ccgauge mcp --check` self-test.
+
+### Highlights
+
+- **9 MCP tools** — added `cost_estimator(source, model, input_tokens,
+  output_tokens, …)` for pure pricing what-ifs (no record lookup).
+  Pairs with `usage_summary` for "if I run X more on Opus 4.7, what
+  does it add to my month-to-date?".
+- **`weekly_summary` is ~4× faster.** Rewrote the per-day trend from
+  8 full record-set passes (1 totals + 7 daily totals × 2 internal
+  source filters) down to a single `timeBuckets('day')` call + a
+  7-slot skeleton merge. Same JSON shape out, including zero-fill
+  for empty days.
+- **MCP bundle 810 KB → 379 KB.** esbuild `minify: true` +
+  `external: ['fsevents']` shaves 53% off the published tarball's
+  MCP slice with no runtime behaviour change.
+- **`ccgauge mcp --check`** — verifies the bundle, boots the indexer,
+  and prints one line per provider (files / records / scanned dirs).
+  Lets users debug "Claude Desktop doesn't see ccgauge tools"
+  without spinning up an MCP client first.
+
+### Added
+
+- `cost_estimator` MCP tool — uses the provider's built-in
+  per-1M-token pricing table; does NOT consult usage history.
+  Useful for budgeting and cap planning.
+- `ccgauge mcp --check` self-test command.
+- README cross-references for both new entry points (`mcp --check`,
+  `cost_estimator`) in en + zh.
+- `__SERVER_VERSION__` injected by esbuild from `package.json#version`
+  so the server's MCP handshake always agrees with the npm release.
+
+### Changed
+
+- **`ccgauge mcp` runs in-process.** The CLI subcommand used to
+  spawn a second Node process for the bundled server (`spawn(node,
+  [bundle])`); it now `await import()`s the bundle and calls
+  `runStdioServer()` directly. Saves ~80–150 ms per invocation and
+  removes a brittle signal-forwarding shim.
+- **MCP responses are compact JSON.** Drop the `JSON.stringify(...,
+  null, 2)` pretty-print on every tool response — LLMs don't read
+  indentation but pay for it. ~30–50% smaller responses for the
+  heavier tools (`weekly_summary`, `usage_by_session`).
+  `CCGAUGE_MCP_PRETTY=1` re-enables.
+- **Default limits on `usage_by_model` (20) and `usage_by_project`
+  (20).** The cap existed as a max; the default is now the same
+  value. A user asking "what did I work on this year" with hundreds
+  of projects no longer gets a 200-entry payload.
+- **`recent_activity` defaults to a 30-day window** (`days` arg to
+  widen). Previously aggregated every session across the user's
+  full CLI lifetime just to return the top 10 by `end_time` — cost
+  grew linearly with history.
+- **Day-aligned named ranges.** `7d` / `30d` / `90d` now map to
+  `[start-of(N-1 days ago), end-of-today]` like `today` /
+  `yesterday` / `this_week` already did. Previously `7d` was a
+  rolling 7×24h window, so summing seven `daily_summary` calls
+  didn't equal one `usage_summary({range:"7d"})` — they do now.
+- **README Highlights refreshed** (en + zh). New top-level subsections
+  for `ccgauge report` (CLI) and `ccgauge mcp` (MCP server) so the
+  two no-server entry points are visible in the first scroll.
+  Cross-provider section updated for 1.0.2's tri-state switcher +
+  real provider logos + worktree-aware Projects collapsing.
+  Drill-down section mentions the Tokens / Conversations trend toggle.
+
+### Fixed
+
+- **`parseDateLike` no longer accepts calendar-overflow dates with
+  a time suffix.** `2026-02-31T00:00:00` used to silently roll
+  forward to March 3 (JS `new Date()` normalises invalid dates);
+  now both the bare-date branch and the time-suffix branch reject
+  it. Affects every MCP date arg, the dashboard's `from`/`to` URL
+  params, and `ccgauge report --since`/`--until`.
+- **`SERVER_VERSION` no longer hardcoded** to `0.4.0`. Now sourced
+  from `package.json#version` at bundle time, so the MCP server's
+  `initialize` response reports the same version as the npm release
+  it shipped in.
+- **README `range: "14d"` example was bogus** — the schema enum
+  doesn't accept `14d`, so following the README's project-breakdown
+  prompt produced an error. Replaced with the explicit-`from`/`to`
+  form. Same fix in `README.zh-CN.md`.
+
+### Performance
+
+| Metric | Before | After |
+| --- | --- | --- |
+| `dist/mcp/server.mjs` size | 810 KB | **379 KB** (-53%) |
+| `weekly_summary` record-set passes | 8 (+ 2 internal source filters each) | **2** |
+| `recent_activity` aggregation scope | every session ever | **last 30 days** |
+| MCP response JSON byte count (typical) | indented | **~half** |
+| Aggregator `withinRange` Date#toISOString() calls | per record × N filters | **once per call** |
+
+### Security / privacy
+
+- **MCP tool errors are scrubbed of `$HOME` paths** before they
+  reach the SDK's error envelope. Belt-and-suspenders today (the
+  only user-visible throws are clean date-arg validators), but
+  defends against future error paths that might wrap an indexer
+  error. Extracted the existing `sanitizeForUser` from the indexer
+  module into a shared `lib/sanitize` so both layers use one
+  definition.
+
+### Internal
+
+- `lib/aggregator/index.ts` — entry-point functions now hoist
+  `from/to → ISO string` and `models/projects → Set` once per
+  call instead of recomputing them per record. Measurable on the
+  `weekly_summary` hot path; invisible for the dashboard's
+  single-pass aggregators.
+- New `lib/mcp/text-result.ts` — single source of truth for the
+  MCP response wrapper. `lib/mcp/safe-handler.ts` — HOF that wraps
+  tool callbacks with the path-scrub guard.
+- `parseDayArg` moved from `tools/activity.ts` to `mcp/context.ts`
+  next to `parseDateRange` so the two share a single implementation
+  of the "today / yesterday / monday / YYYY-MM-DD" parser.
+- 30 s polling fallback in the indexer is now **off by default for
+  the MCP instance** and **on by default for the dashboard**.
+  Override with `CCGAUGE_POLL_FALLBACK={0,1}`. The MCP server runs
+  in a background daemon spawned by an LLM client and shouldn't
+  keep the host warm just to catch the rare `fs.watch(recursive)`
+  miss.
+- `AGENTS.md` documents the `site/` sub-project, the v4 sidechain
+  merge invariant, a release checklist, and the
+  `raw.githubusercontent.com` hero-image fragility. Two new
+  "intentionally NOT supported" items: folding `site/` into a pnpm
+  workspace, and letting `site/` leak into the npm tarball.
+
+### Docs (doesn't ship to npm)
+
+- Marketing site (`site/`) catches up to 1.0.2: features page
+  covers All view + conversation-count toggle + worktree merging;
+  homepage hero, "Multi-source analytics" card, and ScreenshotFrame
+  now use three distinct screenshots; hardcoded `v1.0.0` eyebrows
+  removed.
+- `site/public/images/README.md` rewritten as a single-source-of-
+  truth inventory (file → used-by → source), with the prompt
+  catalogue trimmed to filenames that actually exist. Legacy
+  placeholder SVGs moved to an explicit "kept but unused"
+  subsection.
+- `site/public/robots.txt` no longer points at a non-existent
+  `sitemap-index.xml`.
+
 ## [1.0.2] — 2026-05-15
 
 This release brings the dashboard the long-requested **All view** (one
@@ -531,6 +678,7 @@ of HTML to the browser.
 - Initial public release as `ccgauge`: local Next.js dashboard for
   Claude Code token usage, cost, and 5-hour block tracking.
 
+[1.0.3]: https://github.com/chengzuopeng/ccgauge/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/chengzuopeng/ccgauge/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/chengzuopeng/ccgauge/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/chengzuopeng/ccgauge/compare/v0.4.0...v1.0.0
