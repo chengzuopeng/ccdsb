@@ -27,12 +27,12 @@ const mcpSnippet = `{
   description="本地版 Claude Code 与 OpenAI Codex CLI 用量看板、命令行工具与 MCP 服务，一切在你的电脑里跑，绝不联网回传。"
 >
   <Hero
-    eyebrow="v1.0.0 · 稳定版"
+    eyebrow="稳定版 · 100% 本地"
     title="看清楚 Claude Code 到底"
     titleAccent="花了你多少钱。"
     lede="ccgauge 是 Claude Code 与 OpenAI Codex CLI 的本地用量看板。按项目、模型、会话维度追踪 token、花费、缓存节省、5 小时 block 进度 —— 全程不出本机。"
-    imageSrc="screenshots/overview-en-dark.png"
-    imageAlt="ccgauge Overview 仪表盘真实截图，深色主题，展示 KPI、token 趋势、缓存命中率和 5 小时 block。"
+    imageSrc="screenshots/overview-zh-light.png"
+    imageAlt="ccgauge Overview 仪表盘真实截图，浅色主题中文界面，展示 KPI、token 趋势、缓存命中率和 5 小时 block。"
   >
     <a slot="cta" href={GITHUB_URL} class="btn-brand" target="_blank" rel="noopener noreferrer">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -71,9 +71,9 @@ const mcpSnippet = `{
     <FeatureCard
       icon="◇"
       title="双数据源统一看板"
-      body="Claude Code 与 OpenAI Codex CLI 共用一份看板，顶部一键切换；URL 与 cookie 记忆你的选择。"
-      imageSrc="screenshots/overview-en-dark.png"
-      imageAlt="ccgauge Overview 仪表盘真实截图，展示多数据源 KPI 与趋势图。"
+      body="Claude Code、OpenAI Codex CLI 或两者并表的 All 视图共用一份看板；带真品牌 logo，URL + cookie 记忆你的选择。"
+      imageSrc="screenshots/models-en-dark.png"
+      imageAlt="ccgauge Models 页面深色截图，并列对比 Claude 和 Codex 各模型的花费与 token。"
     />
     <FeatureCard
       icon="▣"
@@ -118,18 +118,20 @@ const mcpSnippet = `{
     />
   </FeatureGrid>
 
+  <!-- 实拍展示：用 Usage 页钻取，避免和 hero 重复 -->
   <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14 sm:py-20">
     <div class="max-w-2xl mb-10">
-      <div class="pill-brand mb-3">你将看到</div>
-      <h2 class="heading-section">是真·本地仪表盘，不是 CLI 的二次封装。</h2>
+      <div class="pill-brand mb-3">钻到单次调用</div>
+      <h2 class="heading-section">从月度花费一路追到某一次 API 调用。</h2>
       <p class="lede mt-3">
-        这就是 ccgauge 跑起来后浏览器里实拍的画面。从月度花费一路钻到吃掉你预算的那一次 API 调用，全在浏览器里完成。
+        所有 assistant 调用都按真实对话轮次聚合。点开一轮看每次调用的工具列表、prompt 片段、花费 ——
+        支持搜索、过滤、排序、CSV 导出。
       </p>
     </div>
     <ScreenshotFrame
-      src="/images/screenshots/overview-zh-light.png"
-      alt="ccgauge overview 页面，浅色主题、中文界面，展示 KPI、趋势、活跃度热力图与 5h block 跟踪。"
-      caption="Overview · 浅色 · 中文"
+      src="/images/screenshots/usage-en-dark.png"
+      alt="ccgauge Usage 页面深色截图，按 turn 聚合的表格、可展开 tool-call 行、搜索框与 CSV 导出按钮。"
+      caption="Usage · turn 聚合表 · 支持 CSV 导出"
     />
   </section>
 

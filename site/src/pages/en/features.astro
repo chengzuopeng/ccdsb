@@ -16,14 +16,15 @@ const sections: Section[] = [
   {
     id: 'dashboard',
     title: 'Multi-source web dashboard',
-    lead: 'A single Next.js dashboard that understands both Claude Code (Anthropic) and OpenAI Codex CLI. Switch sources at the top of every page; URL and cookie remember your choice across reloads and tabs.',
+    lead: 'A single Next.js dashboard that understands both Claude Code (Anthropic) and OpenAI Codex CLI. The top-of-nav switcher offers three states — `Claude`, `Codex`, or `All` (merged) — each rendered with the real provider logo. URL and cookie remember your choice across reloads and tabs.',
     bullets: [
+      'Tri-state source switcher: `All` merges Claude + Codex totals via `combineTotals` / `combineTimeBuckets` so cross-provider summaries stay one query',
       'Overview — KPI cards (today\'s tokens, this month, today\'s top, top model) + token-by-source trend chart',
-      'Usage — per-turn / per-call table with prompt preview, tool list, duration, cost, search and filters',
+      'Usage — per-turn / per-call table with prompt preview, tool list, duration, cost, search and filters. Trend chart toggles between **Tokens** and **Conversations** (per-day turn count)',
       'Sessions — drill into a single conversation, see model usage and message timeline',
-      'Projects — per-cwd spend, worktree-aware (e.g. `repo (playwright)`)',
+      'Projects — per-cwd spend, worktree-aware: all worktrees of the same repo collapse into one project row, regardless of `git worktree` or `.claude/worktrees/` layout',
       'Models — side-by-side comparison with sparkline trends',
-      'Settings — detected data sources, indexer health, scan stats',
+      'Settings — detected data sources (with real provider logos), indexer health, scan stats',
     ],
   },
   {

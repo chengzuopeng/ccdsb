@@ -16,14 +16,15 @@ const sections: Section[] = [
   {
     id: 'dashboard',
     title: '双数据源 Web 仪表盘',
-    lead: '一个 Next.js 仪表盘同时认识 Claude Code（Anthropic）和 OpenAI Codex CLI。每个页面顶部都能一键切换数据源，URL 与 cookie 记忆你的选择。',
+    lead: '一个 Next.js 仪表盘同时认识 Claude Code（Anthropic）和 OpenAI Codex CLI。顶部 nav 三档切换 —— `Claude` / `Codex` / `All`（合并）—— 每个按钮都带真品牌 logo。URL + cookie 持久化选择，跨 tab、刷新都记得。',
     bullets: [
+      '三态数据源切换：`All` 通过 `combineTotals` / `combineTimeBuckets` 把 Claude + Codex 合并成一份总览',
       'Overview — KPI（今日 token / 本月 / 今日 Top / 头牌模型）+ 按数据源分层的趋势图',
-      'Usage — 按轮次 / 按调用展开的表，含 prompt 预览、工具列表、耗时、花费、搜索、过滤',
+      'Usage — 按轮次 / 按调用展开的表，含 prompt 预览、工具列表、耗时、花费、搜索、过滤。趋势图支持 **Token / 对话数** 切换（每日 turn 计数）',
       'Sessions — 钻取单次对话，按模型和时间轴展开',
-      'Projects — 按 cwd 分布的花费，worktree 感知（例如 `repo (playwright)`）',
+      'Projects — 按 cwd 分布的花费，worktree 感知：同一个 repo 的所有 worktree 自动合并成一行，不管是 `git worktree` 还是 Claude Code 的 `.claude/worktrees/` 布局',
       'Models — 各模型并列对比 + 趋势条',
-      'Settings — 检测到的数据源、indexer 健康度、扫描统计',
+      'Settings — 检测到的数据源（带真品牌 logo）、indexer 健康度、扫描统计',
     ],
   },
   {

@@ -27,7 +27,7 @@ const mcpSnippet = `{
   description="Local web dashboard, CLI, and MCP server for Claude Code and OpenAI Codex CLI token usage and cost — runs on your machine, never calls home."
 >
   <Hero
-    eyebrow="v1.0.0 — Now stable"
+    eyebrow="Stable · 100% local"
     title="See how much Claude Code is actually"
     titleAccent="costing you."
     lede="ccgauge is a local-only dashboard for Claude Code and OpenAI Codex CLI. Track tokens, cost, cache savings, and 5h-block usage across every project, model, and session — without sending a single byte off your machine."
@@ -73,9 +73,9 @@ const mcpSnippet = `{
     <FeatureCard
       icon="◇"
       title="Multi-source analytics"
-      body="One unified dashboard for both Claude Code and OpenAI Codex CLI. Switch sources with one click; URL and cookie remember your choice."
-      imageSrc="screenshots/overview-en-dark.png"
-      imageAlt="Real ccgauge overview dashboard showing source-aware KPIs and trend charts."
+      body="One unified dashboard for Claude Code, OpenAI Codex CLI, or both merged in an All view. Real provider logos, persisted via URL + cookie."
+      imageSrc="screenshots/models-en-dark.png"
+      imageAlt="ccgauge Models page comparing per-model token spend across Claude and Codex side by side."
     />
     <FeatureCard
       icon="▣"
@@ -120,20 +120,20 @@ const mcpSnippet = `{
     />
   </FeatureGrid>
 
-  <!-- Real screenshot showcase -->
+  <!-- Real screenshot showcase — usage drill-down, complements the hero -->
   <section class="mx-auto max-w-7xl px-4 sm:px-6 py-14 sm:py-20">
     <div class="max-w-2xl mb-10">
-      <div class="pill-brand mb-3">What you'll see</div>
-      <h2 class="heading-section">A polished local dashboard, not a CLI dump.</h2>
+      <div class="pill-brand mb-3">Drill down to a single call</div>
+      <h2 class="heading-section">From monthly spend to the exact API call.</h2>
       <p class="lede mt-3">
-        Real overview from the running ccgauge dashboard. Drill from monthly spend down to the
-        exact API call that ate your budget, all from your browser.
+        Every assistant call is grouped into its real conversation turn. Expand a turn to see
+        each call's tool list, prompt fragment, and cost — search, filter, sort, export.
       </p>
     </div>
     <ScreenshotFrame
-      src="/images/screenshots/overview-en-dark.png"
-      alt="ccgauge overview page in dark mode, English locale, showing KPIs, trend chart, activity heatmap, and 5-hour block tracker."
-      caption="Overview · dark mode · English"
+      src="/images/screenshots/usage-en-dark.png"
+      alt="ccgauge Usage page in dark mode, showing the turn-grouped table with expandable tool-call rows, search box, and CSV export button."
+      caption="Usage · turn-grouped table with expand · CSV export"
     />
   </section>
 
