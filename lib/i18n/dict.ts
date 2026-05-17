@@ -160,7 +160,7 @@ const en: Dict = {
   'block.projectedTotal': 'Projected total',
   'block.requests': 'Requests',
   'block.empty': 'No active block',
-  'block.emptyDesc': 'Send a message in Claude Code to start one.',
+  'block.emptyDesc': 'Send a message in {cli} to start one.',
   'block.disclaimer': 'Wall-clock progress of the 5h window — not your plan quota.',
 
   // chart
@@ -485,7 +485,7 @@ const zh: Dict = {
   'block.projectedTotal': '预计总花费',
   'block.requests': '请求数',
   'block.empty': '当前无活跃 block',
-  'block.emptyDesc': '在 Claude Code 中发送消息会启动一个新 block。',
+  'block.emptyDesc': '在 {cli} 中发送消息会启动一个新 block。',
   'block.disclaimer': '仅是 5h 窗口的钟表进度，不是你的套餐配额。',
 
   'chart.legend.input': '输入',

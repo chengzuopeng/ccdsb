@@ -74,12 +74,14 @@ export function combineTimeBuckets(perSource: AggregateBucket[][]): AggregateBuc
     for (const b of series) {
       const existing = merged.get(b.key);
       if (!existing) {
-        // Deep-ish clone so later mutations to `existing` don't bleed back
-        // into the source list. Models map can be cloned shallowly because
-        // each value is a small plain object we'll overwrite via spread.
+        // Deep-clone the bucket AND every entry in its `models` map.
+        // Shallow-cloning the outer map alone would leave the model
+        // entries shared with the caller's input — and the merge loop
+        // below mutates those entries in place, which would corrupt
+        // the indexer's cached aggregator output. (See test-source-merge.mjs.)
         merged.set(b.key, {
           ...b,
-          models: { ...b.models },
+          models: cloneModelsMap(b.models),
         });
         continue;
       }
@@ -101,4 +103,14 @@ export function combineTimeBuckets(perSource: AggregateBucket[][]): AggregateBuc
     }
   }
   return Array.from(merged.values()).sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function cloneModelsMap(
+  src: AggregateBucket['models'],
+): AggregateBucket['models'] {
+  const out: AggregateBucket['models'] = {};
+  for (const [k, v] of Object.entries(src)) {
+    out[k] = { tokens: v.tokens, cost: v.cost, requests: v.requests };
+  }
+  return out;
 }

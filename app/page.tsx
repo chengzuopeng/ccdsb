@@ -265,13 +265,18 @@ async function OverviewContent({ source }: { source: EffectiveSource }) {
               slots={blocksBySource.map((b) => ({
                 source: b.source,
                 label: b.source === 'claude' ? 'Claude' : 'Codex',
+                cliName: b.source === 'claude' ? 'Claude Code' : 'Codex CLI',
                 initial: b.serialized,
               }))}
               defaultSource={pickBusierBlock(blocksBySource)}
               className="flex-1"
             />
           ) : (
-            <BlockProgress initial={blocksBySource[0].serialized} className="flex-1" />
+            <BlockProgress
+              initial={blocksBySource[0].serialized}
+              cliName={blocksBySource[0].source === 'claude' ? 'Claude Code' : 'Codex CLI'}
+              className="flex-1"
+            />
           )}
         </div>
       </div>

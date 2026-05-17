@@ -17,6 +17,11 @@ interface Props {
    *  "live" pill on an active block, nothing on the empty state. The
    *  All view passes a source-switcher tablist here instead. */
   headerRight?: React.ReactNode;
+  /** Full CLI name used in the empty-state hint
+   *  ("Send a message in {cli} to start one."). Defaults to "Claude Code"
+   *  for backwards compatibility, but callers viewing the Codex source
+   *  must pass "Codex CLI" so the hint matches what the user has open. */
+  cliName?: string;
 }
 
 export function BlockProgress({
@@ -25,6 +30,7 @@ export function BlockProgress({
   sourceLabel,
   compact,
   headerRight,
+  cliName = 'Claude Code',
 }: Props) {
   const t = useT();
   const { locale } = useI18n();
@@ -58,7 +64,9 @@ export function BlockProgress({
           {headerRight}
         </div>
         <div className="text-sm text-text-tertiary mt-4">{t('block.empty')}</div>
-        <div className="text-xs text-text-tertiary mt-1">{t('block.emptyDesc')}</div>
+        <div className="text-xs text-text-tertiary mt-1">
+          {t('block.emptyDesc', { cli: cliName })}
+        </div>
       </div>
     );
   }

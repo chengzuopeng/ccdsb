@@ -17,14 +17,18 @@ export function safeMcpHandler<TArgs, TResult>(
     try {
       return await fn(args);
     } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err);
-      const scrubbed = sanitizeForUser(raw);
-      // Preserve the original prototype so `err instanceof Error` checks
-      // upstream still work; only the message changes.
-      if (err instanceof Error && scrubbed !== raw) {
-        err.message = scrubbed;
+      if (err instanceof Error) {
+        // Preserve the original prototype so `err instanceof Error`
+        // checks upstream still work; only mutate the message in place
+        // when the scrub actually changes anything.
+        const scrubbed = sanitizeForUser(err.message);
+        if (scrubbed !== err.message) err.message = scrubbed;
+        throw err;
       }
-      throw err;
+      // Non-Error throws (raw strings, plain objects, etc.) bypass the
+      // mutation path. Re-throw as an Error with a scrubbed message so
+      // the SDK envelope + LLM transcript never see an unscrubbed path.
+      throw new Error(sanitizeForUser(String(err)));
     }
   };
 }

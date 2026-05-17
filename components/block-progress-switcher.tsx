@@ -8,6 +8,8 @@ import type { ProviderId } from '@/lib/providers/types';
 interface BlockSlot {
   source: ProviderId;
   label: string;
+  /** Full CLI name for the empty-state hint ("Send a message in {cli}…"). */
+  cliName: string;
   /** Pre-computed on the server so the client switcher is a pure render —
    *  no refetch when the user toggles between providers. */
   initial: SerializedProgress;
@@ -45,6 +47,7 @@ export function BlockProgressSwitcher({ slots, defaultSource, className }: Props
       // redundant confirmation of the active tab but reads well when
       // skimming, and the tab control sits far to the right.
       sourceLabel={active.label}
+      cliName={active.cliName}
       className={className}
       headerRight={
         <div
