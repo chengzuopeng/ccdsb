@@ -22,22 +22,27 @@ const BASE = process.env.CCGAUGE_BASE || 'http://127.0.0.1:3738';
 
 const VIEWPORT = { width: 1440, height: 900 };
 
-const SHOTS = [
-  // Overview — English / Dark (hero)
-  { name: 'overview-en-dark.png', path: '/', locale: 'en', theme: 'dark' },
-  // Overview — Chinese / Light (i18n + theme showcase)
-  { name: 'overview-zh-light.png', path: '/', locale: 'zh', theme: 'light' },
-  // Usage page — English / Dark
-  { name: 'usage-en-dark.png', path: '/usage', locale: 'en', theme: 'dark' },
-  // Sessions page — English / Dark
-  { name: 'sessions-en-dark.png', path: '/sessions', locale: 'en', theme: 'dark' },
-  // Models page — English / Dark
-  { name: 'models-en-dark.png', path: '/models', locale: 'en', theme: 'dark' },
-  // Projects page — English / Dark
-  { name: 'projects-en-dark.png', path: '/projects', locale: 'en', theme: 'dark' },
-  // Settings page — Chinese / Light (showing preferences in CN)
-  { name: 'settings-zh-light.png', path: '/settings', locale: 'zh', theme: 'light' },
+const LOCALES = ['en', 'zh'];
+const THEMES = ['dark', 'light'];
+const PAGES = [
+  { id: 'overview', path: '/' },
+  { id: 'usage', path: '/usage' },
+  { id: 'sessions', path: '/sessions' },
+  { id: 'projects', path: '/projects' },
+  { id: 'models', path: '/models' },
+  { id: 'settings', path: '/settings' },
 ];
+
+const SHOTS = PAGES.flatMap((page) =>
+  LOCALES.flatMap((locale) =>
+    THEMES.map((theme) => ({
+      name: `${page.id}-${locale}-${theme}.png`,
+      path: page.path,
+      locale,
+      theme,
+    })),
+  ),
+);
 
 async function hideDevChrome(page) {
   await page.addStyleTag({

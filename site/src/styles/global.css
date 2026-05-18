@@ -171,6 +171,22 @@ body::before {
   animation-delay: var(--delay, 0s);
 }
 
+.themed-screenshot__img {
+  display: block;
+}
+
+.themed-screenshot__img--light {
+  display: none;
+}
+
+.theme-light .themed-screenshot__img--dark {
+  display: none;
+}
+
+.theme-light .themed-screenshot__img--light {
+  display: block;
+}
+
 .stagger-grid > * {
   animation: fade-up 0.65s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }

@@ -31,6 +31,7 @@ export default defineConfig({
     inlineStylesheets: 'auto',
   },
   vite: {
+    cacheDir: '../node_modules/.vite/site',
     resolve: {
       alias: {
         '@': new URL('./src', import.meta.url).pathname,

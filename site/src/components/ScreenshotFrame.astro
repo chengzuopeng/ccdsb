@@ -1,6 +1,11 @@
 ---
+import type { Locale } from '../consts';
+import ThemedScreenshot from './ThemedScreenshot.astro';
+
 interface Props {
-  src: string;
+  src?: string;
+  screenshotName?: string;
+  locale?: Locale;
   alt: string;
   /** Visual width hint — controls aspect ratio. Defaults to 16:10. */
   ratio?: '16/10' | '16/9' | '4/3';
@@ -8,7 +13,7 @@ interface Props {
   caption?: string;
 }
 
-const { src, alt, ratio = '16/10', caption } = Astro.props;
+const { src, screenshotName, locale, alt, ratio = '16/10', caption } = Astro.props;
 const ratioClass =
   ratio === '16/9' ? 'aspect-[16/9]' : ratio === '4/3' ? 'aspect-[4/3]' : 'aspect-[16/10]';
 ---
@@ -23,7 +28,11 @@ const ratioClass =
       <span class="ml-3 text-[11px] font-mono text-text-tertiary tabular-nums">ccgauge — localhost:3737</span>
     </div>
     <div class:list={['bg-bg-surface-hi', ratioClass]}>
-      <img src={src} alt={alt} loading="eager" decoding="async" class="w-full h-full object-cover" />
+      {screenshotName && locale ? (
+        <ThemedScreenshot name={screenshotName} locale={locale} alt={alt} loading="eager" />
+      ) : src ? (
+        <img src={src} alt={alt} loading="eager" decoding="async" class="w-full h-full object-cover" />
+      ) : null}
     </div>
   </div>
   {caption && <figcaption class="mt-4 text-center text-sm text-text-tertiary">{caption}</figcaption>}

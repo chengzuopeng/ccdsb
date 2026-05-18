@@ -1,23 +1,41 @@
 'use client';
 
 import { useI18n } from '@/lib/i18n/context';
-import type { Locale } from '@/lib/i18n/dict';
+import { LOCALES, type Locale } from '@/lib/i18n/dict';
 
 const LABEL: Record<Locale, string> = { en: 'EN', zh: '中' };
-const NEXT: Record<Locale, Locale> = { en: 'zh', zh: 'en' };
 const FULL: Record<Locale, string> = { en: 'English', zh: '中文' };
 
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useI18n();
-  const next = NEXT[locale];
   return (
-    <button
-      onClick={() => setLocale(next)}
-      className="h-7 w-9 inline-flex items-center justify-center rounded-md border border-border bg-bg-surface text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-hi hover:border-border-hi transition-colors"
-      title={`${t('lang.label')}: ${FULL[locale]} → ${FULL[next]}`}
+    <div
+      role="group"
+      className="inline-flex items-center rounded-md border border-border bg-bg-surface p-0.5 text-xs"
+      title={t('lang.label')}
       aria-label={t('lang.label')}
     >
-      {LABEL[locale]}
-    </button>
+      {LOCALES.map((l) => {
+        const active = l === locale;
+        return (
+          <button
+            key={l}
+            type="button"
+            onClick={() => {
+              if (!active) setLocale(l);
+            }}
+            className={`px-2 py-1 rounded transition-colors ${
+              active
+                ? 'bg-brand-strong text-white font-semibold'
+                : 'text-text-tertiary hover:text-text-primary hover:bg-bg-surface-hi'
+            }`}
+            title={FULL[l]}
+            aria-pressed={active}
+          >
+            {LABEL[l]}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -454,6 +454,8 @@ pnpm test              # codex parser 烟测（Node 22+）
 pnpm build             # next build + 把 static 拷进 .next/standalone
 pnpm start             # 用 bin/cli.mjs 跑 standalone 产物
 pnpm screenshots       # 重新生成 docs/screenshots/*.png
+pnpm site:dev          # 产品官网开发服务，http://localhost:4321
+pnpm site:build        # 只构建 site/ 产品官网
 pnpm clean             # rm -rf .next node_modules
 ```
 
@@ -508,10 +510,11 @@ pnpm publish --access public  # 会自动先跑 pnpm build（prepublishOnly）
 ## 产品官网
 
 产品官网（Astro + Tailwind 自建、中英双语、暗 / 亮主题、独立部署）放在
-[`site/`](./site/) 目录。它跟着主仓库一起在 git 里，但**不会**进 npm 包。
+[`site/`](./site/) 目录。它跟着主仓库一起在 git 里，但**不会**进 npm 包；
+命令和依赖统一由根目录 `package.json` 管理。
 
 ```bash
-cd site && pnpm install && pnpm dev   # http://localhost:4321
+pnpm site:dev   # http://localhost:4321
 ```
 
 构建 / 部署细节见 [`site/README.md`](./site/README.md)。

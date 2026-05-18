@@ -28,11 +28,12 @@ const mcpSnippet = `{
 >
   <Hero
     eyebrow="稳定版 · 100% 本地"
-    title="看清楚 Claude Code 到底"
-    titleAccent="花了你多少钱。"
+    title="看清楚你的 AI 编程 CLI"
+    titleAccent="到底用了多少 token。"
     lede="ccgauge 是 Claude Code 与 OpenAI Codex CLI 的本地用量看板。按项目、模型、会话维度追踪 token、花费、缓存节省、5 小时 block 进度 —— 全程不出本机。"
-    imageSrc="screenshots/overview-zh-light.png"
-    imageAlt="ccgauge Overview 仪表盘真实截图，浅色主题中文界面，展示 KPI、token 趋势、缓存命中率和 5 小时 block。"
+    screenshotName="overview"
+    screenshotLocale={locale}
+    imageAlt="ccgauge 概览仪表盘真实截图，中文界面，展示 KPI、token 趋势、缓存命中率和 5 小时 block。"
   >
     <a slot="cta" href={GITHUB_URL} class="btn-brand" target="_blank" rel="noopener noreferrer">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -72,8 +73,8 @@ const mcpSnippet = `{
       icon="◇"
       title="双数据源统一看板"
       body="Claude Code、OpenAI Codex CLI 或两者并表的 All 视图共用一份看板；带真品牌 logo，URL + cookie 记忆你的选择。"
-      imageSrc="screenshots/models-en-dark.png"
-      imageAlt="ccgauge Models 页面深色截图，并列对比 Claude 和 Codex 各模型的花费与 token。"
+      imageSrc="screenshots/models-zh-dark.png"
+      imageAlt="ccgauge 模型页面截图，并列对比 Claude 和 Codex 各模型的花费与 token。"
     />
     <FeatureCard
       icon="▣"
@@ -129,8 +130,9 @@ const mcpSnippet = `{
       </p>
     </div>
     <ScreenshotFrame
-      src="/images/screenshots/usage-en-dark.png"
-      alt="ccgauge Usage 页面深色截图，按 turn 聚合的表格、可展开 tool-call 行、搜索框与 CSV 导出按钮。"
+      screenshotName="usage"
+      locale={locale}
+      alt="ccgauge 用量页面截图，按 turn 聚合的表格、可展开 tool-call 行、搜索框与 CSV 导出按钮。"
       caption="Usage · turn 聚合表 · 支持 CSV 导出"
     />
   </section>

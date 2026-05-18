@@ -28,10 +28,11 @@ const mcpSnippet = `{
 >
   <Hero
     eyebrow="Stable · 100% local"
-    title="See how much Claude Code is actually"
-    titleAccent="costing you."
+    title="See how many tokens your AI coding CLIs"
+    titleAccent="actually use."
     lede="ccgauge is a local-only dashboard for Claude Code and OpenAI Codex CLI. Track tokens, cost, cache savings, and 5h-block usage across every project, model, and session — without sending a single byte off your machine."
-    imageSrc="screenshots/overview-en-dark.png"
+    screenshotName="overview"
+    screenshotLocale={locale}
     imageAlt="Real ccgauge overview dashboard screenshot in dark mode, showing KPI cards, token trend chart, cache hit rate, and active 5-hour block."
   >
     <a slot="cta" href={GITHUB_URL} class="btn-brand" target="_blank" rel="noopener noreferrer">
@@ -131,8 +132,9 @@ const mcpSnippet = `{
       </p>
     </div>
     <ScreenshotFrame
-      src="/images/screenshots/usage-en-dark.png"
-      alt="ccgauge Usage page in dark mode, showing the turn-grouped table with expandable tool-call rows, search box, and CSV export button."
+      screenshotName="usage"
+      locale={locale}
+      alt="ccgauge Usage page screenshot, showing the turn-grouped table with expandable tool-call rows, search box, and CSV export button."
       caption="Usage · turn-grouped table with expand · CSV export"
     />
   </section>

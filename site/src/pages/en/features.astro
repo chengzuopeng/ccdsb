@@ -110,40 +110,40 @@ const installSnippet = 'npx ccgauge';
 
 const screenshots = [
   {
-    src: '/images/screenshots/overview-en-dark.png',
-    alt: 'ccgauge overview dashboard in dark mode, showing KPI cards and the token usage trend.',
+    name: 'overview',
+    alt: 'ccgauge overview dashboard screenshot, showing KPI cards and the token usage trend.',
     title: 'Overview',
-    meta: 'Dark · English · KPI and cost summary',
+    meta: 'English · KPI and cost summary',
   },
   {
-    src: '/images/screenshots/usage-en-dark.png',
-    alt: 'ccgauge usage page in dark mode, showing per-turn and per-call usage rows.',
+    name: 'usage',
+    alt: 'ccgauge usage page screenshot, showing per-turn and per-call usage rows.',
     title: 'Usage',
     meta: 'Turn grouping · filters · export-ready rows',
   },
   {
-    src: '/images/screenshots/sessions-en-dark.png',
-    alt: 'ccgauge sessions page in dark mode, showing session rollups and model mix.',
+    name: 'sessions',
+    alt: 'ccgauge sessions page screenshot, showing session rollups and model mix.',
     title: 'Sessions',
     meta: 'Conversation drill-down and model mix',
   },
   {
-    src: '/images/screenshots/projects-en-dark.png',
-    alt: 'ccgauge projects page in dark mode, showing project spend and token distribution.',
+    name: 'projects',
+    alt: 'ccgauge projects page screenshot, showing project spend and token distribution.',
     title: 'Projects',
     meta: 'Worktree-aware project analytics',
   },
   {
-    src: '/images/screenshots/models-en-dark.png',
-    alt: 'ccgauge models page in dark mode, showing model comparison cards.',
+    name: 'models',
+    alt: 'ccgauge models page screenshot, showing model comparison cards.',
     title: 'Models',
     meta: 'Per-model cost and token comparison',
   },
   {
-    src: '/images/screenshots/settings-zh-light.png',
-    alt: 'ccgauge settings page in light mode and Chinese locale, showing preferences and detected data sources.',
+    name: 'settings',
+    alt: 'ccgauge settings page screenshot, showing preferences and detected data sources.',
     title: 'Settings',
-    meta: 'Light · 中文 · source and preference checks',
+    meta: 'English · source and preference checks',
   },
 ];
 ---
@@ -188,7 +188,7 @@ const screenshots = [
         tour reflects the actual product surfaces instead of placeholder art.
       </p>
     </div>
-    <ScreenshotGallery items={screenshots} />
+    <ScreenshotGallery items={screenshots} locale={locale} />
   </section>
 
   {sections.map((s) => (

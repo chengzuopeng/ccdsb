@@ -5,16 +5,18 @@ deploy this to). Built with [Astro 4](https://astro.build) + Tailwind v3,
 bilingual (English + 简体中文), with full dark/light theme support and
 zero JS framework runtime.
 
-This directory is **independent** from the npm-published `ccgauge`
-package. It has its own `package.json`, its own lockfile, and is excluded
-from the npm tarball via the main repo's `package.json#files` allowlist
-(plus a `site/` line in `.npmignore` as belt-and-suspenders).
+This directory is **source-only**. Commands and dependencies live in the repo
+root `package.json`, and the site uses the root `node_modules` and root
+`pnpm-lock.yaml`. The site is still excluded from the npm tarball via the main
+repo's `package.json#files` allowlist (plus a `site/` line in `.npmignore` as
+belt-and-suspenders).
 
 ## Develop
 
 ```bash
+# From repo root:
 pnpm install
-pnpm dev                # http://localhost:4321
+pnpm site:dev           # http://localhost:4321
 ```
 
 The dashboard (Next.js, in the parent repo) lives on `:3738` in dev, so
@@ -23,8 +25,9 @@ the two can run side by side without port collisions.
 ## Build & preview
 
 ```bash
-pnpm build              # outputs to ./dist
-pnpm preview            # serves ./dist on :4322
+# From repo root:
+pnpm site:build         # outputs to site/dist
+pnpm site:preview       # serves site/dist on :4322
 ```
 
 ## Project layout
@@ -101,22 +104,22 @@ pnpm screenshots
 
 # Copy them into the site, then rebuild:
 cp docs/screenshots/*.png site/public/images/screenshots/
-pnpm -C site build
+pnpm site:build
 ```
 
 To re-generate the legacy placeholder SVGs (rarely needed — the site
 ships real WebP / PNG now):
 
 ```bash
-pnpm gen:placeholders
+pnpm site:gen:placeholders
 ```
 
 ## Deploy
 
 Recommended: **Cloudflare Pages**.
 
-- Connect the GitHub repo, set "Build directory" = `site`,
-  "Build command" = `pnpm install && pnpm build`,
+- Connect the GitHub repo, keep the build root at the repository root,
+  "Build command" = `pnpm install && pnpm site:build`,
   "Output" = `site/dist`.
 - DNS the chosen domain (e.g. `ccgauge.dev`) at Cloudflare.
 - Update `astro.config.mjs#site` and `src/consts.ts#SITE_URL` to the real
@@ -127,9 +130,10 @@ builds with a one-line config.
 
 ## Why this isn't part of the npm package
 
-The npm tarball is ~7 MB and contains only the dashboard + CLI + MCP
-runtime. Shipping marketing-site source code, build dependencies, and
-~13 MB of placeholder / generated artwork would bloat install times for
-every user who only wants to run `npx ccgauge`. The main repo's
-`package.json#files` whitelists exactly what publishes; `site/` is not
-on that list.
+The npm tarball is ~7 MB and contains only the dashboard + CLI + MCP runtime.
+Shipping marketing-site source code and generated artwork would bloat install
+times for every user who only wants to run `npx ccgauge`. The Astro build
+dependencies live in root `devDependencies`, so they are available to
+maintainers without becoming runtime dependencies. The main repo's
+`package.json#files` whitelists exactly what publishes; `site/` is not on that
+list.

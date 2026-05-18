@@ -5,85 +5,69 @@ All notable changes to **ccgauge** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.4] — 2026-05-17
+## [1.0.4] — 2026-05-18
 
-A correctness + test-coverage pass. No new features. Four small bugs
-caught in a top-to-bottom code review and a live browser smoke walk
-of every dashboard page; everything else is the safety net to keep
-them from coming back.
-
-### Highlights
-
-- **Privacy guarantee actually works on Windows.** `sanitizeForUser`
-  was a near no-op on Windows because `homedir()` returns
-  `C:\Users\<name>` (backslashes) but real error strings carry
-  forward-slashed (`C:/Users/...`), JSON-escaped (`C:\\Users\\...`),
-  and long-path (`\\?\C:\Users\...`) variants. Every variant we can
-  synthesize from `homedir()` is now scrubbed. macOS / Linux behaviour
-  is unchanged.
-- **5h-block empty state shows the correct CLI** for the active source.
-  `?source=codex` no longer says "Send a message in Claude Code to
-  start one" — it says Codex CLI. Same fix on the Codex tab inside
-  the All view.
-- **Shared-reference bug in `combineTimeBuckets`** (All-view merge):
-  shallow-cloning the outer `models` map left each entry's
-  `{ tokens, cost, requests }` referencing the indexer's cached
-  aggregator output. Mutating the merged buckets downstream could
-  poison the cache on the next page-load. Deep-clone on insertion;
-  pinned by a new test.
-- **`safeMcpHandler` non-Error throws now scrubbed.** The previous
-  branch silently fell through to `throw err` for raw-string throws,
-  shipping unscrubbed payloads into the MCP envelope. Now wrapped
-  as `new Error(sanitizeForUser(String(err)))`.
-
-### Added
-
-- **6 new test / drift scripts**, all wired into `pnpm test`:
-  - `test-turns.mjs` — 7 scenarios for `buildTurnIndex` (synthetic
-    user skip, system-reminder, orphan, parentUuid cycle, …).
-  - `test-source-merge.mjs` — 9 assertions for `combineTotals` /
-    `combineTimeBuckets`, including the non-mutation invariant that
-    caught the shared-reference bug fixed in this release.
-  - `test-cost-from-usage.mjs` — 8 assertions covering the 5m vs 1h
-    cache-creation bucket fallback and cache-read savings math.
-  - `test-range.mjs` — 7 assertions pinning dashboard `?range=`
-    semantics. Header comment notes the deliberate inconsistency:
-    dashboard `7d` is rolling, MCP server's `7d` is day-aligned.
-  - `check-parser-versions.mjs` + `scripts/parser-versions.json` —
-    fails if any provider's `parserVersion` literal drifts from the
-    baseline. Catches "edited the parser, forgot to bump the cache
-    key" silently-stale-cache failures.
-  - `check-readme-images.mjs` — verifies every
-    `raw.githubusercontent.com` URL in `README.md` / `README.zh-CN.md`
-    points at a file actually present in the repo. Catches broken
-    npmjs.com README images before publish.
-
-### Changed
-
-- **`cost_estimator` MCP tool** description and `output_tokens` field
-  description spell out that reasoning tokens (Codex / OpenAI o-series)
-  are already included in `output_tokens` — don't double-count.
-- **Activity heatmap tooltip** now exposes the `· 12.5% / 80%` segments
-  via hover-title labels ("Share" / "Of peak"), and adds a small
-  legend line spelling it out. Wires up the `activity.heatmap.shareLabel`
-  / `intensityLabel` i18n keys that were defined but never rendered.
-- **`AssistantRecord.usage.cache_creation`** parsing uses a named
-  `CacheCreationBlock` interface instead of an inline cast.
-- **CLI `readState()`** type-guards `pid` (positive int), `url`, and
-  `logFile` (non-empty strings) on top of the existing `version` check.
-  Hand-edited state.json with garbage shape can't crash `safeKill()`.
+Correctness fixes + much stronger test coverage, plus a brand refresh
+and a marketing-site restructure. No new runtime features.
 
 ### Fixed
 
-- See Highlights — all four are correctness bugs.
+- **Windows path sanitization.** `sanitizeForUser` now also strips
+  forward-slashed, JSON-escaped, and long-path (`\\?\`) variants of
+  `homedir()`, not just the literal `C:\Users\<name>` form. macOS /
+  Linux behaviour unchanged.
+- **5h-block empty state** follows the active source —
+  `?source=codex` no longer says "Send a message in Claude Code".
+  Same fix on the Codex tab inside the All view.
+- **`combineTimeBuckets` shared-reference bug.** Shallow-cloned model
+  entries were aliased back into the indexer's aggregator cache, so
+  downstream mutations could poison subsequent reads. Deep-cloned on
+  insertion; pinned by a new test.
+- **`safeMcpHandler` non-Error throws** are now wrapped + scrubbed
+  before re-throw; the previous branch silently fell through, shipping
+  unscrubbed payloads into the MCP envelope.
+
+### Added
+
+- **6 test / drift scripts**, all wired into `pnpm test`:
+  `test-turns`, `test-source-merge`, `test-cost-from-usage`,
+  `test-range` (fixture-based unit tests for the four core code
+  paths), plus `check-parser-versions` and `check-readme-images` (CI
+  drift guards for silently-stale-cache and broken-npm-image
+  regressions).
+
+### Changed
+
+- **Refined gauge brand mark**, unified across the dashboard, the
+  marketing site, and both favicons. Cleaner geometry (centre at
+  (32, 41), radius 18; arc + needle terminating on the dial rim),
+  Indigo-400 → -600 gradient background, white-ring pivot. New shared
+  `<LogoMark>` component on the marketing site so its Nav + Footer
+  now use the same mark as the dashboard.
+- **Marketing site is source-only.** Removed `site/package.json` and
+  `site/pnpm-lock.yaml`; Astro deps live in root `devDependencies`,
+  commands are explicit `pnpm site:*`. Still excluded from the npm
+  tarball (`pnpm pack --dry-run | grep -c '^site/'` → `0`).
+- **Theme-aware product screenshots.** New `<ThemedScreenshot>`
+  component swaps between dark / light captures via the
+  `.theme-light` class on `<html>`. 24 captures (6 pages × 2 locales
+  × 2 themes) generated by an expanded `scripts/screenshots.mjs`.
+- **OG cards** regenerated at higher fidelity.
+- **`cost_estimator` MCP tool** description spells out that reasoning
+  tokens are already counted inside `output_tokens` — don't
+  double-count.
+- **Activity heatmap tooltip** finally renders the share / of-peak
+  labels that were defined but never used.
+- **`CacheCreationBlock` type** extracted in `parse-jsonl.ts`.
+- **CLI `readState()`** type-guards `pid` / `url` / `logFile`.
 
 ### Internal
 
-- **MCP server `runStdioServer()` comment expanded** so the
-  fire-and-forget `getMcpIndexerReady()` warm-up isn't misread as a
-  "hope the data is ready" path. Every tool handler awaits the same
-  memoized init promise — the warm-up is just a cold-start latency
-  shave.
+- MCP server warm-up comment clarifies the fire-and-forget
+  `getMcpIndexerReady()` is a cold-start shave — tool handlers still
+  await the same memoized init promise.
+- `AGENTS.md` + bundled READMEs updated for the source-only site
+  layout and the new `pnpm site:*` command set.
 
 ## [1.0.3] — 2026-05-15
 

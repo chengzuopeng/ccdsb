@@ -68,6 +68,12 @@
     "test:mcp": "node scripts/test-mcp-server.mjs",
     "clean": "node -e \"for (const p of ['.next','node_modules','tsconfig.tsbuildinfo']) require('node:fs').rmSync(p,{recursive:true,force:true})\"",
     "screenshots": "node scripts/screenshots.mjs",
+    "site:dev": "cd site && astro dev --port 4321",
+    "site:build": "cd site && astro build",
+    "site:preview": "cd site && astro preview --port 4322",
+    "site:check": "cd site && astro check",
+    "site:gen:placeholders": "node site/scripts/gen-placeholders.mjs",
+    "site:clean": "node -e \"for (const p of ['site/dist','site/.astro','site/node_modules']) require('node:fs').rmSync(p,{recursive:true,force:true})\"",
     "prepack": "pnpm build"
   },
   "dependencies": {
@@ -77,10 +83,15 @@
     "open": "^10.1.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/tailwind": "^5.1.4",
     "@eslint/eslintrc": "^3.3.5",
+    "@fontsource-variable/geist": "^5.1.1",
+    "@fontsource-variable/geist-mono": "^5.1.1",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "astro": "^4.16.18",
     "autoprefixer": "^10.4.20",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

@@ -1,30 +1,5 @@
 import { cn } from '@/lib/utils';
 
-/**
- * ccgauge brand mark.
- *
- * Geometry (viewBox 0 0 64 64):
- *   - Dial centred at (32, 41), radius 18 (the rim).
- *   - Dial track is the full 180° arc at the rim.
- *   - Progress arc fills from the leftmost rim point to a "60° elevation"
- *     point (41, 25.4) — same point the needle reaches.
- *   - Needle runs from the pivot (32, 41) to that rim point so the tip
- *     and the progress arc end coincide visually (rounded caps overlap).
- *   - Pivot is a "donut": white outer ring + Indigo-600 core (only when
- *     `withBackground=true`; without the background the core would be
- *     invisible against a transparent canvas, so we drop it).
- *
- * Color strategy:
- *   - With background: vertical gradient Indigo-400 (#818CF8) → Indigo-600
- *     (#4F46E5). Reads as the brand square at any size.
- *   - Without background: strokes inherit `text-brand` via `currentColor`,
- *     so the same mark blends into any container that sets a brand color.
- *
- * Keep `public/favicon.svg` in sync with this file when you change geometry.
- */
-
-const BG_GRADIENT_ID = 'ccg-logo-bg';
-
 export function Logo({
   className,
   withBackground = true,
@@ -32,62 +7,77 @@ export function Logo({
   className?: string;
   withBackground?: boolean;
 }) {
+  const mutedStroke = withBackground ? '#FFFFFF' : 'currentColor';
+  const activeStroke = withBackground ? '#FFFFFF' : 'currentColor';
+  const needleStroke = withBackground ? '#FFFFFF' : 'currentColor';
+
   return (
-    <svg viewBox="0 0 64 64" fill="none" aria-hidden className={cn('block', className)}>
+    <svg
+      viewBox="0 0 64 64"
+      fill="none"
+      aria-hidden
+      className={cn('block', !withBackground && 'text-brand', className)}
+    >
       {withBackground && (
         <>
-          <defs>
-            <linearGradient
-              id={BG_GRADIENT_ID}
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="64"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop offset="0%" stopColor="#818CF8" />
-              <stop offset="100%" stopColor="#4F46E5" />
-            </linearGradient>
-          </defs>
-          <rect width="64" height="64" rx="14" fill={`url(#${BG_GRADIENT_ID})`} />
+          <rect x="3" y="3" width="58" height="58" rx="16" fill="rgb(var(--brand-strong))" />
+          <rect
+            x="3.75"
+            y="3.75"
+            width="56.5"
+            height="56.5"
+            rx="15.25"
+            stroke="#FFFFFF"
+            strokeOpacity="0.18"
+            strokeWidth="1.5"
+          />
         </>
       )}
 
-      {/* Dial track — dim full arc */}
+      {/* Gauge system: outer dial, inner guide, ticks, needle, and token bars. */}
       <path
-        d="M14 41 A18 18 0 0 1 50 41"
-        stroke="currentColor"
-        strokeOpacity={withBackground ? 0.3 : 0.25}
-        strokeWidth="4.5"
+        d="M15 39.5 A17 17 0 0 1 49 39.5"
+        stroke={mutedStroke}
+        strokeOpacity={withBackground ? 0.24 : 0.22}
+        strokeWidth="5"
         strokeLinecap="round"
-        className={withBackground ? 'text-white' : 'text-brand'}
       />
-
-      {/* Progress arc — bright, ends on the dial rim at 60° elevation */}
       <path
-        d="M14 41 A18 18 0 0 1 41 25.4"
-        stroke="currentColor"
-        strokeWidth="4.5"
+        d="M20.8 39.5 A11.2 11.2 0 0 1 43.2 39.5"
+        stroke={mutedStroke}
+        strokeOpacity={withBackground ? 0.2 : 0.18}
+        strokeWidth="1.8"
         strokeLinecap="round"
-        className={withBackground ? 'text-white' : 'text-brand'}
+      />
+      <path
+        d="M15 39.5 A17 17 0 0 1 42.8 26"
+        stroke={activeStroke}
+        strokeWidth="5"
+        strokeLinecap="round"
       />
 
-      {/* Needle — pivot → progress-arc tip */}
-      <line
-        x1="32"
-        y1="41"
-        x2="41"
-        y2="25.4"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        className={withBackground ? 'text-white' : 'text-brand'}
-      />
+      <g stroke={mutedStroke} strokeLinecap="round" strokeWidth="2" strokeOpacity={withBackground ? 0.54 : 0.34}>
+        <path d="M18.1 34.2 L15 32.4" />
+        <path d="M24 28.5 L22.3 25.5" />
+        <path d="M32 26.2 L32 22.8" />
+        <path d="M40 28.5 L41.7 25.5" />
+        <path d="M45.9 34.2 L49 32.4" />
+      </g>
 
-      {/* Donut pivot — white ring + Indigo-600 core. The inner dot only
-          renders with a background; against transparency it'd disappear. */}
-      <circle cx="32" cy="41" r="4" className={withBackground ? 'fill-white' : 'fill-brand'} />
-      {withBackground && <circle cx="32" cy="41" r="1.6" fill="#4F46E5" />}
+      <path
+        d="M32 39.5 L42.8 26"
+        stroke={needleStroke}
+        strokeWidth="3.4"
+        strokeLinecap="round"
+      />
+      <circle cx="32" cy="39.5" r="4.8" fill={withBackground ? '#FFFFFF' : 'currentColor'} />
+      {withBackground && <circle cx="32" cy="39.5" r="2" fill="#4F46E5" />}
+
+      <g opacity={withBackground ? 1 : 0.68}>
+        <rect x="17" y="46" width="7" height="5" rx="2" fill={withBackground ? '#34D399' : 'currentColor'} />
+        <rect x="28.5" y="43" width="7" height="8" rx="2" fill={withBackground ? '#FBBF24' : 'currentColor'} />
+        <rect x="40" y="45" width="7" height="6" rx="2" fill={withBackground ? '#93C5FD' : 'currentColor'} />
+      </g>
     </svg>
   );
 }

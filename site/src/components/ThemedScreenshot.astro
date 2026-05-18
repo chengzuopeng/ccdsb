@@ -1,0 +1,44 @@
+---
+import type { Locale } from '../consts';
+
+interface Props {
+  /** Screenshot basename without locale/theme suffix, e.g. "overview". */
+  name: string;
+  /** Current page locale. The rendered image path uses this locale suffix. */
+  locale: Locale;
+  alt: string;
+  loading?: 'eager' | 'lazy';
+  decoding?: 'async' | 'auto' | 'sync';
+  imgClass?: string;
+}
+
+const {
+  name,
+  locale,
+  alt,
+  loading = 'lazy',
+  decoding = 'async',
+  imgClass = 'w-full h-full object-cover',
+} = Astro.props;
+
+const base = `/images/screenshots/${name}-${locale}`;
+const darkSrc = `${base}-dark.png`;
+const lightSrc = `${base}-light.png`;
+---
+
+<span class="themed-screenshot block w-full h-full">
+  <img
+    src={darkSrc}
+    alt={alt}
+    loading={loading}
+    decoding={decoding}
+    class:list={[imgClass, 'themed-screenshot__img themed-screenshot__img--dark']}
+  />
+  <img
+    src={lightSrc}
+    alt={alt}
+    loading={loading}
+    decoding={decoding}
+    class:list={[imgClass, 'themed-screenshot__img themed-screenshot__img--light']}
+  />
+</span>

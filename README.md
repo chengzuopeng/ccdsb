@@ -461,6 +461,8 @@ pnpm test              # codex parser smoke test (Node 22+)
 pnpm build             # next build + copy static into .next/standalone
 pnpm start             # run bin/cli.mjs against the standalone build
 pnpm screenshots       # regenerate docs/screenshots/*.png
+pnpm site:dev          # marketing site dev server, http://localhost:4321
+pnpm site:build        # build only the site/ marketing site
 pnpm clean             # rm -rf .next node_modules
 ```
 

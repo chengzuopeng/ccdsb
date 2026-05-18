@@ -58,14 +58,15 @@ dist/                      esbuild output. Not source-controlled — generated
                            by `pnpm build`. Listed in package.json#files so it
                            ships in the npm tarball.
 
-site/                      Astro 4 marketing site (ccgauge.dev). Independent
-                           build, independent `pnpm-lock.yaml`, independent
-                           Tailwind config, NOT published to npm — excluded by
-                           the main `package.json#files` allowlist and a
+site/                      Astro 4 marketing site (ccgauge.dev). Source-only
+                           subdirectory: commands and dependencies are managed
+                           by the root `package.json` / `pnpm-lock.yaml`, while
+                           site builds remain explicit via `pnpm site:*`.
+                           NOT published to npm — excluded by the main
+                           `package.json#files` allowlist and a
                            belt-and-suspenders `site/` line in `.npmignore`.
-                           Develop with `cd site && pnpm install && pnpm dev`
-                           (runs on :4321 so it doesn't clash with the
-                           dashboard on :3738).
+                           Develop with `pnpm site:dev` (runs on :4321 so it
+                           doesn't clash with the dashboard on :3738).
 ```
 
 ## Commands you'll actually run
@@ -78,6 +79,8 @@ pnpm test           # codex parser smoke test (node --experimental-strip-types)
 pnpm build:report   # rebuild just dist/report (lib/cli-report/index.ts → bundle)
 pnpm build:mcp      # rebuild just dist/mcp
 pnpm build          # full: next build + mcp + report + postbuild
+pnpm site:dev       # Astro marketing site on :4321
+pnpm site:build     # build only site/ into site/dist
 
 # After source changes, exercise the CLI without reinstalling:
 node bin/cli.mjs report --no-color -r 7d
@@ -209,10 +212,9 @@ A short pre-flight checklist:
 - Editing or writing back to Claude Code / Codex JSONL files. We read only.
 - Real-time subscription to Anthropic/OpenAI billing APIs. The numbers are
   derived from local JSONL × ccgauge's built-in price tables only.
-- Folding `site/` into a pnpm workspace. It stays a standalone sub-project
-  with its own `pnpm-lock.yaml` so the marketing site's Astro / Vite tree
-  doesn't pollute the main repo's `node_modules` and so `tsc --noEmit`
-  stays fast.
+- Folding `site/` into the main `pnpm build` or npm package. The Astro site is
+  source-only under `site/`, but its commands stay explicit (`pnpm site:*`) so
+  dashboard packaging and marketing-site publishing do not affect each other.
 - Shipping `site/` (or anything from it) inside the npm tarball. The
   `files` allowlist excludes it; if you ever rewrite `package.json` keep
   this property and verify with `pnpm pack --dry-run | grep -c '^site/'`
@@ -262,6 +264,6 @@ When cutting a new ccgauge version:
 4. Add a `CHANGELOG.md` entry under the new version header.
 5. If features visibly changed: `pnpm screenshots` to refresh
    `docs/screenshots/`, then `cp docs/screenshots/*.png site/public/images/screenshots/`
-   and `pnpm -C site build` to verify the marketing site still renders.
+   and `pnpm site:build` to verify the marketing site still renders.
 6. `pnpm pack --dry-run | grep -c '^site/'` should be `0`.
 7. Commit, tag, `npm publish`.

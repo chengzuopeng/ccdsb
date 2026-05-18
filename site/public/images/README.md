@@ -6,20 +6,14 @@ Every static image rendered by the marketing site lives here.
 
 | File | Used by | Source |
 |---|---|---|
-| `screenshots/overview-en-dark.png` | Homepage hero (EN), feature-gallery on `/features/` | Real product screenshot from `pnpm screenshots` |
-| `screenshots/overview-zh-light.png` | Homepage hero (ZH), feature-gallery on `/features/` | Real product screenshot |
-| `screenshots/usage-en-dark.png` | Homepage "What you'll see" frame (EN), feature-gallery | Real product screenshot |
-| `screenshots/sessions-en-dark.png` | Feature-gallery on `/features/` | Real product screenshot |
-| `screenshots/projects-en-dark.png` | Feature-gallery on `/features/` | Real product screenshot |
-| `screenshots/models-en-dark.png` | Feature-gallery on `/features/` | Real product screenshot |
-| `screenshots/settings-zh-light.png` | Feature-gallery on `/features/` (proves bilingual UI) | Real product screenshot |
+| `screenshots/{overview,usage,sessions,projects,models,settings}-{en,zh}-{dark,light}.png` | Homepage hero/frame, feature cards, and `/features/` gallery | Real product screenshots from `pnpm screenshots`; rendered by locale and current resolved theme |
 | `feature-cli.webp` | "CLI report" feature card | AI-generated, per prompt below |
 | `feature-mcp.webp` | "MCP server" feature card | AI-generated |
 | `feature-heatmap.webp` | "Activity heatmap" feature card | AI-generated |
 | `feature-privacy.webp` | "100% local" feature card | AI-generated |
 | `feature-i18n.webp` | "Bilingual + themeable" feature card | AI-generated |
-| `og-default.png` | Default `og:image` (homepage, features, mcp, privacy) | AI-generated, 1200×630 |
-| `og-cli.png` | `og:image` for `/cli/` | AI-generated, 1200×630 |
+| `og-default.png` | Default `og:image` (homepage, features, mcp, privacy) | HTML/CSS render using `favicon.svg`, 1200×630 |
+| `og-cli.png` | `og:image` for `/cli/` | HTML/CSS render using `favicon.svg`, 1200×630 |
 
 ### Legacy SVG placeholders (kept, not used by production pages)
 
@@ -34,30 +28,32 @@ anymore. They stay in tree because:
    so leaving them on disk is free.
 
 If you ever clean house, delete the SVGs **and** drop the
-`gen:placeholders` script from `site/package.json`.
+`site:gen:placeholders` script from the root `package.json`.
 
 ## Refresh workflow
 
 ### When the dashboard UI changes
 
-The seven `screenshots/*.png` files come from the main repo's
+The `screenshots/*.png` files come from the main repo's
 [`scripts/screenshots.mjs`](../../../scripts/screenshots.mjs). To
 regenerate:
 
 ```bash
 cd ../..                      # back to repo root
-pnpm screenshots              # writes to docs/screenshots/
+pnpm screenshots              # writes locale × theme variants to docs/screenshots/
 cp docs/screenshots/*.png \
    site/public/images/screenshots/
-cd site && pnpm build         # rebuild marketing site
+pnpm site:build              # rebuild marketing site
 ```
 
 ### When a feature card or OG image changes
 
-1. Re-generate using the prompt for that filename (catalogue below).
-2. Export as **WebP** at 16:10 (feature cards) or **PNG** at 1200×630 (OG).
-3. Drop the file into `public/images/` overwriting the existing one.
-4. Rebuild with `pnpm -C site build`.
+1. Re-generate feature cards using the prompt for that filename (catalogue below).
+2. Re-render OG cards from the current `site/public/favicon.svg` so the social
+   preview stays aligned with the product logo.
+3. Export as **WebP** at 16:10 (feature cards) or **PNG** at 1200×630 (OG).
+4. Drop the file into `public/images/` overwriting the existing one.
+5. Rebuild with `pnpm site:build`.
 
 If you rename a file, grep the `site/src/pages/` and `site/src/layouts/`
 trees for the old name and update every reference.
@@ -115,20 +111,15 @@ real logos.**
 
 ### `og-default.png` — 1200 × 630
 
-> Social media share card, near-black `#0A0A0A` background, large bold
-> sans-serif word "ccgauge" centered-left in pure white, small indigo
-> (#818CF8) chart-icon glyph to the immediate left of the word, an indigo
-> bar-chart silhouette fading into the right edge, generous padding
-> (~80 px), premium SaaS marketing aesthetic à la Vercel / Linear OG
-> images, 1200×630 dimensions.
+Rendered from HTML/CSS with `site/public/favicon.svg` as the brand mark:
+near-black background, indigo glow/grid, ccgauge wordmark, local-first
+badge, and a dashboard-style chart panel on the right.
 
 ### `og-cli.png` — 1200 × 630
 
-> Social card 1200×630, near-black background, stylized terminal prompt
-> `$ ccgauge report` rendered in white monospace centered, blinking
-> indigo (#818CF8) cursor at the end, a small horizontal bar-chart
-> graphic beneath the command in indigo, premium minimalist dev-tool
-> aesthetic.
+Rendered from HTML/CSS with `site/public/favicon.svg` as the brand mark:
+near-black background, indigo glow/grid, ccgauge wordmark, and a terminal
+panel featuring `$ ccgauge report` plus abstract report rows.
 
 ## Aspect-ratio reference
 
@@ -140,7 +131,8 @@ real logos.**
 
 ## Budget
 
-Keep `public/images/` under ~3 MB total. Current footprint:
-~2.4 MB (screenshots dominate at ~1.8 MB; feature WebPs ~250 KB; OG PNGs
-~330 KB). Real-product screenshots are the heaviest items but also the
-most credible — don't try to slim them by re-encoding past visual fidelity.
+Keep `public/images/` under ~8 MB total. Current footprint:
+~7.3 MB (the locale × theme screenshot matrix dominates at ~6.2 MB; feature
+WebPs ~250 KB; OG PNGs ~800 KB). Real-product screenshots are the heaviest
+items but also the most credible — don't try to slim them by re-encoding past
+visual fidelity.

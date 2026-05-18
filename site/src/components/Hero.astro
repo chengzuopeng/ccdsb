@@ -1,4 +1,7 @@
 ---
+import type { Locale } from '../consts';
+import ThemedScreenshot from './ThemedScreenshot.astro';
+
 interface Props {
   eyebrow?: string;
   title: string;
@@ -9,9 +12,13 @@ interface Props {
    *  slot collapses and the text spans full width. */
   imageSrc?: string;
   imageAlt?: string;
+  /** Screenshot basename under /images/screenshots, rendered for the current locale + theme. */
+  screenshotName?: string;
+  screenshotLocale?: Locale;
 }
 
-const { eyebrow, title, titleAccent, lede, imageSrc, imageAlt } = Astro.props;
+const { eyebrow, title, titleAccent, lede, imageSrc, imageAlt, screenshotName, screenshotLocale } = Astro.props;
+const hasMedia = Boolean(screenshotName || imageSrc);
 ---
 
 <section class="relative overflow-hidden">
@@ -19,8 +26,8 @@ const { eyebrow, title, titleAccent, lede, imageSrc, imageAlt } = Astro.props;
   <div class="pointer-events-none absolute inset-x-0 top-[-120px] h-[400px] hero-glow" aria-hidden="true"></div>
 
   <div class="relative mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-20 pb-12 sm:pb-16">
-    <div class:list={['grid items-center gap-10 lg:gap-12', imageSrc ? 'lg:grid-cols-2' : '']}>
-      <div class:list={['min-w-0', !imageSrc && 'max-w-3xl mx-auto text-center']}>
+    <div class:list={['grid items-center gap-10 lg:gap-12', hasMedia ? 'lg:grid-cols-2' : '']}>
+      <div class:list={['min-w-0', !hasMedia && 'max-w-3xl mx-auto text-center']}>
         {eyebrow && (
           <div class="pill-brand mb-5">{eyebrow}</div>
         )}
@@ -37,22 +44,31 @@ const { eyebrow, title, titleAccent, lede, imageSrc, imageAlt } = Astro.props;
         <p class="lede mt-5 sm:mt-6 max-w-2xl">
           {lede}
         </p>
-        <div class:list={['mt-7 sm:mt-8 flex flex-wrap gap-3', !imageSrc && 'justify-center']}>
+        <div class:list={['mt-7 sm:mt-8 flex flex-wrap gap-3', !hasMedia && 'justify-center']}>
           <slot name="cta" />
         </div>
         <slot name="below-cta" />
       </div>
 
-      {imageSrc && (
+      {hasMedia && (
         <div class="relative">
           <div class="rounded-card border border-border-hi bg-bg-surface shadow-card overflow-hidden aspect-[16/10]">
-            <img
-              src={`/images/${imageSrc}`}
-              alt={imageAlt ?? ''}
-              loading="eager"
-              decoding="async"
-              class="w-full h-full object-cover"
-            />
+            {screenshotName && screenshotLocale ? (
+              <ThemedScreenshot
+                name={screenshotName}
+                locale={screenshotLocale}
+                alt={imageAlt ?? ''}
+                loading="eager"
+              />
+            ) : (
+              <img
+                src={`/images/${imageSrc}`}
+                alt={imageAlt ?? ''}
+                loading="eager"
+                decoding="async"
+                class="w-full h-full object-cover"
+              />
+            )}
           </div>
           <!-- Decorative caret in brand color, mirrors dashboard accent -->
           <div

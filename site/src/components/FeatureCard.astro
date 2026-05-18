@@ -1,4 +1,7 @@
 ---
+import type { Locale } from '../consts';
+import ThemedScreenshot from './ThemedScreenshot.astro';
+
 interface Props {
   /** Optional icon emoji or single character; falls back to a brand dot. */
   icon?: string;
@@ -8,24 +11,32 @@ interface Props {
   /** Image src (relative to /images/). */
   imageSrc?: string;
   imageAlt?: string;
+  /** Screenshot basename under /images/screenshots, rendered for the current locale + theme. */
+  screenshotName?: string;
+  screenshotLocale?: Locale;
   /** Optional CTA: { label, href } */
   ctaLabel?: string;
   ctaHref?: string;
 }
 
-const { icon, title, body, imageSrc, imageAlt, ctaLabel, ctaHref } = Astro.props;
+const { icon, title, body, imageSrc, imageAlt, screenshotName, screenshotLocale, ctaLabel, ctaHref } = Astro.props;
+const hasMedia = Boolean(screenshotName || imageSrc);
 ---
 
 <article class="card card-interactive flex flex-col overflow-hidden">
-  {imageSrc && (
+  {hasMedia && (
     <div class="aspect-[16/10] bg-bg-surface-hi border-b border-border overflow-hidden">
-      <img
-        src={`/images/${imageSrc}`}
-        alt={imageAlt ?? ''}
-        loading="lazy"
-        decoding="async"
-        class="w-full h-full object-cover"
-      />
+      {screenshotName && screenshotLocale ? (
+        <ThemedScreenshot name={screenshotName} locale={screenshotLocale} alt={imageAlt ?? ''} />
+      ) : (
+        <img
+          src={`/images/${imageSrc}`}
+          alt={imageAlt ?? ''}
+          loading="lazy"
+          decoding="async"
+          class="w-full h-full object-cover"
+        />
+      )}
     </div>
   )}
   <div class="card-pad flex flex-col gap-2 flex-1">

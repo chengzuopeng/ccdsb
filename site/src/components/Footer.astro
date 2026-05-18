@@ -1,6 +1,7 @@
 ---
 import { useTranslations, localePath } from '../i18n/utils';
 import { GITHUB_URL, NPM_URL, SITE_TITLE, type Locale } from '../consts';
+import LogoMark from './LogoMark.astro';
 
 interface Props {
   locale: Locale;
@@ -42,22 +43,7 @@ const columns: Array<{
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-8">
       <div class="col-span-2">
         <div class="flex items-center gap-2 mb-3">
-          <span
-            class="inline-flex h-7 w-7 items-center justify-center rounded-button"
-            style="background: rgb(var(--brand-strong));"
-            aria-hidden="true"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-linecap="round" aria-hidden="true">
-              <!-- Dial track (180° arc) -->
-              <path d="M5 15.5 A6.5 6.5 0 0 1 18 15.5" stroke-opacity="0.32" stroke-width="2" fill="none"/>
-              <!-- Progress arc, ends on the rim at 60° elevation -->
-              <path d="M5 15.5 A6.5 6.5 0 0 1 14.75 9.87" stroke-width="2" fill="none"/>
-              <!-- Needle — pivot to rim -->
-              <line x1="11.5" y1="15.5" x2="14.75" y2="9.87" stroke-width="1.6"/>
-              <!-- Pivot dot -->
-              <circle cx="11.5" cy="15.5" r="1.6" fill="white" stroke="none"/>
-            </svg>
-          </span>
+          <LogoMark class="h-7 w-7 shrink-0" />
           <span class="font-semibold text-text-primary text-[15px] tracking-tight">{SITE_TITLE}</span>
         </div>
         <p class="text-sm text-text-secondary max-w-sm leading-relaxed">{t('footer.tagline')}</p>

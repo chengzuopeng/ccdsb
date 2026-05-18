@@ -1,6 +1,10 @@
 ---
+import type { Locale } from '../consts';
+import ThemedScreenshot from './ThemedScreenshot.astro';
+
 interface ScreenshotItem {
-  src: string;
+  name?: string;
+  src?: string;
   alt: string;
   title: string;
   meta: string;
@@ -8,22 +12,27 @@ interface ScreenshotItem {
 
 interface Props {
   items: ScreenshotItem[];
+  locale: Locale;
 }
 
-const { items } = Astro.props;
+const { items, locale } = Astro.props;
 ---
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
   {items.map((item) => (
     <figure class="card overflow-hidden">
       <div class="aspect-[16/10] bg-bg-surface-hi border-b border-border overflow-hidden">
-        <img
-          src={item.src}
-          alt={item.alt}
-          loading="lazy"
-          decoding="async"
-          class="w-full h-full object-cover"
-        />
+        {item.name ? (
+          <ThemedScreenshot name={item.name} locale={locale} alt={item.alt} />
+        ) : item.src ? (
+          <img
+            src={item.src}
+            alt={item.alt}
+            loading="lazy"
+            decoding="async"
+            class="w-full h-full object-cover"
+          />
+        ) : null}
       </div>
       <figcaption class="card-pad">
         <div class="font-semibold text-text-primary text-sm">{item.title}</div>

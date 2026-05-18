@@ -110,40 +110,40 @@ const installSnippet = 'npx ccgauge';
 
 const screenshots = [
   {
-    src: '/images/screenshots/overview-en-dark.png',
-    alt: 'ccgauge Overview 仪表盘深色主题截图，展示 KPI 与 token 趋势。',
-    title: 'Overview',
-    meta: '深色 · English · KPI 与花费总览',
+    name: 'overview',
+    alt: 'ccgauge 概览仪表盘截图，展示 KPI 与 token 趋势。',
+    title: '概览',
+    meta: '中文 · KPI 与花费总览',
   },
   {
-    src: '/images/screenshots/usage-en-dark.png',
-    alt: 'ccgauge Usage 页面深色主题截图，展示按 turn 和 call 聚合的用量表。',
-    title: 'Usage',
+    name: 'usage',
+    alt: 'ccgauge 用量页面截图，展示按 turn 和 call 聚合的用量表。',
+    title: '用量',
     meta: 'turn 聚合 · 过滤 · 可导出表格',
   },
   {
-    src: '/images/screenshots/sessions-en-dark.png',
-    alt: 'ccgauge Sessions 页面深色主题截图，展示会话汇总和模型分布。',
-    title: 'Sessions',
+    name: 'sessions',
+    alt: 'ccgauge 会话页面截图，展示会话汇总和模型分布。',
+    title: '会话',
     meta: '会话钻取与模型构成',
   },
   {
-    src: '/images/screenshots/projects-en-dark.png',
-    alt: 'ccgauge Projects 页面深色主题截图，展示项目花费和 token 分布。',
-    title: 'Projects',
+    name: 'projects',
+    alt: 'ccgauge 项目页面截图，展示项目花费和 token 分布。',
+    title: '项目',
     meta: 'worktree 感知的项目分析',
   },
   {
-    src: '/images/screenshots/models-en-dark.png',
-    alt: 'ccgauge Models 页面深色主题截图，展示模型对比卡片。',
-    title: 'Models',
+    name: 'models',
+    alt: 'ccgauge 模型页面截图，展示模型对比卡片。',
+    title: '模型',
     meta: '按模型比较 token 与花费',
   },
   {
-    src: '/images/screenshots/settings-zh-light.png',
-    alt: 'ccgauge Settings 页面浅色中文截图，展示偏好设置和数据源检测。',
-    title: 'Settings',
-    meta: '浅色 · 中文 · 数据源与偏好检查',
+    name: 'settings',
+    alt: 'ccgauge 设置页面截图，展示偏好设置和数据源检测。',
+    title: '设置',
+    meta: '中文 · 数据源与偏好检查',
   },
 ];
 ---
@@ -185,7 +185,7 @@ const screenshots = [
         这些截图来自本机正在运行的 ccgauge 应用，所以功能导览看到的是实际产品界面，不再是占位插图。
       </p>
     </div>
-    <ScreenshotGallery items={screenshots} />
+    <ScreenshotGallery items={screenshots} locale={locale} />
   </section>
 
   {sections.map((s) => (

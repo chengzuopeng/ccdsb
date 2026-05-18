@@ -106,13 +106,13 @@ export function SourceSwitcher({ available, initial, providers }: Props) {
             onClick={() => select(p.id)}
             aria-pressed={isActive}
             disabled={pending}
-            className={`px-2.5 h-6 text-xs inline-flex items-center gap-1.5 rounded transition-all ${
+            className={`px-2.5 h-6 text-xs font-medium inline-flex items-center gap-1.5 rounded transition-colors ${
               isActive
-                ? 'bg-brand-strong text-white font-semibold shadow-sm ring-1 ring-brand/40'
-                : 'text-text-tertiary font-medium hover:text-text-primary hover:bg-bg-surface-hi'
+                ? 'bg-brand-strong text-white shadow-sm'
+                : 'text-text-tertiary hover:text-text-primary hover:bg-bg-surface-hi'
             }`}
           >
-            <ProviderMark provider={p} active={isActive} />
+            <ProviderMark provider={p} />
             <span>{label}</span>
           </button>
         );
@@ -123,7 +123,7 @@ export function SourceSwitcher({ available, initial, providers }: Props) {
 
 /** Brand mark: prefers the provider's logo image if available; otherwise
  *  falls back to the original colored chip with the short-letter label. */
-function ProviderMark({ provider, active }: { provider: ProviderInfo; active: boolean }) {
+function ProviderMark({ provider }: { provider: ProviderInfo }) {
   if (provider.logoSrc) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -131,17 +131,13 @@ function ProviderMark({ provider, active }: { provider: ProviderInfo; active: bo
         src={provider.logoSrc}
         alt=""
         aria-hidden
-        className={`w-4 h-4 rounded-[3px] object-contain shrink-0 ${
-          active ? 'ring-1 ring-white/40' : ''
-        }`}
+        className="w-4 h-4 rounded-[3px] object-contain shrink-0"
       />
     );
   }
   return (
     <span
-      className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none ${
-        active ? 'ring-1 ring-white/40' : ''
-      }`}
+      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none"
       style={{ background: provider.bg, color: provider.fg }}
     >
       {provider.shortLabel}
@@ -168,10 +164,10 @@ function AllButton({
       onClick={onSelect}
       aria-pressed={active}
       disabled={disabled}
-      className={`px-2.5 h-6 text-xs inline-flex items-center gap-1.5 rounded transition-all ${
+      className={`px-2.5 h-6 text-xs font-medium inline-flex items-center gap-1.5 rounded transition-colors ${
         active
-          ? 'bg-brand-strong text-white font-semibold shadow-sm ring-1 ring-brand/40'
-          : 'text-text-tertiary font-medium hover:text-text-primary hover:bg-bg-surface-hi'
+          ? 'bg-brand-strong text-white shadow-sm'
+          : 'text-text-tertiary hover:text-text-primary hover:bg-bg-surface-hi'
       }`}
     >
       <span
@@ -190,9 +186,7 @@ function AllButton({
                 key={p.id}
                 src={p.logoSrc}
                 alt=""
-                className={`absolute w-4 h-4 rounded-[3px] object-contain ring-1 ${
-                  active ? 'ring-white/40' : 'ring-bg-surface'
-                }`}
+                className="absolute w-4 h-4 rounded-[3px] object-contain"
                 style={{ left, zIndex: providers.length - i }}
               />
             );
@@ -200,9 +194,7 @@ function AllButton({
           return (
             <span
               key={p.id}
-              className={`absolute inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none ring-1 ${
-                active ? 'ring-white/40' : 'ring-bg-surface'
-              }`}
+              className="absolute inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none"
               style={{
                 background: p.bg,
                 color: p.fg,
